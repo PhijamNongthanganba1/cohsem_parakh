@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Questions</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header a {
+            color: white;
+            text-decoration: none;
+            background: #3498db;
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        
+        .header a:hover {
+            background: #2980b9;
+        }
+        
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .header-btn {
+            color: white;
+            text-decoration: none;
+            background: #3498db;
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: Arial, sans-serif;
+        }
+        
+        .header-btn:hover {
+            background: #2980b9;
+        }
+        
+        .header-btn.back-btn {
+            background: #95a5a6;
+        }
+        
+        .header-btn.back-btn:hover {
+            background: #7f8c8d;
+        }
+        
+        .selection-info {
+            background: white;
+            margin: 15px;
+            padding: 12px 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .info-grid {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            gap: 10px;
+            margin-top: 5px;
+            padding: 8px 0;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .info-grid::-webkit-scrollbar {
+            height: 5px;
+        }
+        
+        .info-grid::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        .info-grid::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+        
+        .info-grid::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        .info-item {
+            background: #f8f9fa;
+            padding: 10px 14px;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+            min-width: 140px;
+            flex-shrink: 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .info-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            white-space: nowrap;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .info-value {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 3px;
+        }
+        
+        .question-form {
+            background: white;
+            margin: 15px;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 15px;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        textarea {
+            resize: vertical;
+            font-family: Arial, sans-serif;
+        }
+        
+        .question-textarea {
+            min-height: 150px;
+        }
+        
+        .answer-textarea {
+            min-height: 120px;
+            background: #f8f9fa;
+            border: 1px solid #d1ecf1;
+        }
+        
+        .answer-section {
+            background: #d4edda;
+            padding: 20px;
+            border-radius: 4px;
+            margin: 20px 0;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .answer-section h3 {
+            color: #155724;
+            margin-bottom: 15px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        
+        .action-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            flex: 1;
+            font-weight: 600;
+        }
+        
+        .save-btn { background: #28a745; color: white; }
+        .save-btn:hover { background: #218838; }
+        .reset-btn { background: #dc3545; color: white; }
+        .reset-btn:hover { background: #c82333; }
+        
+        .questions-list {
+            background: white;
+            margin: 15px;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .question-item {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        
+        .question-text {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        
+        .answer-display {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 14px;
+            border-left: 3px solid #28a745;
+            margin-top: 10px;
+            line-height: 1.5;
+        }
+        
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+            border: 1px solid #c3e6cb;
+            display: none;
+            font-weight: 600;
+        }
+        
+        .criteria-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 3px;
+            line-height: 1.4;
+        }
+        
+        .form-required {
+            color: #dc3545;
+            font-weight: normal;
+        }
+        
+        .compact-display {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 10px;
+        }
+        
+        .compact-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 14px;
+            border-left: 3px solid #3498db;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            min-width: 160px;
+        }
+        
+        .compact-label {
+            font-weight: 600;
+            color: #666;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        
+        .compact-value {
+            color: #2c3e50;
+            font-weight: bold;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .selection-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .selection-title i {
+            color: #3498db;
+        }
+        
+        @media (max-width: 768px) {
+            .compact-display {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .compact-item {
+                width: 100%;
+                min-width: 100%;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .action-btn {
+                width: 100%;
+            }
+            
+            .info-grid {
+                flex-wrap: wrap;
+            }
+            
+            .info-item {
+                min-width: calc(50% - 10px);
+            }
+            
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .header-buttons {
+                width: 100%;
+                justify-content: flex-start;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="header">
+        <div>COHSEM IT - Create Questions</div>
+        <div class="header-buttons">
+            <button class="header-btn back-btn" onclick="goBackToSelection()">
+                <i class="fas fa-arrow-left"></i> Back to Selection
+            </button>
+            <button class="header-btn" onclick="window.location.href='/dashboard'">
+                Dashboard
+            </button>
+        </div>
+    </div>
+    
+    <div class="selection-info">
+        <div class="selection-title">
+            <i class="fas fa-info-circle"></i>
+            <span>Current Selection</span>
+        </div>
+        <div class="compact-display" id="compactGrid">
+        </div>
+    </div>
+    
+    <form id="questionForm" class="question-form">
+        <div class="form-group">
+            <label>Question Text <span class="form-required">*</span></label>
+            <textarea 
+                id="questionText" 
+                class="question-textarea"
+                placeholder="Enter your question here..." 
+                required></textarea>
+        </div>
+        
+        <div class="answer-section">
+            <h3>Answer <span class="form-required">*</span></h3>
+            <textarea 
+                id="answer" 
+                class="answer-textarea"
+                placeholder="Enter the complete answer here.." 
+                required></textarea>
+        </div>
+        
+        <div class="success-message" id="successMessage">
+            Question saved successfully!
+        </div>
+        
+        <div class="action-buttons">
+            <!-- <button type="button" class="action-btn save-btn" onclick="saveQuestion()">Configuration</button> -->
+            <button type="button" class="action-btn save-btn" onclick="saveQuestion()">Save Question</button>
+            <button type="button" class="action-btn reset-btn" onclick="resetForm()">Reset Form</button>
+        </div>
+    </form>
+    
+    <div class="questions-list" id="questionsList" style="display: none;">
+        <h3>Existing Questions</h3>
+        <div id="questionsContainer"></div>
+    </div>
+    
+    <script>
+        let currentSelections = {};
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            currentSelections = {
+                compCode: localStorage.getItem('selectedCompCode'),
+                compDesc: localStorage.getItem('selectedCompDesc'),
+                domainName: localStorage.getItem('selectedDomainName'),
+                knowledgeLevelName: localStorage.getItem('selectedKnowledgeLevelName'),
+                questionTypeName: localStorage.getItem('selectedQuestionTypeName'),
+                difficultyName: localStorage.getItem('selectedDifficultyName'),
+                gradeName: localStorage.getItem('selectedGradeName'),
+                subjectName: localStorage.getItem('selectedSubjectName'),
+                cgCode: localStorage.getItem('selectedCGCode')
+            };
+            
+            console.log('Loaded selections:', currentSelections);
+            
+            const grid = document.getElementById('compactGrid');
+            
+            let compactHTML = '';
+            
+            if (currentSelections.gradeName) {
+                compactHTML += `
+                    <div class="compact-item">
+                        <span class="compact-label">Grade:</span>
+                        <span class="compact-value">${currentSelections.gradeName}</span>
+                    </div>
+                `;
+            }
+            
+            if (currentSelections.subjectName) {
+                compactHTML += `
+                    <div class="compact-item">
+                        <span class="compact-label">Subject:</span>
+                        <span class="compact-value">${currentSelections.subjectName}</span>
+                    </div>
+                `;
+            }
+            
+            if (currentSelections.cgCode) {
+                compactHTML += `
+                    <div class="compact-item">
+                        <span class="compact-label">CG:</span>
+                        <span class="compact-value">${currentSelections.cgCode}</span>
+                    </div>
+                `;
+            }
+            
+            if (currentSelections.compCode) {
+                compactHTML += `
+                    <div class="compact-item">
+                        <span class="compact-label">Competency:</span>
+                        <span class="compact-value">${currentSelections.compCode}</span>
+                    </div>
+                `;
+            }
+            
+            if (currentSelections.domainName) {
+                compactHTML += `
+                    <div class="compact-item">
+                        <span class="compact-label">Domain:</span>
+                        <span class="compact-value">${currentSelections.domainName}</span>
+                    </div>
+                `;
+            }
+            
+            if (currentSelections.knowledgeLevelName) {
+                compactHTML += `
+                    <div class="compact-item">
+                        <span class="compact-label">Knowledge:</span>
+                        <span class="compact-value">${currentSelections.knowledgeLevelName}</span>
+                    </div>
+                `;
+            }
+            
+            if (currentSelections.questionTypeName) {
+                compactHTML += `
+                    <div class="compact-item">
+                        <span class="compact-label">Type:</span>
+                        <span class="compact-value">${currentSelections.questionTypeName}</span>
+                    </div>
+                `;
+            }
+            
+            if (currentSelections.difficultyName) {
+                compactHTML += `
+                    <div class="compact-item">
+                        <span class="compact-label">Difficulty:</span>
+                        <span class="compact-value">${currentSelections.difficultyName}</span>
+                    </div>
+                `;
+            }
+            
+            grid.innerHTML = compactHTML;
+            
+            await loadExistingQuestions();
+            
+            document.getElementById('questionText').focus();
+        });
+        
+        function goBackToSelection() {
+            localStorage.setItem('restoreSelections', 'true');
+            window.location.href = '/complete-selection';
+        }
+        
+        async function loadExistingQuestions() {
+            try {
+                const compId = localStorage.getItem('selectedCompId');
+                if (!compId || compId === 'null') {
+                    console.log('No compId found in localStorage');
+                    return;
+                }
+                
+                const response = await fetch(`/api/page3-questions?comp_id=${compId}`);
+                const data = await response.json();
+                
+                if (data.questions && data.questions.length > 0) {
+                    document.getElementById('questionsList').style.display = 'block';
+                    displayQuestions(data.questions);
+                } else {
+                    console.log('No questions found for compId:', compId);
+                }
+            } catch (error) {
+                console.error('Error loading questions:', error);
+            }
+        }
+        
+        function displayQuestions(questions) {
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = '';
+            
+            if (questions.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No questions found for this competency yet.</p>';
+                return;
+            }
+            
+            questions.forEach((q, index) => {
+                const div = document.createElement('div');
+                div.className = 'question-item';
+                
+                let answer = '';
+                if (q.answer) {
+                    answer = q.answer;
+                } else if (q.correct_option) {
+                    answer = q.correct_option;
+                } else if (q.option_a) {
+                    answer = q.option_a;
+                }
+                
+                div.innerHTML = `
+                    <div class="question-text">${index + 1}. ${q.question_text || 'No question text'}</div>
+                    <div class="answer-display">
+                        <strong>Answer:</strong> ${answer || 'No answer provided'}
+                    </div>
+                    <div class="criteria-info">
+                        <div>Created by ${q.created_by || 'Unknown'} on ${new Date(q.created_at).toLocaleString() || 'Unknown date'}</div>
+                        ${q.competency_code ? `<div>Competency: ${q.competency_code}</div>` : ''}
+                        ${q.difficulty_name ? `<div>Difficulty: ${q.difficulty_name}</div>` : ''}
+                        ${q.domain_name ? `<div>Domain: ${q.domain_name}</div>` : ''}
+                        ${q.knowledge_level_name ? `<div>Knowledge Level: ${q.knowledge_level_name}</div>` : ''}
+                        ${q.question_type_name ? `<div>Question Type: ${q.question_type_name}</div>` : ''}
+                        ${q.grade_name ? `<div>Grade: ${q.grade_name}</div>` : ''}
+                        ${q.subject_name ? `<div>Subject: ${q.subject_name}</div>` : ''}
+                        ${q.cg_code ? `<div>CG: ${q.cg_code}</div>` : ''}
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        async function saveQuestion() {
+            const questionText = document.getElementById('questionText').value.trim();
+            const answer = document.getElementById('answer').value.trim();
+            
+            if (!questionText) {
+                alert('Please enter a question!');
+                document.getElementById('questionText').focus();
+                return;
+            }
+            
+            if (!answer) {
+                alert('Please enter an answer!');
+                document.getElementById('answer').focus();
+                return;
+            }
+            
+            const compId = localStorage.getItem('selectedCompId');
+            if (!compId || compId === 'null') {
+                alert('Error: No competency selected. Please go back and select a competency first.');
+                window.location.href = '/complete-selection';
+                return;
+            }
+            
+            const questionData = {
+                question_text: questionText,
+                answer: answer,
+
+                comp_id: localStorage.getItem('selectedCompId'),
+                grade_id: localStorage.getItem('selectedGradeId'),
+                subject_id: localStorage.getItem('selectedSubjectId'),
+                cg_id: localStorage.getItem('selectedCGId'),
+                domain_id: localStorage.getItem('selectedDomainId'),
+                knowledge_level_id: localStorage.getItem('selectedKnowledgeLevelId'),
+                question_type_id: localStorage.getItem('selectedQuestionTypeId'),
+                difficulty_id: localStorage.getItem('selectedDifficultyId'),
+                
+                competency_code: localStorage.getItem('selectedCompCode'),
+                grade_name: localStorage.getItem('selectedGradeName'),
+                subject_name: localStorage.getItem('selectedSubjectName'),
+                cg_code: localStorage.getItem('selectedCGCode'),
+                domain_name: localStorage.getItem('selectedDomainName'),
+                knowledge_level_name: localStorage.getItem('selectedKnowledgeLevelName'),
+                question_type_name: localStorage.getItem('selectedQuestionTypeName'),
+                difficulty_name: localStorage.getItem('selectedDifficultyName')
+            };
+            
+            console.log('Sending question data:', questionData);
+            
+            try {
+                const response = await fetch('/api/create-question', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(questionData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('successMessage').style.display = 'block';
+                    document.getElementById('successMessage').innerHTML = `
+                        <strong>Question saved successfully!</strong><br>
+                        Question ID: ${result.question_id}
+                    `;
+                    
+                    resetForm();
+                    await loadExistingQuestions();
+                    
+                    setTimeout(() => {
+                        document.getElementById('successMessage').style.display = 'none';
+                    }, 3000);
+                } else {
+                    alert('Error: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to save question. Please check your connection and try again.');
+            }
+        }
+        
+        function resetForm() {
+            document.getElementById('questionForm').reset();
+            document.getElementById('questionText').focus();
+        }
+        
+        document.addEventListener('keydown', function(event) {
+            if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                event.preventDefault();
+                saveQuestion();
+            }
+        });
+    </script>
+</body>
+</html>
