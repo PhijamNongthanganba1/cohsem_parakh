@@ -21,48 +21,69 @@ def home():
     return redirect(url_for('dashboard'))
 
 
-@app.route('/register', methods=['GET','POST'])
+@app.route("/register", methods=["GET", "POST"])
 def register():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = generate_password_hash(request.form['password'])
+    msg = None
+    success = None
+
+    if request.method == "POST":
+        username = request.form["username"].strip()
+        password = request.form["password"]
 
         db = get_db()
         cur = db.cursor()
-        cur.execute(
-            "INSERT INTO users (username, password, created_at) VALUES (%s, %s, %s)",
-            (username, password, datetime.now())
-        )
-        db.commit()
-        cur.close()
-        db.close()
 
-        return redirect(url_for('login'))
+        # Check username exists
+        cur.execute("SELECT id FROM users WHERE username=%s", (username,))
+        if cur.fetchone():
+            msg = "Username already exists!"
+            success = None
+        else:
+            from werkzeug.security import generate_password_hash
+            hashed_password = generate_password_hash(password)
 
-    return render_template('register.html')
+            cur.execute("""
+                INSERT INTO users (username, password, role)
+                VALUES (%s, %s, 'uploader')
+            """, (username, hashed_password))
+            db.commit()
+
+            success = "Registration successful!"
+            msg = None
+
+    return render_template("register.html", msg=msg, success=success)
 
 
-@app.route('/login', methods=['GET','POST'])
+
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+    if request.method == "POST":
+        username = request.form["username"].strip()
+        password = request.form["password"]
 
         db = get_db()
         cur = db.cursor(dictionary=True)
+
         cur.execute("SELECT * FROM users WHERE username=%s", (username,))
         user = cur.fetchone()
-        cur.close()
-        db.close()
 
-        if user and check_password_hash(user['password'], password):
-            session['user'] = user['username']
-            session['login_type'] = 'uploader'  
-            return redirect(url_for('complete_selection'))
+        from werkzeug.security import check_password_hash
 
-        return "Invalid Login"
+        # User not found
+        if not user:
+            return render_template("login.html", msg="User not found! Please register first.")
 
-    return render_template('login.html')
+        # Wrong password
+        if not check_password_hash(user["password"], password):
+            return render_template("login.html", msg="Invalid password!")
+
+        # Login success
+        session["username"] = username
+        session["role"] = user["role"]
+        return render_template("login.html", success="Login successful!")
+
+    return render_template("login.html")
+
 
 
 @app.route('/builder-login', methods=['GET','POST'])
@@ -1153,12 +1174,12 @@ def configure_debug():
 
 
 
-@app.route("/")
-def home():
-    return render_template("index.html")
+# @app.route("/")
+# def home():
+#     return render_template("index.html")
 
 
 
-# if __name__ == '__main__':
+if __name__ == '__main__':
     
-#     app.run(debug=True, port=5000)
+    app.run(debug=True, port=5000)

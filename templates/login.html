@@ -376,5 +376,27 @@
       console.log('%cCOHSEM ITMS - Authorized Access Only', 'color: #3498db; font-size: 12px;');
     });
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+{% if msg %}
+<script>
+Swal.fire({
+  icon: "error",
+  title: "Login Failed",
+  text: "{{ msg }}"
+});
+</script>
+{% elif success %}
+<script>
+Swal.fire({
+  icon: "success",
+  title: "Welcome!",
+  text: "{{ success }}"
+}).then(() => {
+  window.location.href = "/dashboard";
+});
+</script>
+{% endif %}
+
 </body>
 </html>
