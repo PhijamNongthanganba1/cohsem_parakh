@@ -2,18 +2,77 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 import mysql.connector
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+import os
+from urllib.parse import urlparse
 
 app = Flask(__name__)
-app.secret_key = "secret_key_123"
+app.secret_key = os.environ.get('SECRET_KEY', 'secret_key_123')  # Use environment variable
 
 
 def get_db():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="nong@123",
-        database="cohsem_IT"
-    )
+    # Check for Render's database URL or local development
+    database_url = os.environ.get('DATABASE_URL')
+    
+    if database_url:
+        try:
+            # Handle different database URL formats
+            if database_url.startswith('mysql://'):
+                # Remove mysql:// prefix
+                db_string = database_url.replace('mysql://', '')
+                # Split user:password@host:port/database
+                if '@' in db_string:
+                    user_pass, host_port_db = db_string.split('@')
+                    user, password = user_pass.split(':')
+                    
+                    if '/' in host_port_db:
+                        host_port, database = host_port_db.split('/')
+                        if ':' in host_port:
+                            host, port = host_port.split(':')
+                            port = int(port)
+                        else:
+                            host = host_port
+                            port = 3306
+                    else:
+                        host = host_port_db
+                        port = 3306
+                        database = ''
+                    
+                    return mysql.connector.connect(
+                        host=host,
+                        user=user,
+                        password=password,
+                        database=database,
+                        port=port,
+                        ssl_disabled=True  # Disable SSL for now, enable for production
+                    )
+            else:
+                # Try direct parsing for other formats
+                parsed = urlparse(database_url)
+                return mysql.connector.connect(
+                    host=parsed.hostname,
+                    user=parsed.username,
+                    password=parsed.password,
+                    database=parsed.path[1:] if parsed.path.startswith('/') else parsed.path,
+                    port=parsed.port or 3306,
+                    ssl_disabled=True
+                )
+        except Exception as e:
+            print(f"Error parsing DATABASE_URL: {e}")
+            # Fallback to local development
+            return mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="nong@123",
+                database="cohsem_IT"
+            )
+    else:
+        # Local development fallback
+        return mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="nong@123",
+            database="cohsem_IT"
+        )
 
 
 @app.route('/')
@@ -1181,5 +1240,6 @@ def configure_debug():
 
 
 if __name__ == '__main__':
-    
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    debug_mode = os.environ.get('FLASK_ENV') == 'development'
+    app.run(host='0.0.0.0', port=port, debug=debug_mode)

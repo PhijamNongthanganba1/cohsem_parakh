@@ -1,1 +1,5 @@
-web: gunicorn app:app
+Flask==2.3.3
+mysql-connector-python==8.1.0
+Werkzeug==2.3.7
+gunicorn==21.2.0
+python-dotenv==1.0.0web: gunicorn app:app
