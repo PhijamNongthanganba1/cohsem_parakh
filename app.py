@@ -80,7 +80,7 @@ def login():
         # Login success
         session["username"] = username
         session["role"] = user["role"]
-        return render_template("login.html", success="Login successful!")
+        return render_template("complete_selection.html", success="Login successful!")
 
     return render_template("login.html")
 
