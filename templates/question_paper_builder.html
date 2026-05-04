@@ -1,0 +1,1910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COHSEM | PARAKH - Paper Builder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #0a1a3a, #1a3a6d, #0c2461, #1e3a5f, #0a1a3a);
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+        }
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            height: calc(100vh - 40px);
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50px;
+            padding: 12px 25px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .header-left h1 {
+            color: white;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header-left h1 i {
+            color: #e67e22;
+        }
+        .header-right {
+            display: flex;
+            gap: 15px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #229954;
+        }
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+        .btn-warning:hover {
+            background: #e67e22;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .main-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+        .tracker-sidebar {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 25px 20px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        .tracker-title {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .tracker-title i {
+            color: #e67e22;
+        }
+        .tracker-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .tracker-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            border-left: 3px solid transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .tracker-step:hover {
+            background: rgba(230,126,34,0.1);
+            transform: translateX(5px);
+        }
+        .tracker-step.active {
+            background: rgba(230,126,34,0.2);
+            border-left-color: #e67e22;
+        }
+        .tracker-step.completed {
+            background: rgba(39,174,96,0.1);
+            border-left-color: #27ae60;
+        }
+        .step-number {
+            width: 30px;
+            height: 30px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        .tracker-step.active .step-number {
+            background: #e67e22;
+        }
+        .tracker-step.completed .step-number {
+            background: #27ae60;
+        }
+        .step-info {
+            flex: 1;
+        }
+        .step-label {
+            color: rgba(255,255,255,0.7);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .step-value {
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .content-area {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 25px;
+            overflow-y: auto;
+            min-height: 0;
+        }
+        .progress-container {
+            margin-bottom: 25px;
+        }
+        .progress-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e67e22, #f39c12);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        .progress-text {
+            text-align: center;
+            color: rgba(255,255,255,0.7);
+            font-size: 13px;
+            margin-top: 8px;
+        }
+        .stage-container {
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .stage-header {
+            margin-bottom: 25px;
+        }
+        .stage-header h2 {
+            color: white;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .stage-header p {
+            color: rgba(255,255,255,0.7);
+            font-size: 15px;
+        }
+        .grid-2, .grid-3 {
+            display: grid;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .grid-2 { grid-template-columns: repeat(2, 1fr); }
+        .grid-3 { grid-template-columns: repeat(3, 1fr); }
+        .card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 25px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .card:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: #e67e22;
+            transform: translateY(-3px);
+        }
+        .card.selected {
+            background: rgba(230,126,34,0.2);
+            border-color: #e67e22;
+        }
+        .card.selected::before {
+            content: '✓';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 24px;
+            height: 24px;
+            background: #e67e22;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, #e67e22, #f39c12);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            font-size: 24px;
+            color: white;
+        }
+        .card h3 {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .card p {
+            color: rgba(255,255,255,0.7);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .card .badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.1);
+            color: #e67e22;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        .subject-info {
+            background: rgba(230,126,34,0.15);
+            border: 1px solid #e67e22;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .subject-info h3 {
+            color: white;
+            font-size: 22px;
+        }
+        .subject-info span {
+            color: #e67e22;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        .cg-info-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .cg-code {
+            color: #e67e22;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .cg-description {
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .comp-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .comp-item {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .comp-item:hover {
+            background: rgba(230,126,34,0.1);
+            border-color: #e67e22;
+            transform: translateY(-2px);
+        }
+        .comp-item.selected {
+            background: rgba(230,126,34,0.2);
+            border-color: #e67e22;
+            border-left: 4px solid #e67e22;
+        }
+        .comp-code {
+            color: #e67e22;
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        .comp-desc {
+            color: rgba(255,255,255,0.7);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .selected-badge {
+            display: inline-block;
+            background: #27ae60;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-top: 10px;
+        }
+        .empty-cg-message {
+            background: rgba(255,255,255,0.03);
+            border: 1px dashed rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            margin: 30px 0;
+        }
+        .empty-cg-message i {
+            font-size: 48px;
+            color: #e67e22;
+            opacity: 0.5;
+            margin-bottom: 15px;
+        }
+        .empty-cg-message h3 {
+            color: white;
+            margin-bottom: 10px;
+        }
+        .empty-cg-message p {
+            color: rgba(255,255,255,0.7);
+        }
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .marks-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .marks-title {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .marks-title i {
+            color: #e67e22;
+        }
+        .marks-input-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .marks-label {
+            width: 150px;
+            color: white;
+        }
+        .marks-input {
+            width: 100px;
+            padding: 10px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            color: white;
+            text-align: center;
+            font-size: 16px;
+        }
+        .marks-input:focus {
+            outline: none;
+            border-color: #e67e22;
+        }
+        .type-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .type-item {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 15px;
+        }
+        .type-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            color: white;
+            font-weight: 600;
+        }
+        .type-inputs {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .type-input {
+            width: 60px;
+            padding: 8px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 4px;
+            color: white;
+            text-align: center;
+        }
+        .type-multiply {
+            color: #e67e22;
+        }
+        .type-equal {
+            color: #27ae60;
+            font-weight: 600;
+        }
+        .type-total {
+            min-width: 50px;
+            text-align: right;
+            color: #27ae60;
+            font-weight: 600;
+        }
+        .questions-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .questions-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        .card-header {
+            background: rgba(0,0,0,0.2);
+            padding: 15px 20px;
+            color: white;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-header span {
+            background: #e67e22;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        .table-container {
+            max-height: 450px;
+            overflow-y: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            text-align: left;
+            padding: 12px 15px;
+            color: rgba(255,255,255,0.7);
+            font-weight: 600;
+            font-size: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+        }
+        td {
+            padding: 12px 15px;
+            color: white;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            vertical-align: top;
+        }
+        tr:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .remove-btn {
+            background: #e74c3c;
+            border: none;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .remove-btn:hover {
+            background: #c0392b;
+        }
+        .question-image-thumb {
+            width: 40px;
+            height: 40px;
+            border-radius: 4px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.3);
+            margin-top: 8px;
+        }
+        .question-image-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .question-images-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        .has-image-icon {
+            color: #3498db;
+            margin-left: 5px;
+            font-size: 12px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255,255,255,0.5);
+            font-size: 16px;
+        }
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.3;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .modal-header {
+            padding: 20px 30px;
+            background: linear-gradient(135deg, #e67e22, #f39c12);
+            color: white;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .modal-body {
+            padding: 30px;
+        }
+        .modal-footer {
+            padding: 20px 30px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .paper-preview {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        .paper-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e67e22;
+        }
+        .paper-header h2 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        .paper-header h3 {
+            color: #e67e22;
+            margin-bottom: 15px;
+        }
+        .paper-meta {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            color: #666;
+        }
+        .question-item {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            color: #2c3e50;
+            line-height: 1.5;
+        }
+        .question-header span:first-child {
+            flex: 1;
+        }
+        .question-marks {
+            color: #27ae60;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .question-images-preview-modal {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+        .preview-image {
+            max-width: 200px;
+            max-height: 150px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .summary-section {
+            background: rgba(39,174,96,0.1);
+            border: 1px solid #27ae60;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        .summary-title {
+            color: #27ae60;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 10px;
+        }
+        .summary-item {
+            background: rgba(255,255,255,0.05);
+            padding: 12px;
+            border-radius: 8px;
+            color: white;
+        }
+        .summary-item strong {
+            color: #e67e22;
+        }
+        .summary-item small {
+            color: #27ae60;
+            display: block;
+            margin-top: 5px;
+        }
+        .skip-badge {
+            display: inline-block;
+            background: #95a5a6;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+        .image-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 1100;
+            cursor: pointer;
+        }
+        .image-modal img {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+        }
+        .image-modal-close {
+            position: absolute;
+            top: 20px;
+            right: 35px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        @media (max-width: 1024px) {
+            .main-container {
+                grid-template-columns: 250px 1fr;
+            }
+            .grid-3 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+            .tracker-sidebar {
+                display: none;
+            }
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+            .questions-section {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.debug.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <div class="header-left">
+                <h1>
+                    <i class="fas fa-file-alt"></i>
+                    Question Paper Builder
+                </h1>
+            </div>
+            <div class="header-right">
+                <a href="/dashboard" class="btn btn-primary">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+                <a href="/logout" class="btn btn-danger">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+        <div class="main-container">
+            <div class="tracker-sidebar">
+                <div class="tracker-title">
+                    <i class="fas fa-tasks"></i> Build Progress
+                </div>
+                <div class="tracker-steps">
+                    <div class="tracker-step" id="tracker-grade" onclick="navigateToStage(1)">
+                        <div class="step-number">1</div>
+                        <div class="step-info">
+                            <div class="step-label">Step 1</div>
+                            <div class="step-value" id="tracker-grade-value">Select Grade</div>
+                        </div>
+                    </div>
+                    <div class="tracker-step" id="tracker-subject" onclick="navigateToStage(2)">
+                        <div class="step-number">2</div>
+                        <div class="step-info">
+                            <div class="step-label">Step 2</div>
+                            <div class="step-value" id="tracker-subject-value">Select Subject</div>
+                        </div>
+                    </div>
+                    <div class="tracker-step" id="tracker-chain" onclick="navigateToStage(3)">
+                        <div class="step-number">3</div>
+                        <div class="step-info">
+                            <div class="step-label">Step 3</div>
+                            <div class="step-value" id="tracker-chain-value">Select Competencies</div>
+                        </div>
+                    </div>
+                    <div class="tracker-step" id="tracker-config" onclick="navigateToStage(4)">
+                        <div class="step-number">4</div>
+                        <div class="step-info">
+                            <div class="step-label">Step 4</div>
+                            <div class="step-value" id="tracker-config-value">Configure Paper</div>
+                        </div>
+                    </div>
+                    <div class="tracker-step" id="tracker-questions" onclick="navigateToStage(5)">
+                        <div class="step-number">5</div>
+                        <div class="step-info">
+                            <div class="step-label">Step 5</div>
+                            <div class="step-value" id="tracker-questions-value">Select Questions</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="content-area">
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">Step 1 of 5</div>
+                </div>
+                <div class="stage-container" id="stage1">
+                    <div class="stage-header">
+                        <h2>Select Grade</h2>
+                        <p>Choose the grade level for your question paper</p>
+                    </div>
+                    <div class="grid-2" id="gradeGrid">
+                        <div class="loading">Loading grades...</div>
+                    </div>
+                </div>
+                <div class="stage-container" id="stage2" style="display: none;">
+                    <div class="stage-header">
+                        <h2>Select Subject</h2>
+                        <p>Choose a subject to select competencies</p>
+                    </div>
+                    <div class="grid-3" id="subjectGrid"></div>
+                    <div class="nav-buttons">
+                        <button class="btn btn-warning" onclick="goToStage(1)">
+                            <i class="fas fa-arrow-left"></i> Back to Grades
+                        </button>
+                    </div>
+                </div>
+                <div class="stage-container" id="stage3" style="display: none;">
+                    <div class="stage-header">
+                        <h2>Select Competencies</h2>
+                        <p>For each Curricular Goal, select ONE Competency (CGs with no competencies will be skipped)</p>
+                    </div>
+                    <div class="subject-info" id="subjectInfo">
+                        <h3 id="currentSubjectName"></h3>
+                        <span id="chainProgress">CG 1/X</span>
+                    </div>
+                    <div class="cg-info-card" id="currentCGCard">
+                        <div class="cg-code" id="currentCGCode"></div>
+                        <div class="cg-description" id="currentCGDesc"></div>
+                    </div>
+                    <h3 style="color: white; margin: 20px 0 10px;">Select ONE Competency for this CG:</h3>
+                    <div class="comp-grid" id="compGrid"></div>
+                    <div id="emptyCGMessage" style="display: none;">
+                        <div class="empty-cg-message">
+                            <i class="fas fa-info-circle"></i>
+                            <h3>No Competencies Found</h3>
+                            <p>This Curricular Goal has no competencies. It will be skipped automatically.</p>
+                            <button class="btn btn-success" onclick="skipEmptyCG()" style="margin-top: 20px;">
+                                Skip to Next CG <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="nav-buttons">
+                        <button class="btn btn-warning" onclick="previousCG()" id="prevCGBtn" disabled>
+                            <i class="fas fa-arrow-left"></i> Previous CG
+                        </button>
+                        <button class="btn btn-warning" onclick="goToStage(2)">
+                            <i class="fas fa-arrow-left"></i> Back to Subjects
+                        </button>
+                        <button class="btn btn-success" onclick="nextCG()" id="nextCGBtn">
+                            Next CG <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="summary-section" id="cgSummary">
+                        <div class="summary-title">
+                            Selected Competencies 
+                            <span class="skip-badge" id="skippedCount">0 skipped</span>
+                        </div>
+                        <div class="summary-grid" id="cgSummaryGrid"></div>
+                    </div>
+                </div>
+                <div class="stage-container" id="stage4" style="display: none;">
+                    <div class="stage-header">
+                        <h2>Configure Paper Structure</h2>
+                        <p>Set marks distribution for the paper</p>
+                    </div>
+                    <div class="marks-card">
+                        <div class="marks-title">Cognitive Domain Distribution (%)</div>
+                        <div class="marks-input-group">
+                            <span class="marks-label">Awareness</span>
+                            <input type="number" class="marks-input" id="awarenessPercent" value="50" min="0" max="100" onchange="calculateTotals()">
+                            <span style="color: #e67e22;">%</span>
+                        </div>
+                        <div class="marks-input-group">
+                            <span class="marks-label">Sensitivity</span>
+                            <input type="number" class="marks-input" id="sensitivityPercent" value="25" min="0" max="100" onchange="calculateTotals()">
+                            <span style="color: #e67e22;">%</span>
+                        </div>
+                        <div class="marks-input-group">
+                            <span class="marks-label">Creativity</span>
+                            <input type="number" class="marks-input" id="creativityPercent" value="25" min="0" max="100" onchange="calculateTotals()">
+                            <span style="color: #e67e22;">%</span>
+                        </div>
+                        <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                            <span style="color: white; margin-right: 20px;">Total:</span>
+                            <span style="color: #27ae60; font-weight: 600;" id="cognitiveTotal">100%</span>
+                        </div>
+                    </div>
+                    <div class="marks-card">
+                        <div class="marks-title">Difficulty Level Distribution (%)</div>
+                        <div class="marks-input-group">
+                            <span class="marks-label">Easy</span>
+                            <input type="number" class="marks-input" id="easyPercent" value="25" min="0" max="100" onchange="calculateTotals()">
+                            <span style="color: #e67e22;">%</span>
+                        </div>
+                        <div class="marks-input-group">
+                            <span class="marks-label">Medium</span>
+                            <input type="number" class="marks-input" id="mediumPercent" value="50" min="0" max="100" onchange="calculateTotals()">
+                            <span style="color: #e67e22;">%</span>
+                        </div>
+                        <div class="marks-input-group">
+                            <span class="marks-label">Hard</span>
+                            <input type="number" class="marks-input" id="hardPercent" value="25" min="0" max="100" onchange="calculateTotals()">
+                            <span style="color: #e67e22;">%</span>
+                        </div>
+                        <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                            <span style="color: white; margin-right: 20px;">Total:</span>
+                            <span style="color: #27ae60; font-weight: 600;" id="difficultyTotal">100%</span>
+                        </div>
+                    </div>
+                    <div class="marks-card">
+                        <div class="marks-title">
+                            <i class="fas fa-question-circle"></i> Question Types & Marks
+                        </div>
+                        <div class="type-grid">
+                            <div class="type-item">
+                                <div class="type-header"><span>Objective</span></div>
+                                <div class="type-inputs">
+                                    <input type="number" class="type-input" id="objectiveCount" value="15" min="0" onchange="calculateQuestionMarks()">
+                                    <span class="type-multiply">×</span>
+                                    <input type="number" class="type-input" id="objectiveMarks" value="1" min="0" onchange="calculateQuestionMarks()">
+                                    <span class="type-equal">=</span>
+                                    <span class="type-total" id="objectiveTotal">15</span>
+                                </div>
+                            </div>
+                            <div class="type-item">
+                                <div class="type-header"><span>Very Short Answer</span></div>
+                                <div class="type-inputs">
+                                    <input type="number" class="type-input" id="veryShortCount" value="5" min="0" onchange="calculateQuestionMarks()">
+                                    <span class="type-multiply">×</span>
+                                    <input type="number" class="type-input" id="veryShortMarks" value="3" min="0" onchange="calculateQuestionMarks()">
+                                    <span class="type-equal">=</span>
+                                    <span class="type-total" id="veryShortTotal">15</span>
+                                </div>
+                            </div>
+                            <div class="type-item">
+                                <div class="type-header"><span>Short Answer</span></div>
+                                <div class="type-inputs">
+                                    <input type="number" class="type-input" id="shortCount" value="5" min="0" onchange="calculateQuestionMarks()">
+                                    <span class="type-multiply">×</span>
+                                    <input type="number" class="type-input" id="shortMarks" value="3" min="0" onchange="calculateQuestionMarks()">
+                                    <span class="type-equal">=</span>
+                                    <span class="type-total" id="shortTotal">15</span>
+                                </div>
+                            </div>
+                            <div class="type-item">
+                                <div class="type-header"><span>Long Answer</span></div>
+                                <div class="type-inputs">
+                                    <input type="number" class="type-input" id="longCount" value="5" min="0" onchange="calculateQuestionMarks()">
+                                    <span class="type-multiply">×</span>
+                                    <input type="number" class="type-input" id="longMarks" value="7" min="0" onchange="calculateQuestionMarks()">
+                                    <span class="type-equal">=</span>
+                                    <span class="type-total" id="longTotal">35</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: flex-end; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                            <span style="color: white; font-size: 18px; margin-right: 20px;">Grand Total Marks</span>
+                            <span style="color: #27ae60; font-size: 24px; font-weight: 600;" id="grandTotal">80</span>
+                        </div>
+                    </div>
+                    <div class="nav-buttons">
+                        <button class="btn btn-warning" onclick="goToStage(3)">
+                            <i class="fas fa-arrow-left"></i> Back to Competency Selection
+                        </button>
+                        <button class="btn btn-success" onclick="finishConfiguration()">
+                            Next: Select Questions <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="stage-container" id="stage5" style="display: none;">
+                    <div class="stage-header">
+                        <h2>Select Questions</h2>
+                        <p>Choose questions from the available pool</p>
+                    </div>
+                    <div class="questions-section">
+                        <div class="questions-card">
+                            <div class="card-header">
+                                Available Approved Questions
+                                <span id="availableCount">0</span>
+                            </div>
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 40px">Sel</th>
+                                            <th>Question</th>
+                                            <th style="width: 60px">Marks</th>
+                                            <th style="width: 80px">Type</th>
+                                            <th style="width: 100px">Subject</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="availableQuestionsBody">
+                                        <tr>
+                                            <td colspan="5" style="text-align: center; padding: 30px;">
+                                                Complete competency selection first
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="questions-card">
+                            <div class="card-header">
+                                Selected Questions
+                                <span id="selectedCount">0</span>
+                            </div>
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Question</th>
+                                            <th>Marks</th>
+                                            <th>Type</th>
+                                            <th>Subject</th>
+                                            <th style="width: 40px">Remove</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="selectedQuestionsBody">
+                                        <tr>
+                                            <td colspan="6" style="text-align: center; padding: 30px;">
+                                                No questions selected
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: center; margin-top: 30px;">
+                        <button class="btn btn-success" onclick="generatePaper()" style="padding: 15px 40px; font-size: 18px;" id="generateBtn">
+                            <i class="fas fa-file-pdf"></i> GENERATE QUESTION PAPER
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="imageModal" class="image-modal" onclick="closeImageModal()">
+        <span class="image-modal-close">&times;</span>
+        <img id="modalImage" alt="Full size image">
+    </div>
+    <div class="modal" id="paperPreviewModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-file-alt"></i> Question Paper Preview</h3>
+                <button class="close-btn" onclick="closeModal('paperPreviewModal')">&times;</button>
+            </div>
+            <div class="modal-body" id="paperPreviewBody">
+                <div class="paper-preview" id="paperPreview"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success" onclick="downloadPDF()">
+                    <i class="fas fa-download"></i> Download PDF
+                </button>
+                <button class="btn btn-primary" onclick="printPaper()">
+                    <i class="fas fa-print"></i> Print Preview
+                </button>
+                <button class="btn btn-danger" onclick="closeModal('paperPreviewModal')">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="loadingModal">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <div class="modal-body">
+                <i class="fas fa-spinner fa-pulse" style="font-size: 50px; color: #e67e22; margin-bottom: 20px;"></i>
+                <h3 style="color: #2c3e50;">Generating PDF...</h3>
+                <p style="color: #666;">Please wait while we create your question paper</p>
+            </div>
+        </div>
+    </div>
+    <script>
+        let currentStage = 1;
+        let page1NavigationData = {};
+        let approvedQuestions = [];
+        let selectedQuestions = [];
+        let generatedPDF = null;
+        let generatedPDFName = null;
+        let gradesData = [];
+        let currentSelections = {
+            grade: null,
+            subject: null
+        };
+        let chainData = {
+            subjectId: null,
+            subjectName: null,
+            cgList: [],
+            currentCGIndex: 0,
+            selectedCompetencies: {},
+            skippedCGs: []
+        };
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadGrades();
+            await loadNavigationData();
+            updateTracker();
+            updateProgress();
+        });
+        
+        async function loadGrades() {
+            try {
+                const response = await fetch('/api/grades');
+                const data = await response.json();
+                gradesData = data.grades || [];
+                console.log('Loaded grades:', gradesData);
+                const gradeGrid = document.getElementById('gradeGrid');
+                if (gradesData.length === 0) {
+                    gradeGrid.innerHTML = '<div class="empty-state">No grades available. Please create grades in Configuration Dashboard.</div>';
+                    return;
+                }
+                gradeGrid.innerHTML = gradesData.map(grade => `
+                    <div class="card" onclick="selectGrade(${grade.id}, '${grade.grade_name}', this)">
+                        <div class="card-icon"><i class="fas fa-graduation-cap"></i></div>
+                        <h3>${grade.grade_name}</h3>
+                        <p>Select this grade to continue</p>
+                        <div class="badge">${grade.grade_name}</div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading grades:', error);
+                document.getElementById('gradeGrid').innerHTML = '<div class="empty-state">Error loading grades. Please refresh.</div>';
+            }
+        }
+        
+        async function loadNavigationData() {
+            try {
+                const response = await fetch('/api/page1-data');
+                if (!response.ok) throw new Error('Failed to load data');
+                page1NavigationData = await response.json();
+                console.log('Navigation data loaded:', page1NavigationData);
+            } catch (error) {
+                console.error('Error loading navigation data:', error);
+                Swal.fire('Error', 'Failed to load data. Please refresh.', 'error');
+            }
+        }
+        
+        function navigateToStage(stage) {
+            if (stage === 1) {
+                goToStage(1);
+                return;
+            }
+            if (stage === 2) {
+                if (currentSelections.grade) {
+                    goToStage(2);
+                    loadSubjects();
+                } else {
+                    Swal.fire('Warning', 'Please complete previous steps first!', 'warning');
+                }
+                return;
+            }
+            if (stage === 3) {
+                if (currentSelections.subject) {
+                    goToStage(3);
+                    startChain();
+                } else {
+                    Swal.fire('Warning', 'Please complete previous steps first!', 'warning');
+                }
+                return;
+            }
+            if (stage === 4) {
+                if (Object.keys(chainData.selectedCompetencies).length > 0) {
+                    goToStage(4);
+                } else {
+                    Swal.fire('Warning', 'Please complete previous steps first!', 'warning');
+                }
+                return;
+            }
+            if (stage === 5) {
+                goToStage(5);
+                loadAllApprovedQuestions();
+                return;
+            }
+        }
+        
+        function updateTracker() {
+            const gradeObj = gradesData.find(g => g.id == currentSelections.grade?.id);
+            document.getElementById('tracker-grade-value').textContent = currentSelections.grade ? (gradeObj?.grade_name || currentSelections.grade.display_name) : 'Select Grade';
+            document.getElementById('tracker-subject-value').textContent = currentSelections.subject ? currentSelections.subject.subject_name : 'Select Subject';
+            let chainStatus = 'Not Started';
+            if (chainData.cgList.length > 0) {
+                const selected = Object.keys(chainData.selectedCompetencies).length;
+                chainStatus = `${selected}/${chainData.cgList.length} CGs completed (${chainData.skippedCGs.length} skipped)`;
+            }
+            document.getElementById('tracker-chain-value').textContent = chainStatus;
+            document.getElementById('tracker-config-value').textContent = 'Configure';
+            document.getElementById('tracker-questions-value').textContent = selectedQuestions.length > 0 ? `${selectedQuestions.length} Selected` : 'Select Questions';
+            
+            const steps = ['grade', 'subject', 'chain', 'config', 'questions'];
+            steps.forEach((step, index) => {
+                const element = document.getElementById(`tracker-${step}`);
+                if (element) {
+                    element.classList.remove('active', 'completed');
+                    if (index + 1 < currentStage) element.classList.add('completed');
+                    else if (index + 1 === currentStage) element.classList.add('active');
+                }
+            });
+            if (currentSelections.grade) document.getElementById('tracker-grade').classList.add('completed');
+            if (currentSelections.subject) document.getElementById('tracker-subject').classList.add('completed');
+            if (Object.keys(chainData.selectedCompetencies).length > 0) document.getElementById('tracker-chain').classList.add('completed');
+            if (selectedQuestions.length > 0) document.getElementById('tracker-questions').classList.add('completed');
+        }
+        
+        function updateProgress() {
+            const percent = ((currentStage - 1) / 4) * 100;
+            document.getElementById('progressFill').style.width = percent + '%';
+            document.getElementById('progressText').textContent = `Step ${currentStage} of 5`;
+        }
+        
+        function goToStage(stage) {
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById(`stage${i}`).style.display = 'none';
+            }
+            document.getElementById(`stage${stage}`).style.display = 'block';
+            currentStage = stage;
+            updateTracker();
+            updateProgress();
+        }
+        
+        function selectGrade(id, name, element) {
+            document.querySelectorAll('#stage1 .card').forEach(c => c.classList.remove('selected'));
+            element.classList.add('selected');
+            currentSelections.grade = { id, display_name: name };
+            currentSelections.subject = null;
+            resetChain();
+            updateTracker();
+            setTimeout(() => { goToStage(2); loadSubjects(); }, 300);
+        }
+        
+        function resetChain() {
+            chainData = {
+                subjectId: null,
+                subjectName: null,
+                cgList: [],
+                currentCGIndex: 0,
+                selectedCompetencies: {},
+                skippedCGs: []
+            };
+        }
+        
+        function loadSubjects() {
+            const container = document.getElementById('subjectGrid');
+            const gradeId = currentSelections.grade.id;
+            let subjectList = page1NavigationData.subjects?.filter(s => s.grade_id == gradeId) || [];
+            if (subjectList.length === 0) {
+                container.innerHTML = '<div class="empty-state">No subjects available for this grade</div>';
+                return;
+            }
+            container.innerHTML = subjectList.map(subject => {
+                const isSelected = currentSelections.subject && currentSelections.subject.id === subject.id;
+                return `
+                    <div class="card ${isSelected ? 'selected' : ''}" onclick="selectSubject(${subject.id}, '${subject.subject_name}', this)">
+                        <div class="card-icon"><i class="fas fa-book"></i></div>
+                        <h3>${subject.subject_name}</h3>
+                        <p>${subject.subject_name} for ${currentSelections.grade.display_name}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function selectSubject(id, name, element) {
+            document.querySelectorAll('#stage2 .card').forEach(c => c.classList.remove('selected'));
+            element.classList.add('selected');
+            currentSelections.subject = { id, subject_name: name };
+            chainData.subjectId = id;
+            chainData.subjectName = name;
+            chainData.cgList = page1NavigationData.cgs?.filter(cg => cg.subject_id == id) || [];
+            chainData.currentCGIndex = 0;
+            chainData.selectedCompetencies = {};
+            chainData.skippedCGs = [];
+            findNextValidCG();
+            updateTracker();
+            goToStage(3);
+            loadCurrentCG();
+        }
+        
+        function findNextValidCG() {
+            while (chainData.currentCGIndex < chainData.cgList.length) {
+                const currentCG = chainData.cgList[chainData.currentCGIndex];
+                if (chainData.selectedCompetencies[currentCG.id]) {
+                    chainData.currentCGIndex++;
+                    continue;
+                }
+                const competencies = page1NavigationData.competencies?.filter(c => c.cg_id == currentCG.id && c.status == 1) || [];
+                if (competencies.length === 0) {
+                    chainData.skippedCGs.push(currentCG.id);
+                    chainData.currentCGIndex++;
+                    continue;
+                }
+                break;
+            }
+        }
+        
+        function startChain() {
+            findNextValidCG();
+            loadCurrentCG();
+        }
+        
+        function loadCurrentCG() {
+            if (chainData.currentCGIndex >= chainData.cgList.length) {
+                showAllCGsCompleted();
+                return;
+            }
+            const currentCG = chainData.cgList[chainData.currentCGIndex];
+            document.getElementById('currentSubjectName').textContent = chainData.subjectName;
+            document.getElementById('chainProgress').textContent = `CG ${chainData.currentCGIndex + 1}/${chainData.cgList.length} (${chainData.skippedCGs.length} skipped)`;
+            document.getElementById('currentCGCode').textContent = currentCG.cg_code || `CG ${currentCG.id}`;
+            document.getElementById('currentCGDesc').textContent = currentCG.cg_description || '';
+            
+            const competencies = page1NavigationData.competencies?.filter(c => c.cg_id == currentCG.id && c.status == 1) || [];
+            if (competencies.length === 0) {
+                document.getElementById('currentCGCard').style.display = 'block';
+                document.getElementById('compGrid').style.display = 'none';
+                document.getElementById('emptyCGMessage').style.display = 'block';
+                return;
+            }
+            document.getElementById('currentCGCard').style.display = 'block';
+            document.getElementById('compGrid').style.display = 'grid';
+            document.getElementById('emptyCGMessage').style.display = 'none';
+            
+            const existingSelection = chainData.selectedCompetencies[currentCG.id];
+            let compHtml = '';
+            competencies.forEach(comp => {
+                const isSelected = existingSelection && existingSelection.compId === comp.id;
+                compHtml += `
+                    <div class="comp-item ${isSelected ? 'selected' : ''}" onclick="selectCompetency(${comp.id}, '${comp.comp_code || 'Comp'}', this)">
+                        <div class="comp-code">${comp.comp_code || 'Comp ' + comp.id}</div>
+                        <div class="comp-desc">${comp.comp_description || 'No description'}</div>
+                        ${isSelected ? '<div class="selected-badge">Selected</div>' : ''}
+                    </div>
+                `;
+            });
+            document.getElementById('compGrid').innerHTML = compHtml;
+            document.getElementById('prevCGBtn').disabled = chainData.currentCGIndex === 0;
+            updateCGSummary();
+        }
+        
+        function selectCompetency(compId, compCode, element) {
+            const currentCG = chainData.cgList[chainData.currentCGIndex];
+            document.querySelectorAll('#compGrid .comp-item').forEach(item => {
+                item.classList.remove('selected');
+                const badge = item.querySelector('.selected-badge');
+                if (badge) badge.remove();
+            });
+            element.classList.add('selected');
+            const badge = document.createElement('div');
+            badge.className = 'selected-badge';
+            badge.textContent = 'Selected';
+            element.appendChild(badge);
+            chainData.selectedCompetencies[currentCG.id] = {
+                compId: compId,
+                compCode: compCode
+            };
+            updateCGSummary();
+        }
+        
+        function skipEmptyCG() {
+            const currentCG = chainData.cgList[chainData.currentCGIndex];
+            chainData.skippedCGs.push(currentCG.id);
+            chainData.currentCGIndex++;
+            findNextValidCG();
+            if (chainData.currentCGIndex < chainData.cgList.length) {
+                loadCurrentCG();
+            } else {
+                showAllCGsCompleted();
+            }
+            updateCGSummary();
+            updateTracker();
+        }
+        
+        function previousCG() {
+            if (chainData.currentCGIndex > 0) {
+                chainData.currentCGIndex--;
+                while (chainData.currentCGIndex >= 0 && chainData.skippedCGs.includes(chainData.cgList[chainData.currentCGIndex].id)) {
+                    chainData.currentCGIndex--;
+                }
+                if (chainData.currentCGIndex >= 0) {
+                    loadCurrentCG();
+                } else {
+                    chainData.currentCGIndex = 0;
+                    loadCurrentCG();
+                }
+            }
+        }
+        
+        function nextCG() {
+            const currentCG = chainData.cgList[chainData.currentCGIndex];
+            if (!chainData.selectedCompetencies[currentCG.id]) {
+                Swal.fire('Error', 'Please select a competency for this CG', 'error');
+                return;
+            }
+            chainData.currentCGIndex++;
+            findNextValidCG();
+            if (chainData.currentCGIndex < chainData.cgList.length) {
+                loadCurrentCG();
+            } else {
+                showAllCGsCompleted();
+            }
+            updateCGSummary();
+            updateTracker();
+        }
+        
+        function showAllCGsCompleted() {
+            Swal.fire({
+                icon: 'success',
+                title: 'All CGs Processed!',
+                text: `You have selected competencies for ${Object.keys(chainData.selectedCompetencies).length} CGs and skipped ${chainData.skippedCGs.length} CGs. Proceed to configure the paper.`,
+                confirmButtonText: 'Configure Paper'
+            }).then(() => {
+                goToStage(4);
+            });
+        }
+        
+        function updateCGSummary() {
+            const summaryGrid = document.getElementById('cgSummaryGrid');
+            let summaryHtml = '';
+            chainData.cgList.forEach((cg) => {
+                if (chainData.skippedCGs.includes(cg.id)) {
+                    summaryHtml += `
+                        <div class="summary-item" style="border-left: 3px solid #95a5a6;">
+                            <strong>${cg.cg_code || 'CG ' + cg.id}</strong>
+                            <small style="color: #95a5a6;">Skipped (no competencies)</small>
+                        </div>
+                    `;
+                } else {
+                    const selected = chainData.selectedCompetencies[cg.id];
+                    if (selected) {
+                        summaryHtml += `
+                            <div class="summary-item">
+                                <strong>${cg.cg_code || 'CG ' + cg.id}</strong>
+                                <small>${selected.compCode}</small>
+                            </div>
+                        `;
+                    }
+                }
+            });
+            if (summaryHtml) {
+                summaryGrid.innerHTML = summaryHtml;
+            } else {
+                summaryGrid.innerHTML = '<div class="summary-item">No competencies selected yet</div>';
+            }
+            document.getElementById('skippedCount').textContent = `${chainData.skippedCGs.length} skipped`;
+        }
+        
+        function calculateTotals() {
+            const awareness = parseInt(document.getElementById('awarenessPercent').value) || 0;
+            const sensitivity = parseInt(document.getElementById('sensitivityPercent').value) || 0;
+            const creativity = parseInt(document.getElementById('creativityPercent').value) || 0;
+            document.getElementById('cognitiveTotal').textContent = (awareness + sensitivity + creativity) + '%';
+            const easy = parseInt(document.getElementById('easyPercent').value) || 0;
+            const medium = parseInt(document.getElementById('mediumPercent').value) || 0;
+            const hard = parseInt(document.getElementById('hardPercent').value) || 0;
+            document.getElementById('difficultyTotal').textContent = (easy + medium + hard) + '%';
+        }
+        
+        function calculateQuestionMarks() {
+            const objective = (parseInt(document.getElementById('objectiveCount').value) || 0) * (parseInt(document.getElementById('objectiveMarks').value) || 0);
+            const veryShort = (parseInt(document.getElementById('veryShortCount').value) || 0) * (parseInt(document.getElementById('veryShortMarks').value) || 0);
+            const short = (parseInt(document.getElementById('shortCount').value) || 0) * (parseInt(document.getElementById('shortMarks').value) || 0);
+            const long = (parseInt(document.getElementById('longCount').value) || 0) * (parseInt(document.getElementById('longMarks').value) || 0);
+            document.getElementById('objectiveTotal').textContent = objective;
+            document.getElementById('veryShortTotal').textContent = veryShort;
+            document.getElementById('shortTotal').textContent = short;
+            document.getElementById('longTotal').textContent = long;
+            document.getElementById('grandTotal').textContent = objective + veryShort + short + long;
+        }
+        
+        function finishConfiguration() {
+            goToStage(5);
+            loadAllApprovedQuestions();
+        }
+        
+        async function loadAllApprovedQuestions() {
+            if (!currentSelections.subject) {
+                Swal.fire('Error', 'No subject selected', 'error');
+                return;
+            }
+            const tbody = document.getElementById('availableQuestionsBody');
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 30px;"><i class="fas fa-spinner fa-pulse"></i> Loading approved questions...</td></tr>';
+            try {
+                const response = await fetch(`/api/builder-questions?subject_id=${currentSelections.subject.id}`);
+                if (!response.ok) throw new Error('Failed to load questions');
+                const data = await response.json();
+                approvedQuestions = (data.questions || []).map(q => ({
+                    ...q,
+                    images: q.images ? (typeof q.images === 'string' ? JSON.parse(q.images) : q.images) : []
+                }));
+                approvedQuestions.forEach(q => q.subject_name = currentSelections.subject.subject_name);
+                document.getElementById('availableCount').textContent = approvedQuestions.length;
+                if (approvedQuestions.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 30px;">No approved questions found</td></tr>';
+                } else {
+                    displayAvailableQuestions();
+                }
+            } catch (error) {
+                console.error('Error loading approved questions:', error);
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 30px; color: #e74c3c;">Error: ${error.message}</td></tr>`;
+            }
+        }
+        
+        function displayAvailableQuestions() {
+            const tbody = document.getElementById('availableQuestionsBody');
+            tbody.innerHTML = approvedQuestions.map(q => {
+                const isSelected = selectedQuestions.some(sq => sq.id === q.id);
+                const hasImage = q.images && q.images.length > 0;
+                const imageIcon = hasImage ? '<i class="fas fa-image has-image-icon" title="Has image"></i>' : '';
+                return `
+                    <tr>
+                        <td style="text-align: center;">
+                            <input type="checkbox" class="checkbox" onchange="toggleQuestion(${q.id}, this.checked)" ${isSelected ? 'checked' : ''}>
+                        </td>
+                        <td>
+                            ${(q.question_text || '').substring(0, 80)}${q.question_text && q.question_text.length > 80 ? '...' : ''}
+                            ${imageIcon}
+                            ${hasImage ? `
+                                <div class="question-images-preview">
+                                    ${q.images.slice(0, 2).map(img => `
+                                        <div class="question-image-thumb" onclick="event.stopPropagation(); showFullImage('${img}')">
+                                            <img src="${img}" alt="Question image">
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                        </td>
+                        <td style="color: #27ae60; font-weight: 600;">${q.marks || 1}</td>
+                        <td>${q.question_type_name || 'Objective'}</td>
+                        <td>${q.subject_name || 'N/A'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        function toggleQuestion(id, checked) {
+            if (checked) {
+                const question = approvedQuestions.find(q => q.id === id);
+                if (question) selectedQuestions.push(question);
+            } else {
+                selectedQuestions = selectedQuestions.filter(q => q.id !== id);
+            }
+            updateSelectedQuestions();
+            updateTracker();
+        }
+        
+        function updateSelectedQuestions() {
+            const tbody = document.getElementById('selectedQuestionsBody');
+            const countSpan = document.getElementById('selectedCount');
+            if (selectedQuestions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px;">No questions selected</td></tr>';
+                countSpan.textContent = '0';
+                return;
+            }
+            tbody.innerHTML = selectedQuestions.map((q, index) => {
+                const hasImage = q.images && q.images.length > 0;
+                const imageIcon = hasImage ? '<i class="fas fa-image has-image-icon" title="Has image"></i>' : '';
+                return `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>
+                            ${(q.question_text || '').substring(0, 60)}${q.question_text && q.question_text.length > 60 ? '...' : ''}
+                            ${imageIcon}
+                            ${hasImage ? `
+                                <div class="question-images-preview">
+                                    ${q.images.slice(0, 2).map(img => `
+                                        <div class="question-image-thumb" onclick="event.stopPropagation(); showFullImage('${img}')">
+                                            <img src="${img}" alt="Question image">
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                        </td>
+                        <td style="color: #27ae60; font-weight: 600;">${q.marks || 1}</td>
+                        <td>${q.question_type_name || 'Objective'}</td>
+                        <td>${q.subject_name || 'N/A'}</td>
+                        <td>
+                            <button class="remove-btn" onclick="removeQuestion(${q.id})">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            countSpan.textContent = selectedQuestions.length;
+        }
+        
+        function removeQuestion(id) {
+            selectedQuestions = selectedQuestions.filter(q => q.id !== id);
+            updateSelectedQuestions();
+            displayAvailableQuestions();
+            updateTracker();
+        }
+        
+        function showFullImage(imageUrl) {
+            const modal = document.getElementById('imageModal');
+            const modalImg = document.getElementById('modalImage');
+            modal.style.display = 'flex';
+            modalImg.src = imageUrl;
+        }
+        
+        function closeImageModal() {
+            document.getElementById('imageModal').style.display = 'none';
+        }
+        
+        function createPaperContent() {
+            let html = `
+                <div class="paper-header">
+                    <h2>COHSEM | PARAKH</h2>
+                    <h3>${currentSelections.grade.display_name} - ${currentSelections.subject.subject_name}</h3>
+                    <div class="paper-meta">
+                        <span><i class="far fa-clock"></i> Time: 3 Hours</span>
+                        <span><i class="fas fa-star"></i> Full Marks: ${document.getElementById('grandTotal').textContent}</span>
+                    </div>
+                </div>
+            `;
+            selectedQuestions.forEach((q, index) => {
+                const hasImages = q.images && q.images.length > 0;
+                html += `
+                    <div class="question-item">
+                        <div class="question-header">
+                            <span><strong>Q${index + 1}.</strong> ${(q.question_text || '').replace(/\n/g, '<br>')}</span>
+                            <span class="question-marks">[${q.marks || 1} marks]</span>
+                        </div>
+                        ${hasImages ? `
+                            <div class="question-images-preview-modal">
+                                ${q.images.map(img => `
+                                    <img src="${img}" class="preview-image" alt="Question image" crossorigin="anonymous" onerror="this.style.display='none'">
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            return html;
+        }
+        
+        function generatePreview() {
+            document.getElementById('paperPreview').innerHTML = createPaperContent();
+        }
+        
+        async function generatePaper() {
+            if (selectedQuestions.length === 0) {
+                Swal.fire('Error', 'Please select at least one question', 'error');
+                return;
+            }
+            document.getElementById('loadingModal').classList.add('active');
+            try {
+                generatePreview();
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                const tempDiv = document.createElement('div');
+                tempDiv.style.position = 'absolute';
+                tempDiv.style.left = '-9999px';
+                tempDiv.style.top = '0';
+                tempDiv.style.width = '800px';
+                tempDiv.style.backgroundColor = 'white';
+                tempDiv.style.padding = '40px';
+                tempDiv.innerHTML = createPaperContent();
+                document.body.appendChild(tempDiv);
+                const tempImages = tempDiv.querySelectorAll('img');
+                await Promise.all(Array.from(tempImages).map(img => {
+                    if (img.complete) return Promise.resolve();
+                    return new Promise(resolve => {
+                        img.onload = resolve;
+                        img.onerror = resolve;
+                    });
+                }));
+                await new Promise(resolve => setTimeout(resolve, 500));
+                const canvas = await html2canvas(tempDiv, {
+                    scale: 2,
+                    backgroundColor: '#ffffff',
+                    useCORS: true,
+                    logging: false,
+                    allowTaint: false,
+                    imageTimeout: 0,
+                    onclone: (clonedDoc, element) => {
+                        const clonedImages = clonedDoc.querySelectorAll('img');
+                        clonedImages.forEach(img => {
+                            if (img.src && img.src.startsWith('http')) {
+                                img.crossOrigin = 'Anonymous';
+                            }
+                        });
+                    }
+                });
+                document.body.removeChild(tempDiv);
+                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                if (!imgData || imgData === 'data:,') {
+                    throw new Error('Failed to capture preview image');
+                }
+                const doc = new jsPDF('p', 'mm', 'a4');
+                const imgWidth = 210;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                doc.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+                let heightLeft = imgHeight;
+                let position = 0;
+                while (heightLeft > 297) {
+                    position = heightLeft - 297;
+                    doc.addPage();
+                    doc.addImage(imgData, 'JPEG', 0, -position, imgWidth, imgHeight);
+                    heightLeft -= 297;
+                }
+                generatedPDF = doc.output('datauristring');
+                generatedPDFName = `${currentSelections.grade.display_name}_${currentSelections.subject.subject_name}_Question_Paper.pdf`;
+                document.getElementById('loadingModal').classList.remove('active');
+                document.getElementById('paperPreviewModal').classList.add('active');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'PDF Generated!',
+                    text: 'Your question paper with images is ready',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } catch (error) {
+                console.error('Error generating paper:', error);
+                document.getElementById('loadingModal').classList.remove('active');
+                Swal.fire('Error', 'Failed to generate PDF: ' + error.message, 'error');
+            }
+        }
+        
+        function downloadPDF() {
+            if (!generatedPDF) {
+                Swal.fire('Error', 'No PDF generated yet. Please click "Generate Question Paper" first.', 'error');
+                return;
+            }
+            const link = document.createElement('a');
+            link.href = generatedPDF;
+            link.download = generatedPDFName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            Swal.fire({
+                icon: 'success',
+                title: 'Download Started',
+                text: 'Your PDF is being downloaded',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+        
+        function printPaper() {
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>${currentSelections.grade.display_name} - ${currentSelections.subject.subject_name} Question Paper</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 40px; }
+                        .paper-header { text-align: center; margin-bottom: 30px; }
+                        .paper-header h2 { color: #2c3e50; }
+                        .paper-header h3 { color: #e67e22; }
+                        .paper-meta { display: flex; justify-content: center; gap: 30px; margin: 20px 0; }
+                        .question-item { margin-bottom: 25px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; page-break-inside: avoid; break-inside: avoid; }
+                        .question-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+                        .question-header span:first-child { flex: 1; }
+                        .question-marks { color: #27ae60; font-weight: 600; white-space: nowrap; }
+                        .preview-image { max-width: 200px; max-height: 150px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; }
+                        .question-images-preview-modal { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; }
+                        @media print { 
+                            body { padding: 0; }
+                            .question-item { page-break-inside: avoid; break-inside: avoid; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${createPaperContent()}
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+        
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeImageModal();
+                closeModal('paperPreviewModal');
+            }
+        });
+    </script>
+</body>
+</html>

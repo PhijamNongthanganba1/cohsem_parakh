@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>COHSEM ITMS - Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #0a1a3a, #1a3a6d, #0c2461, #1e3a5f, #0a1a3a);
+            min-height: 100vh;
+            padding: 20px;
+            padding-bottom: 70px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .top-bar {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50px;
+            padding: 6px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .left-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 1;
+            min-width: 0;
+            overflow-x: auto;
+        }
+        .logos {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .logo-img {
+            width: 28px;
+            height: 28px;
+            object-fit: contain;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 4px;
+        }
+        .title-main {
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            padding-right: 10px;
+            border-right: 1px solid rgba(255,255,255,0.2);
+            flex-shrink: 0;
+        }
+        .title-full {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: rgba(255,255,255,0.9);
+            font-size: 11px;
+            flex-wrap: nowrap;
+            white-space: nowrap;
+        }
+        .title-full span {
+            color: rgba(255,255,255,0.7);
+        }
+        .title-full .separator {
+            color: rgba(255,255,255,0.3);
+            font-size: 9px;
+        }
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .user-icon {
+            color: #3498db;
+            font-size: 18px;
+        }
+        .user-name {
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .user-role {
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            color: white;
+        }
+        .role-uploader { background: rgba(39,174,96,0.8); }
+        .role-master { background: rgba(52,152,219,0.8); }
+        .role-approver { background: rgba(155,89,182,0.8); }
+        .role-builder { background: rgba(243,156,18,0.8); }
+        .role-admin { background: rgba(231,76,60,0.8); }
+       
+        .perm-badge {
+            display: inline-block;
+            padding: 2px 5px;
+            border-radius: 10px;
+            font-size: 9px;
+            font-weight: 600;
+        }
+        .perm-re { background: #3498db; }
+        .perm-ra { background: #e67e22; }
+        .perm-rc { background: #f1c40f; color: #2c3e50; }
+        .perm-ap { background: #2ecc71; }
+        .logout-btn {
+            color: white;
+            background: rgba(231,76,60,0.8);
+            padding: 4px 12px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-shrink: 0;
+        }
+        .logout-btn:hover {
+            background: rgba(192,57,43,0.9);
+        }
+        .datetime {
+            background: #2c3e50;
+            color: white;
+            padding: 4px 15px;
+            border-radius: 25px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .time-part {
+            color: #3498db;
+            margin-left: 5px;
+        }
+        /* Main grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 20px;
+            margin-bottom: 0px;
+        }
+        /* Left column - Scrollable container for all grades */
+        .left-col {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-height: calc(120vh - 200px);
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        .left-col::-webkit-scrollbar {
+            width: 6px;
+        }
+        .left-col::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+        }
+        .left-col::-webkit-scrollbar-thumb {
+            background: rgba(52,152,219,0.5);
+            border-radius: 10px;
+        }
+        .left-col::-webkit-scrollbar-thumb:hover {
+            background: rgba(52,152,219,0.8);
+        }
+        .class-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 20px 20px 15px 20px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            flex-shrink: 0;
+        }
+        .class-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+        .class-icon {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            flex-shrink: 0;
+        }
+        .class-title {
+            color: white;
+            font-size: 25px;
+            font-weight: 700;
+        }
+        .subject-count-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(52,152,219,0.2);
+            color: #3498db;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid rgba(52,152,219,0.3);
+        }
+        .slideshow-container {
+            position: relative;
+            width: 100%;
+        }
+        .subjects-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            transition: opacity 0.3s ease;
+            width: 100%;
+        }
+        .subject-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 8px 8px 5px 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+            animation: fadeIn 0.5s ease;
+            display: flex;
+            flex-direction: column;
+            height: 165px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .subject-card:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: #3498db;
+            transform: translateY(-2px);
+        }
+        .subject-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+        .subject-name {
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 140px;
+        }
+        .subject-chart-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 3px;
+        }
+        .subject-chart {
+            width: 90px;
+            height: 90px;
+            position: relative;
+            flex-shrink: 0;
+        }
+        .subject-chart canvas {
+            width: 90px !important;
+            height: 90px !important;
+        }
+        .subject-legend {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .legend-color {
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+        /* UPDATED: Changed pending to under_review and reviewed to reviewed_completed */
+        .legend-color.under-review {
+            background: #f39c12;
+        }
+        .legend-color.reviewed-completed {
+            background: #00bcd4;
+        }
+        .legend-color.approved {
+            background: #2ecc71;
+        }
+        .legend-color.rejected {
+            background: #e74c3c;
+        }
+        .legend-text {
+            color: white;
+            font-size: 11px;
+            display: flex;
+            justify-content: space-between;
+            flex: 1;
+        }
+        .legend-label {
+            color: rgba(255,255,255,0.7);
+        }
+        .legend-value {
+            font-weight: 700;
+            color: white;
+            font-size: 12px;
+        }
+        .subject-stats-mini {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 3px;
+            padding-top: 3px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat-mini-item {
+            text-align: center;
+            flex: 1;
+        }
+        .stat-mini-value {
+            color: white;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .stat-mini-label {
+            color: rgba(255,255,255,0.5);
+            font-size: 8px;
+            text-transform: uppercase;
+        }
+        .empty-card {
+            background: rgba(255,255,255,0.02);
+            border-radius: 16px;
+            padding: 8px;
+            border: 1px dashed rgba(255,255,255,0.1);
+            height: 165px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255,255,255,0.2);
+            text-align: center;
+            font-size: 12px;
+        }
+        .slideshow-nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            height: 24px;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+        .slideshow-nav:hover {
+            opacity: 1;
+        }
+        .nav-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255,255,255,0.6);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 12px;
+        }
+        .nav-btn:hover:not(.disabled) {
+            color: white;
+            background: rgba(52,152,219,0.3);
+        }
+        .nav-btn.disabled {
+            opacity: 0.2;
+            cursor: not-allowed;
+        }
+        .page-indicator {
+            color: rgba(255,255,255,0.5);
+            font-size: 11px;
+            font-weight: 400;
+        }
+        /* Right column */
+        .right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        /* Action buttons - ALL VISIBLE with permission-based styling */
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .action-card {
+            background: rgba(0, 164, 154, 0.452);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 18px;
+            padding: 20px 10px;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 110px;
+            position: relative;
+            cursor: pointer;
+        }
+        .action-card:hover:not(.disabled) {
+            background: rgba(255,255,255,0.15);
+            border-color: #3498db;
+            transform: translateY(-2px);
+        }
+        .action-card.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            filter: grayscale(0.2);
+        }
+        .action-card.disabled:hover {
+            transform: none;
+            background: rgba(0, 164, 154, 0.452);
+        }
+        .action-card.disabled::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: #f39c12;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            white-space: nowrap;
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+        .action-card.disabled:hover::after {
+            opacity: 1;
+        }
+        .action-title {
+            color: white;
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            letter-spacing: 1px;
+        }
+        .action-desc {
+            color: rgba(255,255,255,0.7);
+            font-size: 11px;
+        }
+        .action-desc strong {
+            color: #FFD700;
+            font-size: 10px;
+            background: rgba(255,215,0,0.1);
+            padding: 2px 8px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        .required-permission {
+            font-size: 9px;
+            color: #f39c12;
+            margin-top: 5px;
+            background: rgba(0,0,0,0.3);
+            padding: 2px 6px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+        .activity-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            height: 400px;
+            width: 100%;
+        }
+        .activity-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            flex-shrink: 0;
+        }
+        .activity-header h3 {
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+        }
+        .activity-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-right: 5px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(52,152,219,0.5) rgba(255,255,255,0.05);
+        }
+        .activity-list::-webkit-scrollbar {
+            width: 5px;
+        }
+        .activity-list::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+        }
+        .activity-list::-webkit-scrollbar-thumb {
+            background: rgba(52,152,219,0.5);
+            border-radius: 10px;
+        }
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            flex-shrink: 0;
+        }
+        .activity-item-content {
+            flex: 1;
+            min-width: 0;
+        }
+        .activity-item-title {
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .activity-item-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: rgba(255,255,255,0.5);
+            font-size: 11px;
+            flex-wrap: wrap;
+        }
+        .status-badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .status-under-review {
+            background: rgba(241,196,15,0.2);
+            color: #f1c40f;
+        }
+        .status-reviewed-completed {
+            background: rgba(0,188,212,0.2);
+            color: #00bcd4;
+        }
+        .status-approved {
+            background: rgba(46,204,113,0.2);
+            color: #2ecc71;
+        }
+        .status-rejected {
+            background: rgba(231,76,60,0.2);
+            color: #e74c3c;
+        }
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 12px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 50px;
+            border: 1px solid rgba(255,255,255,0.1);
+            width: 100%;
+            margin-top: 10px;
+        }
+        .footer-text {
+            color: rgba(255,255,255,0.7);
+            font-size: 12px;
+        }
+        /* Status badges - Fixed position */
+        .status-badge-bottom {
+            position: fixed;
+            bottom: 10px;
+            right: 20px;
+            background: rgba(0,0,0,0.5);
+            color: #2ecc71;
+            padding: 6px 15px;
+            border-radius: 25px;
+            font-size: 11px;
+            border: 1px solid rgba(46,204,113,0.3);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            pointer-events: none;
+            animation: pulse 2s infinite;
+        }
+        .security-badge-bottom {
+            position: fixed;
+            bottom: 10px;
+            left: 20px;
+            background: rgba(0,0,0,0.5);
+            color: #3498db;
+            padding: 6px 15px;
+            border-radius: 25px;
+            font-size: 11px;
+            border: 1px solid rgba(52,152,219,0.3);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            pointer-events: none;
+            animation: pulse-blue 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.8; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+            50% { opacity: 1; box-shadow: 0 4px 20px rgba(46,204,113,0.2); }
+            100% { opacity: 0.8; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        }
+        @keyframes pulse-blue {
+            0% { opacity: 0.8; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+            50% { opacity: 1; box-shadow: 0 4px 20px rgba(52,152,219,0.2); }
+            100% { opacity: 0.8; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        }
+        .loading {
+            text-align: center;
+            color: rgba(255,255,255,0.5);
+            padding: 40px;
+            grid-column: span 2;
+        }
+        .no-data {
+            text-align: center;
+            color: rgba(255,255,255,0.5);
+            padding: 40px;
+            grid-column: span 2;
+            font-style: italic;
+        }
+        .empty-grades {
+            text-align: center;
+            padding: 50px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            color: rgba(255,255,255,0.7);
+        }
+        .empty-grades i {
+            font-size: 60px;
+            margin-bottom: 20px;
+            color: #3498db;
+            opacity: 0.5;
+        }
+        .empty-grades h3 {
+            color: white;
+            margin-bottom: 10px;
+        }
+        .empty-grades p {
+            margin-bottom: 20px;
+        }
+        .empty-grades .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        /* Role info card */
+        .role-info-card {
+            background: rgba(52,152,219,0.1);
+            border: 1px solid rgba(52,152,219,0.3);
+            border-radius: 12px;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .role-info-card i {
+            color: #3498db;
+            font-size: 18px;
+        }
+        .role-info-text {
+            color: rgba(255,255,255,0.9);
+            font-size: 12px;
+            flex: 1;
+        }
+        .role-info-text strong {
+            color: #3498db;
+        }
+        /* Responsive - Keep top bar single line on all screens */
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            .activity-card {
+                height: 350px;
+            }
+            .title-full {
+                display: none;
+            }
+        }
+        @media (max-width: 992px) {
+            .title-full {
+                display: none;
+            }
+            .top-bar {
+                padding: 6px 15px;
+            }
+        }
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                padding-bottom: 70px;
+            }
+            .top-bar {
+                border-radius: 30px;
+                padding: 5px 12px;
+                overflow-x: auto;
+            }
+            .left-section {
+                gap: 8px;
+            }
+            .logos {
+                gap: 5px;
+            }
+            .logo-img {
+                width: 24px;
+                height: 24px;
+            }
+            .title-main {
+                font-size: 12px;
+                padding-right: 6px;
+            }
+            .title-full {
+                display: none;
+            }
+            .user-section {
+                gap: 8px;
+            }
+            .user-info {
+                gap: 5px;
+            }
+            .user-name {
+                font-size: 11px;
+            }
+            .user-role {
+                font-size: 9px;
+                padding: 2px 6px;
+            }
+            .perm-badge {
+                font-size: 8px;
+                padding: 1px 4px;
+            }
+            .logout-btn {
+                padding: 3px 8px;
+                font-size: 10px;
+            }
+            .datetime {
+                padding: 3px 8px;
+                font-size: 10px;
+            }
+            .class-title {
+                font-size: 28px;
+            }
+            .subject-name {
+                font-size: 13px;
+            }
+            .action-title {
+                font-size: 20px;
+            }
+            .action-card {
+                height: 100px;
+                padding: 15px 10px;
+            }
+            .activity-card {
+                height: 300px;
+            }
+            .footer {
+                margin-top: 15px;
+                padding: 10px;
+            }
+            .footer-text {
+                font-size: 10px;
+            }
+            .status-badge-bottom,
+            .security-badge-bottom {
+                padding: 4px 10px;
+                font-size: 9px;
+            }
+        }
+        @media (max-width: 480px) {
+            .subjects-grid {
+                grid-template-columns: 1fr;
+            }
+            .subject-card {
+                height: 155px;
+            }
+            .empty-card {
+                height: 155px;
+            }
+            .class-title {
+                font-size: 24px;
+            }
+            .action-grid {
+                grid-template-columns: 1fr;
+            }
+            .user-section {
+                gap: 6px;
+            }
+            .user-name {
+                display: none;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="dashboard">
+        <div class="top-bar">
+            <div class="left-section">
+                <div class="logos">
+                    <img src="/static/cohsem_ico.png" alt="COHSEM" class="logo-img" onerror="this.style.display='none'">
+                    <img src="/static/parakh.png" alt="PARAKH" class="logo-img" onerror="this.style.display='none'">
+                    <span class="title-main">ITMS</span>
+                </div>
+
+<div class="title-full">
+                    <span>COHSEM</span>
+                    <span class="separator" style="color:greenyellow">•</span>
+                    <span>Council Of Higher Secondary Education, Manipur</span>
+                    <span class="separator">|</span>
+                    <span>PARAKH</span>
+                    <span class="separator" style="color:greenyellow">•</span>
+                    <span>Performance Assessment, Review, and Analysis of Knowledge</span>
+                </div>
+            </div>
+            <div class="user-section">
+                <div class="user-info">
+                    <i class="fas fa-user-circle user-icon"></i>
+                    <span class="user-name">{{ user }}</span>
+                    {% if user_role %}
+                    <span class="user-role role-{{ user_role }}">
+                        {% if user_role == 'uploader' %}Uploader
+                        {% elif user_role == 'master' %}Master
+                        {% elif user_role == 'approver' %}Approver
+                        {% elif user_role == 'builder' %}Builder
+                        {% elif user_role == 'admin' %}Admin
+                        {% else %}{{ user_role|upper }}{% endif %}
+                    </span>
+                    {% endif %}
+                    {% if permissions %}
+                    <div style="display: inline-flex; gap: 3px;">
+                        {% if permissions.RE %}<span class="perm-badge perm-re" title="Question Author">RE</span>{% endif %}
+                        {% if permissions.RA %}<span class="perm-badge perm-ra" title="Paper Builder">RA</span>{% endif %}
+                        {% if permissions.RC %}<span class="perm-badge perm-rc" title="Reviewer">RC</span>{% endif %}
+                        {% if permissions.AP %}<span class="perm-badge perm-ap" title="Approver">AP</span>{% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                <a href="/logout" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+                <div class="datetime" id="datetime-display">
+                    Loading...
+                </div>
+            </div>
+        </div>
+        <div class="role-info-card" id="roleInfoCard">
+            <i class="fas fa-info-circle"></i>
+            <div class="role-info-text" id="roleInfoText">
+                Loading role information...
+            </div>
+        </div>
+        <div class="main-grid">
+            <div class="left-col" id="gradesContainer">
+                <div class="loading">Loading grades...</div>
+            </div>
+            <div class="right-col">
+                <div class="action-grid" id="actionGrid">
+                </div>
+                <div class="activity-card">
+                    <div class="activity-header">
+                        <h3>Recent Activity</h3>
+                    </div>
+                    <div class="activity-list" id="activityList">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer">
+            <span class="footer-text">© 2026 Council of Higher Secondary Education, Manipur | Official Government System</span>
+        </div>
+    </div>
+    <div class="status-badge-bottom">
+        <i class="fas fa-check-circle"></i>
+        <span>System Online</span>
+    </div>
+    <div class="security-badge-bottom">
+        <i class="fas fa-shield-alt"></i>
+        <span>Secure Connection</span>
+    </div>
+    <script>
+        const currentUserRole = '{{ user_role }}';
+        const permissions = {
+            RE: {{ permissions.RE|default('false')|lower }},
+            RA: {{ permissions.RA|default('false')|lower }},
+            RC: {{ permissions.RC|default('false')|lower }},
+            AP: {{ permissions.AP|default('false')|lower }}
+        };
+        let subjectCharts = [];
+        let autoSlideIntervals = {};
+        const slideshowState = {};
+        const ITEMS_PER_PAGE = 2;
+        const AUTO_SLIDE_INTERVAL = 5000;
+        const baseActionCards = [
+            { 
+                name: 'Q-CONFIG', 
+                icon: 'fa-cogs', 
+                href: '/configure', 
+                requiredRole: 'admin',
+                requiredPerm: null,
+                description: 'System Configuration',
+                tooltip: 'Admin access required'
+            },
+            { 
+                name: 'Q-UPLOAD', 
+                icon: 'fa-upload', 
+                href: '/complete-selection', 
+                requiredRole: null,
+                requiredPerm: 'RE',
+                description: 'Create New Questions',
+                tooltip: 'RE (Question Author) permission required'
+            },
+            { 
+                name: 'Q-ITEMS', 
+                icon: 'fa-file-alt', 
+                href: '/question-paper-builder', 
+                requiredRole: null,
+                requiredPerm: 'RA',
+                description: 'Build Question Papers',
+                tooltip: 'RA (Paper Builder) permission required'
+            }
+        ];
+        const roleDescriptions = {
+            'uploader': 'You are an <strong>Uploader (RE)</strong>. You can create and edit your own questions. Click <strong>Q-MY</strong> to view your pending/rejected questions.',
+            'master': 'You are a <strong>Master (RC)</strong>. You can review pending questions. Click <strong>Q-LIST</strong> to see questions waiting for your review.',
+            'approver': 'You are an <strong>Approver (AP)</strong>. You can approve reviewed questions. Click <strong>Q-APPROVE</strong> to see questions ready for final approval.',
+            'builder': 'You are a <strong>Builder (RA)</strong>. You can build question papers. Click <strong>Q-LIST</strong> to browse approved questions.',
+            'admin': 'You are an <strong>Administrator</strong>. You have full access to all features. Click <strong>Q-LIST</strong> to view all questions.'
+        };
+        
+        function getDynamicQListButton() {
+            if (currentUserRole === 'admin') {
+                return {
+                    name: 'Q-LIST',
+                    href: '/review',
+                    description: 'View All Questions',
+                    icon: 'fa-database',
+                    tooltip: null,
+                    statusHint: 'All Questions'
+                };
+            }
+            if (permissions.AP && !permissions.RC && !permissions.RE && !permissions.RA) {
+                return {
+                    name: 'Q-APPROVE',
+                    href: '/review',
+                    description: 'Approve Reviewed Questions',
+                    icon: 'fa-check-double',
+                    tooltip: 'Review and approve questions',
+                    statusHint: 'Reviewed Questions'
+                };
+            }
+            if (permissions.RC && !permissions.AP && !permissions.RE && !permissions.RA) {
+                return {
+                    name: 'Q-LIST',
+                    href: '/review',
+                    description: 'Review Pending Questions',
+                    icon: 'fa-eye',
+                    tooltip: 'Review pending questions',
+                    statusHint: 'Pending Questions'
+                };
+            }
+            if (permissions.RA && !permissions.RE && !permissions.RC && !permissions.AP) {
+                return {
+                    name: 'Q-LIST',
+                    href: '/review',
+                    description: 'Browse Approved Questions',
+                    icon: 'fa-hammer',
+                    tooltip: 'Select questions for paper building',
+                    statusHint: 'Approved Questions'
+                };
+            }
+            if (permissions.RE && !permissions.RA && !permissions.RC && !permissions.AP) {
+                return {
+                    name: 'Q-MY',
+                    href: '/review',
+                    description: 'My Questions',
+                    icon: 'fa-user-edit',
+                    tooltip: 'View and edit your questions',
+                    statusHint: 'Your Questions'
+                };
+            }
+            let mixedName = 'Q-LIST';
+            let mixedDesc = 'View Questions';
+            let statusHint = 'Questions';
+            if (permissions.AP) { mixedDesc = 'Approve Questions'; statusHint = 'Reviewed Questions'; }
+            else if (permissions.RC) { mixedDesc = 'Review Questions'; statusHint = 'Pending Questions'; }
+            else if (permissions.RA) { mixedDesc = 'Build Papers'; statusHint = 'Approved Questions'; }
+            else if (permissions.RE) { mixedDesc = 'My Questions'; statusHint = 'Your Questions'; }
+            return {
+                name: mixedName,
+                href: '/review',
+                description: mixedDesc,
+                icon: 'fa-list',
+                tooltip: null,
+                statusHint: statusHint
+            };
+        }
+        function updateDateTime() {
+            const now = new Date();
+            const dateString = now.toLocaleDateString('en-IN', { 
+                weekday: 'short', day: 'numeric', month: 'short' 
+            });
+            const timeString = now.toLocaleTimeString('en-IN', { 
+                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false 
+            });
+            document.getElementById('datetime-display').innerHTML = 
+                `${dateString} <span class="time-part">${timeString}</span>`;
+        }
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+        // Update role info card
+        function updateRoleInfo() {
+            const infoText = document.getElementById('roleInfoText');
+            let desc = roleDescriptions[currentUserRole] || 'Welcome to COHSEM ITMS. Select an action to get started.';
+            infoText.innerHTML = desc;
+        }
+        function hasAccess(card) {
+            if (currentUserRole === 'admin') return true;
+            if (card.requiredRole && currentUserRole === card.requiredRole) return true;
+            if (card.requiredPerm && permissions[card.requiredPerm]) return true;
+            return false;
+        }
+        function getAccessMessage(card) {
+            if (card.requiredRole) {
+                return `Requires ${card.requiredRole.toUpperCase()} role`;
+            }
+            if (card.requiredPerm) {
+                if (card.requiredPerm === 'RE') return 'Requires RE permission (Question Author)';
+                if (card.requiredPerm === 'RA') return 'Requires RA permission (Paper Builder)';
+                if (card.requiredPerm === 'RC') return 'Requires RC permission (Master/Reviewer)';
+                if (card.requiredPerm === 'AP') return 'Requires AP permission (Approver)';
+                return `Requires ${card.requiredPerm} permission`;
+            }
+            return 'Access restricted';
+        }
+        function buildActionGrid() {
+            const container = document.getElementById('actionGrid');
+            const qlistButton = getDynamicQListButton();
+            const allCards = [
+                ...baseActionCards,
+                {
+                    name: qlistButton.name,
+                    icon: qlistButton.icon,
+                    href: qlistButton.href,
+                    requiredRole: null,
+                    requiredPerm: null,
+                    description: qlistButton.description,
+                    tooltip: qlistButton.tooltip
+                }
+            ];
+            container.innerHTML = allCards.map(card => {
+                let hasAccessFlag = true;
+                let disabledClass = '';
+                let tooltip = '';
+                let requiredText = '';
+                const isDynamicQList = (card.name === qlistButton.name);
+                if (!isDynamicQList) {
+                    hasAccessFlag = hasAccess(card);
+                    disabledClass = hasAccessFlag ? '' : 'disabled';
+                    tooltip = !hasAccessFlag ? getAccessMessage(card) : '';
+                    requiredText = !hasAccessFlag ? `<div class="required-permission">🔒 ${getAccessMessage(card)}</div>` : '';
+                }
+                let extraStyle = '';
+                if (card.name === 'Q-LIST') {
+                    extraStyle = 'border: 1px solid rgba(243,156,18,0.5); box-shadow: 0 0 5px rgba(243,156,18,0.3);';
+                } else if (card.name === 'Q-REVIEW') {
+                    extraStyle = 'border: 1px solid rgba(52,152,219,0.5); box-shadow: 0 0 5px rgba(52,152,219,0.3);';
+                } else if (card.name === 'Q-APPROVE') {
+                    extraStyle = 'border: 1px solid rgba(46,204,113,0.5); box-shadow: 0 0 5px rgba(46,204,113,0.3);';
+                } else if (card.name === 'Q-MY') {
+                    extraStyle = 'border: 1px solid rgba(39,174,96,0.5); box-shadow: 0 0 5px rgba(39,174,96,0.3);';
+                } else if (card.name === 'Q-LIST (ALL)') {
+                    extraStyle = 'border: 1px solid rgba(231,76,60,0.5); box-shadow: 0 0 5px rgba(231,76,60,0.3);';
+                }
+                return `
+                    <div class="action-card ${disabledClass}" style="${extraStyle}"
+                         onclick="${hasAccessFlag ? `navigateTo('${card.href}')` : 'event.stopPropagation(); showAccessDenied(this);'}"
+                         data-tooltip="${tooltip}"
+                         data-href="${card.href}">
+                        <div class="action-title">${card.name}</div>
+                        <div class="action-desc">${card.description}</div>
+                        ${requiredText}
+                    </div>
+                `;
+            }).join('');
+        }
+        function showAccessDenied(element) {
+            const tooltip = element.getAttribute('data-tooltip');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Access Denied',
+                text: tooltip || 'You do not have permission to access this feature.',
+                confirmButtonColor: '#e74c3c',
+                confirmButtonText: 'OK'
+            });
+        }
+        function navigateTo(url) {
+            window.location.href = url;
+        }
+        // UPDATED: Changed "pending" to "under_review" and "reviewed" to "reviewed_completed"
+        function createSubjectChart(canvasId, underReview, reviewedCompleted, approved, rejected) {
+            const ctx = document.getElementById(canvasId)?.getContext('2d');
+            if (!ctx) return null;
+            const total = underReview + reviewedCompleted + approved + rejected;
+            if (total === 0) {
+                return new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        datasets: [{
+                            data: [1],
+                            backgroundColor: ['rgba(255,255,255,0.1)'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        cutout: '70%',
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: { 
+                            legend: { display: false }, 
+                            tooltip: { enabled: false } 
+                        }
+                    }
+                });
+            }
+            return new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [underReview, reviewedCompleted, approved, rejected],
+                        backgroundColor: ['#f39c12', '#00bcd4', '#2ecc71', '#e74c3c'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    cutout: '70%',
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { 
+                        legend: { display: false }, 
+                        tooltip: { 
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        function changeSlide(gradeId, direction, resetTimer = true) {
+            const state = slideshowState[gradeId];
+            if (!state) return;
+            const newPage = state.currentPage + direction;
+            if (newPage < 1 || newPage > state.totalPages) return;
+            state.currentPage = newPage;
+            renderCurrentPage(gradeId);
+            if (resetTimer) {
+                resetAutoSlide(gradeId);
+            }
+        }
+        function startAutoSlide(gradeId) {
+            if (autoSlideIntervals[gradeId]) {
+                clearInterval(autoSlideIntervals[gradeId]);
+            }
+            autoSlideIntervals[gradeId] = setInterval(() => {
+                const state = slideshowState[gradeId];
+                if (state && state.totalPages > 1) {
+                    let nextPage = state.currentPage + 1;
+                    if (nextPage > state.totalPages) {
+                        nextPage = 1;
+                    }
+                    changeSlide(gradeId, nextPage - state.currentPage, false);
+                }
+            }, AUTO_SLIDE_INTERVAL);
+        }
+        function resetAutoSlide(gradeId) {
+            if (autoSlideIntervals[gradeId]) {
+                clearInterval(autoSlideIntervals[gradeId]);
+                startAutoSlide(gradeId);
+            }
+        }
+        function stopAllAutoSlides() {
+            Object.keys(autoSlideIntervals).forEach(gradeId => {
+                clearInterval(autoSlideIntervals[gradeId]);
+            });
+        }
+        function renderCurrentPage(gradeId) {
+            const state = slideshowState[gradeId];
+            if (!state) return;
+            const container = document.getElementById(`subjects-${gradeId}`);
+            const pageIndicator = document.getElementById(`page-${gradeId}`);
+            const prevBtn = document.getElementById(`prev-${gradeId}`);
+            const nextBtn = document.getElementById(`next-${gradeId}`);
+            if (!container) return;
+            if (state.totalPages > 1) {
+                if (pageIndicator) pageIndicator.textContent = `${state.currentPage}/${state.totalPages}`;
+            } else {
+                if (pageIndicator) pageIndicator.textContent = '';
+            }
+            if (prevBtn) {
+                prevBtn.classList.toggle('disabled', state.totalPages <= 1);
+            }
+            if (nextBtn) {
+                nextBtn.classList.toggle('disabled', state.totalPages <= 1);
+            }
+            if (!state.subjects || state.subjects.length === 0) {
+                container.innerHTML = '<div class="no-data">No subjects available</div>';
+                return;
+            }
+            const startIdx = (state.currentPage - 1) * ITEMS_PER_PAGE;
+            const endIdx = Math.min(startIdx + ITEMS_PER_PAGE, state.subjects.length);
+            const pageSubjects = state.subjects.slice(startIdx, endIdx);
+            let html = '';
+            pageSubjects.forEach(subject => {
+                const underReview = subject.under_review || 0;
+                const reviewedCompleted = subject.reviewed_completed || 0;
+                const approved = subject.approved || 0;
+                const rejected = subject.rejected || 0;
+                const chartId = `chart-${gradeId}-${subject.id}-${startIdx}`;
+                html += `
+                    <div class="subject-card">
+                        <div class="subject-header">
+                            <span class="subject-name">${escapeHtml(subject.name)}</span>
+                        </div>
+                        <div class="subject-chart-container">
+                            <div class="subject-chart">
+                                <canvas id="${chartId}" width="90" height="90"></canvas>
+                            </div>
+                            <div class="subject-legend">
+                                <div class="legend-item">
+                                    <div class="legend-color under-review"></div>
+                                    <div class="legend-text">
+                                        <span class="legend-label">Under Review</span>
+                                        <span class="legend-value">${underReview}</span>
+                                    </div>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color reviewed-completed"></div>
+                                    <div class="legend-text">
+                                        <span class="legend-label">Reviewed Completed</span>
+                                        <span class="legend-value">${reviewedCompleted}</span>
+                                    </div>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color approved"></div>
+                                    <div class="legend-text">
+                                        <span class="legend-label">Approved</span>
+                                        <span class="legend-value">${approved}</span>
+                                    </div>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color rejected"></div>
+                                    <div class="legend-text">
+                                        <span class="legend-label">Rejected</span>
+                                        <span class="legend-value">${rejected}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="subject-stats-mini">
+                            <div class="stat-mini-item">
+                                <div class="stat-mini-value">${underReview}</div>
+                                <div class="stat-mini-label">Rev</div>
+                            </div>
+                            <div class="stat-mini-item">
+                                <div class="stat-mini-value">${reviewedCompleted}</div>
+                                <div class="stat-mini-label">Review</div>
+                            </div>
+                            <div class="stat-mini-item">
+                                <div class="stat-mini-value">${approved}</div>
+                                <div class="stat-mini-label">App</div>
+                            </div>
+                            <div class="stat-mini-item">
+                                <div class="stat-mini-value">${rejected}</div>
+                                <div class="stat-mini-label">Rej</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            const remainingSlots = ITEMS_PER_PAGE - pageSubjects.length;
+            for (let i = 0; i < remainingSlots; i++) {
+                html += `
+                    <div class="empty-card">
+                        <div>
+                            <i class="fas fa-minus-circle" style="font-size: 20px; margin-bottom: 4px;"></i>
+                            <div>No Data</div>
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+            setTimeout(() => {
+                pageSubjects.forEach((subject, index) => {
+                    const underReview = subject.under_review || 0;
+                    const reviewedCompleted = subject.reviewed_completed || 0;
+                    const approved = subject.approved || 0;
+                    const rejected = subject.rejected || 0;
+                    const chartId = `chart-${gradeId}-${subject.id}-${startIdx}`;
+                    const chart = createSubjectChart(chartId, underReview, reviewedCompleted, approved, rejected);
+                    if (chart) subjectCharts.push(chart);
+                });
+            }, 100);
+        }
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        // UPDATED: Changed pending to under_review and reviewed to reviewed_completed
+        function processSubjectsData(subjectsData) {
+            if (!subjectsData || Object.keys(subjectsData).length === 0) {
+                return [];
+            }
+            const subjectsArray = Object.entries(subjectsData).map(([id, subject]) => ({
+                id: id,
+                name: subject.subject_name || `Subject ${id}`,
+                under_review: subject.under_review || 0,
+                reviewed_completed: subject.reviewed_completed || 0,
+                approved: subject.approved || 0,
+                rejected: subject.rejected || 0
+            }));
+            return subjectsArray;
+        }
+        async function fetchDashboardStats() {
+            try {
+                const response = await fetch('/api/dashboard-stats');
+                const data = await response.json();
+                subjectCharts.forEach(chart => chart.destroy());
+                subjectCharts = [];
+                stopAllAutoSlides();
+                const gradeKeys = Object.keys(data).filter(key => key.startsWith('grade_'));
+                if (gradeKeys.length === 0) {
+                    document.getElementById('gradesContainer').innerHTML = `
+                        <div class="empty-grades">
+                            <i class="fas fa-layer-group"></i>
+                            <h3>No Grades with Questions</h3>
+                            <p>Upload questions first to see statistics.</p>
+                            <a href="/complete-selection" class="btn">Go to Question Uploader</a>
+                        </div>
+                    `;
+                    return;
+                }
+                let gradesHTML = '';
+                const sortedGradeKeys = gradeKeys.sort((a, b) => {
+                    const idA = parseInt(a.replace('grade_', ''));
+                    const idB = parseInt(b.replace('grade_', ''));
+                    return idA - idB;
+                });
+                sortedGradeKeys.forEach(gradeKey => {
+                    const gradeData = data[gradeKey];
+                    const gradeId = gradeData.grade_id || parseInt(gradeKey.replace('grade_', ''));
+                    const gradeName = gradeData.grade_name || `Grade ${gradeId}`;
+                    const subjectsArray = processSubjectsData(gradeData.subjects || {});
+                    slideshowState[gradeId] = {
+                        currentPage: 1,
+                        totalPages: Math.max(1, Math.ceil(subjectsArray.length / ITEMS_PER_PAGE)),
+                        subjects: subjectsArray
+                    };
+                    const displayGrade = gradeName.toUpperCase();
+                    gradesHTML += `
+                        <div class="class-card" id="grade-card-${gradeId}">
+                            <div class="class-header">
+                                <div class="class-icon"><i class="fas fa-graduation-cap"></i></div>
+                                <div class="class-title">${escapeHtml(displayGrade)}</div>
+                            </div>
+                            <div class="subject-count-badge" id="count-${gradeId}">${subjectsArray.length} Subject${subjectsArray.length !== 1 ? 's' : ''}</div>
+                            <div class="slideshow-container">
+                                <div class="subjects-grid" id="subjects-${gradeId}">
+                                    <div class="loading">Loading subjects...</div>
+                                </div>
+                                <div class="slideshow-nav">
+                                    <button class="nav-btn" id="prev-${gradeId}" onclick="changeSlide(${gradeId}, -1)"><i class="fas fa-chevron-left"></i></button>
+                                    <span class="page-indicator" id="page-${gradeId}"></span>
+                                    <button class="nav-btn" id="next-${gradeId}" onclick="changeSlide(${gradeId}, 1)"><i class="fas fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                document.getElementById('gradesContainer').innerHTML = gradesHTML;
+                sortedGradeKeys.forEach(gradeKey => {
+                    const gradeData = data[gradeKey];
+                    const gradeId = gradeData.grade_id || parseInt(gradeKey.replace('grade_', ''));
+                    renderCurrentPage(gradeId);
+                });
+                sortedGradeKeys.forEach(gradeKey => {
+                    const gradeData = data[gradeKey];
+                    const gradeId = gradeData.grade_id || parseInt(gradeKey.replace('grade_', ''));
+                    startAutoSlide(gradeId);
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('gradesContainer').innerHTML = `
+                    <div class="empty-grades">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <h3>Error Loading Data</h3>
+                        <p>${error.message}</p>
+                        <button class="btn" onclick="refreshDashboard()">Try Again</button>
+                    </div>
+                `;
+            }
+        }
+        async function refreshDashboard() {
+            Swal.fire({
+                title: 'Refreshing...',
+                text: 'Loading latest data',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            await fetchDashboardStats();
+            await fetchRecentActivity();
+            Swal.close();
+        }
+        async function fetchRecentActivity() {
+            try {
+                const response = await fetch('/api/review-questions');
+                const data = await response.json();
+                const list = document.getElementById('activityList');
+                if (data.questions?.length) {
+                    list.innerHTML = data.questions.slice(0, 8).map(q => {
+                        let statusClass = '';
+                        const status = q.status || 'pending';
+                        if (status === 'under_review') statusClass = 'status-under-review';
+                        else if (status === 'reviewed_completed') statusClass = 'status-reviewed-completed';
+                        else if (status === 'approved') statusClass = 'status-approved';
+                        else if (status === 'rejected') statusClass = 'status-rejected';
+                        return `
+                            <div class="activity-item">
+                                <div class="activity-item-content">
+                                    <div class="activity-item-title">${escapeHtml((q.question || '').substring(0, 45))}${(q.question || '').length > 45 ? '...' : ''}</div>
+                                    <div class="activity-item-meta">
+                                        <span><i class="fas fa-user"></i> ${escapeHtml(q.created_by || 'Unknown')}</span>
+                                        <span><i class="fas fa-calendar"></i> ${q.created_at ? new Date(q.created_at).toLocaleDateString() : ''}</span>
+                                        <span class="status-badge ${statusClass}">${status.replace('_', ' ').toUpperCase()}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    list.innerHTML = `
+                        <div class="activity-item">
+                            <div class="activity-item-content" style="text-align: center; color: rgba(255,255,255,0.5); padding: 20px;">
+                                <i class="fas fa-inbox" style="font-size: 40px; margin-bottom: 10px;"></i>
+                                <div>No recent activity</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('activityList').innerHTML = `
+                    <div class="activity-item">
+                        <div class="activity-item-content" style="text-align: center; color: rgba(255,255,255,0.5); padding: 20px;">
+                            <i class="fas fa-exclamation-circle" style="font-size: 40px; margin-bottom: 10px;"></i>
+                            <div>Error loading activity</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            updateRoleInfo();
+            buildActionGrid();
+            fetchDashboardStats();
+            fetchRecentActivity();
+            setInterval(() => {
+                fetchDashboardStats();
+                fetchRecentActivity();
+            }, 30000);
+        });
+        // Pause auto-slide on hover
+        document.addEventListener('mouseover', (e) => {
+            const classCard = e.target.closest('.class-card');
+            if (classCard) {
+                const subjectGrid = classCard.querySelector('[id^="subjects-"]');
+                if (subjectGrid) {
+                    const gradeId = subjectGrid.id.replace('subjects-', '');
+                    if (autoSlideIntervals[gradeId]) {
+                        clearInterval(autoSlideIntervals[gradeId]);
+                    }
+                }
+            }
+        });
+        document.addEventListener('mouseout', (e) => {
+            const classCard = e.target.closest('.class-card');
+            if (classCard) {
+                const subjectGrid = classCard.querySelector('[id^="subjects-"]');
+                if (subjectGrid) {
+                    const gradeId = subjectGrid.id.replace('subjects-', '');
+                    startAutoSlide(gradeId);
+                }
+            }
+        });
+        // Keyboard shortcuts with permission checks
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                const qlistButton = getDynamicQListButton();
+                switch(e.key) {
+                    case '1': 
+                        if (currentUserRole === 'admin') window.location.href = '/configure';
+                        else showAccessDeniedMsg('Admin access required for Configuration');
+                        break;
+                    case '2': 
+                        if (permissions.RE || currentUserRole === 'admin') window.location.href = '/complete-selection';
+                        else showAccessDeniedMsg('RE (Question Author) permission required for Question Uploader');
+                        break;
+                    case '3': 
+                        if (permissions.RA || currentUserRole === 'admin') window.location.href = '/question-paper-builder';
+                        else showAccessDeniedMsg('RA (Paper Builder) permission required');
+                        break;
+                    case '4': 
+                        window.location.href = qlistButton.href;
+                        break;
+                    case 'r': 
+                        refreshDashboard(); 
+                        break;
+                }
+            }
+        });
+        function showAccessDeniedMsg(message) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Access Denied',
+                text: message,
+                confirmButtonColor: '#e74c3c',
+                confirmButtonText: 'OK'
+            });
+        }
+        window.addEventListener('beforeunload', () => {
+            stopAllAutoSlides();
+        });
+        console.log('User Role:', currentUserRole);
+        console.log('Permissions:', permissions);
+        console.log('Dynamic Q-LIST Button:', getDynamicQListButton());
+    </script>
+</body>
+</html>

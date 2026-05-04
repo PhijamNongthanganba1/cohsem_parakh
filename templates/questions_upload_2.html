@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COHSEM | PARAKH - Create Questions</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #0a1a3a, #1a3a6d, #0c2461, #1e3a5f, #0a1a3a);
+            min-height: 100vh;
+            padding: 20px;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50px;
+            padding: 12px 25px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .header-left h1 {
+            color: white;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header-left h1 i {
+            color: #f39c12;
+        }
+        .header-right {
+            display: flex;
+            gap: 15px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #229954;
+        }
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+        .btn-warning:hover {
+            background: #e67e22;
+        }
+        .selection-info {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 15px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            flex-shrink: 0;
+        }
+        .compact-scroll {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            gap: 10px;
+            padding: 5px 0 10px 0;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: #3498db rgba(255,255,255,0.1);
+        }
+        .compact-scroll::-webkit-scrollbar {
+            height: 5px;
+        }
+        .compact-scroll::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }
+        .compact-scroll::-webkit-scrollbar-thumb {
+            background: #3498db;
+            border-radius: 10px;
+        }
+        .compact-item {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 30px;
+            padding: 8px 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+        .compact-label {
+            color: rgba(255,255,255,0.7);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .compact-value {
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        /* Main content area with scrolling */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 5px;
+            min-height: 0;
+        }
+        .main-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        .main-content::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }
+        .main-content::-webkit-scrollbar-thumb {
+            background: #3498db;
+            border-radius: 10px;
+        }
+        .question-form {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            color: white;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .form-required {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-left: 5px;
+        }
+        textarea, input {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        textarea:focus, input:focus {
+            outline: none;
+            border-color: #3498db;
+            background: rgba(255,255,255,0.12);
+        }
+        textarea::placeholder, input::placeholder {
+            color: rgba(255,255,255,0.4);
+        }
+        .question-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .answer-section {
+            background: rgba(39,174,96,0.1);
+            border: 1px solid rgba(39,174,96,0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        .answer-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .answer-section-title {
+            color: #2ecc71;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .answer-section-title i {
+            color: #2ecc71;
+        }
+        .answer-container {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+        .answer-text-container {
+            flex: 2;
+        }
+        .answer-textarea {
+            min-height: 100px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(39,174,96,0.3);
+            border-radius: 8px;
+            padding: 12px;
+            color: white;
+        }
+        /* Compact row for metrics and image upload */
+        .metrics-image-row {
+            display: flex;
+            gap: 15px;
+            margin-top: 0;
+        }
+        .metrics-container {
+            flex: 1;
+            display: flex;
+            gap: 15px;
+        }
+        .metric-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .metric-label {
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .metric-label i {
+            font-size: 14px;
+        }
+        .marks-label i {
+            color: #2ecc71;
+        }
+        .time-label i {
+            color: #f39c12;
+        }
+        .metric-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .metric-input {
+            width: 100%;
+            max-width: 100px;
+            padding: 10px 12px;
+            background: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            text-align: center;
+        }
+        .marks-input {
+            color: #27ae60;
+            border-color: #2ecc71;
+        }
+        .time-input {
+            color: #e67e22;
+            border-color: #f39c12;
+        }
+        .metric-input:focus {
+            outline: none;
+        }
+        .metric-unit {
+            color: rgba(255,255,255,0.6);
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        .metric-hint {
+            color: rgba(255,255,255,0.4);
+            font-size: 10px;
+            margin-top: 2px;
+            padding-left: 10px;
+        }
+        /* Compact Image Upload */
+        .compact-image-upload {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.989);
+            border: 1px solid rgba(52,152,219,0.3);
+            border-radius: 18px;
+            padding: 12px;
+        }
+        .compact-image-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            color: #eb810f;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .compact-image-header i {
+            font-size: 14px;
+        }
+        .compact-upload-area {
+            border: 1px dashed rgba(52,152,219,0.5);
+            border-radius: 8px;
+            padding: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.03);
+        }
+        .compact-upload-area:hover {
+            border-color: #3498db;
+            background: rgba(52,152,219,0.1);
+        }
+        .compact-upload-area.drag-over {
+            border-color: #2ecc71;
+            background: rgba(46,204,113,0.1);
+        }
+        .compact-upload-icon {
+            font-size: 20px;
+            color: #3498db;
+            margin-bottom: 4px;
+        }
+        .compact-upload-text {
+            color: rgb(0, 0, 122);
+            font-size: 10px;
+        }
+        .compact-upload-hint {
+            color: rgba(0, 38, 109, 0.981);
+            font-size: 8px;
+            margin-top: 2px;
+        }
+        .compact-preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+        .compact-preview-container::-webkit-scrollbar {
+            height: 3px;
+            width: 3px;
+        }
+        .compact-image-preview {
+            position: relative;
+            width: 45px;
+            height: 45px;
+            border-radius: 6px;
+            overflow: hidden;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            flex-shrink: 0;
+        }
+        .compact-image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .compact-remove-btn {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(231,76,60,0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+        }
+        .compact-remove-btn:hover {
+            background: #e74c3c;
+        }
+        .success-message {
+            background: rgba(46,204,113,0.2);
+            border: 1px solid rgba(46,204,113,0.3);
+            color: #2ecc71;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: none;
+            font-weight: 600;
+            font-size: 14px;
+            text-align: center;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .action-btn {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .save-btn {
+            background: #27ae60;
+            color: white;
+        }
+        .save-btn:hover {
+            background: #229954;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(39,174,96,0.3);
+        }
+        .reset-btn {
+            background: #7f8c8d;
+            color: white;
+        }
+        .reset-btn:hover {
+            background: #6c7a7a;
+            transform: translateY(-2px);
+        }
+        .questions-list {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+            max-height: 350px;
+            overflow-y: auto;
+        }
+        .questions-list h3 {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: sticky;
+            top: 0;
+            background: rgba(10,26,58,0.95);
+            backdrop-filter: blur(10px);
+            padding-bottom: 10px;
+            z-index: 10;
+        }
+        .questions-list h3 i {
+            color: #f39c12;
+        }
+        #questionsContainer {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .question-item {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            position: relative;
+        }
+        .question-item:hover {
+            background: rgba(255,255,255,0.08);
+        }
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .question-number {
+            background: #3498db;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .question-badges {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .badge {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .marks-badge {
+            background: rgba(46,204,113,0.2);
+            color: #2ecc71;
+        }
+        .time-badge {
+            background: rgba(243,156,18,0.2);
+            color: #f39c12;
+        }
+        .question-text {
+            color: white;
+            font-weight: 500;
+            margin-bottom: 10px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .answer-display {
+            background: rgba(46,204,113,0.1);
+            border-left: 3px solid #2ecc71;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            color: rgba(255,255,255,0.9);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .criteria-info {
+            font-size: 11px;
+            color: rgba(255,255,255,0.6);
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 6px;
+            line-height: 1.6;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .chapter-badge {
+            background: rgba(52,152,219,0.2);
+            color: #3498db;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: rgba(255,255,255,0.5);
+        }
+        .empty-state i {
+            font-size: 40px;
+            margin-bottom: 10px;
+            opacity: 0.3;
+        }
+        .image-badge {
+            background: rgba(52,152,219,0.2);
+            color: #3498db;
+        }
+        .question-images {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .question-image-thumb {
+            width: 60px;
+            height: 60px;
+            border-radius: 6px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.2s ease;
+        }
+        .question-image-thumb:hover {
+            transform: scale(1.05);
+        }
+        .question-image-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .shortcut-hint {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 30px;
+            padding: 6px 12px;
+            color: rgba(255,255,255,0.7);
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 100;
+        }
+        .shortcut-hint kbd {
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            padding: 2px 5px;
+            color: white;
+            font-family: monospace;
+            font-size: 10px;
+        }
+        .image-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            cursor: pointer;
+        }
+        .image-modal img {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+        }
+        .image-modal-close {
+            position: absolute;
+            top: 20px;
+            right: 35px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .form-footer {
+            margin-top: 0;
+        }
+        @media (max-width: 1024px) {
+            .answer-container {
+                flex-direction: column;
+            }
+            .metrics-image-row {
+                flex-direction: column;
+                width: 100%;
+            }
+            .metrics-container {
+                width: 100%;
+            }
+            .compact-image-upload {
+                width: 100%;
+            }
+        }
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                overflow: auto;
+                height: auto;
+            }
+            .dashboard {
+                height: auto;
+            }
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .header-right {
+                width: 100%;
+                justify-content: flex-start;
+            }
+            .action-buttons {
+                flex-direction: column;
+            }
+            .action-btn {
+                width: 100%;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <div class="header-left">
+                <h1>
+                    <i class="fas fa-pen" style="color: #f39c12;"></i>
+                    Create Questions
+                </h1>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-warning" onclick="goBackToSelection()">
+                    <i class="fas fa-arrow-left"></i> Back to Selection
+                </button>
+                <button class="btn btn-primary" onclick="window.location.href='/dashboard'">
+                    <i class="fas fa-home"></i> Dashboard
+                </button>
+            </div>
+        </div>
+        <div class="selection-info">
+            <div class="compact-scroll" id="compactGrid">
+            </div>
+        </div>
+        <div class="main-content">
+            <div class="question-form">
+                <form id="questionForm">
+                    <div class="form-group">
+                        <label>Question Text <span class="form-required">*</span></label>
+                        <textarea 
+                            id="questionText" 
+                            class="question-textarea"
+                            placeholder="Enter your question here..." 
+                            required></textarea>
+                    </div>
+                    <div class="answer-section">
+                        <div class="answer-section-header">
+                            <h4 class="answer-section-title">
+                                <i class="fas fa-check-circle"></i>
+                                Answer <span class="form-required">*</span>
+                            </h4>
+                        </div>
+                        <div class="answer-container">
+                            <div class="answer-text-container">
+                                <textarea 
+                                    id="answer" 
+                                    class="answer-textarea"
+                                    placeholder="Enter the complete answer here..." 
+                                    required></textarea>
+                            </div>
+                            <div class="metrics-image-row">
+                                <div class="metrics-container">
+                                    <div class="metric-item">
+                                        <div class="metric-label marks-label">
+                                            <i class="fas fa-star"></i> Marks
+                                        </div>
+                                        <div class="metric-input-wrapper">
+                                            <input 
+                                                type="number" 
+                                                id="marks" 
+                                                class="metric-input marks-input" 
+                                                min="0" 
+                                                max="100" 
+                                                step="1" 
+                                                value="1" 
+                                                required>
+                                            <span class="metric-unit">pts</span>
+                                        </div>
+                                        <div class="metric-hint">[0-100]</div>
+                                    </div>
+                                    <div class="metric-item">
+                                        <div class="metric-label time-label">
+                                            <i class="fas fa-clock"></i> Time
+                                        </div>
+                                        <div class="metric-input-wrapper">
+                                            <input 
+                                                type="number" 
+                                                id="duration_minutes" 
+                                                class="metric-input time-input" 
+                                                min="0" 
+                                                max="180" 
+                                                step="1" 
+                                                value="5">
+                                            <span class="metric-unit">min</span>
+                                        </div>
+                                        <div class="metric-hint">[0-15]</div>
+                                    </div>
+                                </div>
+                                <div class="compact-image-upload">
+                                    <div class="compact-image-header">
+                                        <i class="fas fa-image"></i>
+                                        <span>Image (Optional)</span>
+                                    </div>
+                                    <div class="compact-upload-area" id="imageUploadArea">
+                                        <div class="compact-upload-icon">
+                                            <i class="fas fa-cloud-upload-alt"></i>
+                                        </div>
+                                        <div class="compact-upload-text">
+                                            Click or drag image
+                                        </div>
+                                        <div class="compact-upload-hint">
+                                            JPG, PNG (Max 5MB)
+                                        </div>
+                                        <input type="file" id="imageInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;">
+                                    </div>
+                                    <div class="compact-preview-container" id="imagePreviewContainer"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <div class="success-message" id="successMessage">
+                    <i class="fas fa-check-circle"></i>
+                    Question saved successfully!
+                </div>
+                <div class="form-footer">
+                    <div class="action-buttons">
+                        <button type="button" class="action-btn save-btn" onclick="saveQuestion()">
+                            <i class="fas fa-save"></i> Save Question
+                        </button>
+                        <button type="button" class="action-btn reset-btn" onclick="resetForm()">
+                            <i class="fas fa-undo"></i> Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="questions-list" id="questionsList" style="display: none;">
+                <h3>
+                    <i class="fas fa-list" style="color: #f39c12;"></i>
+                    <span>Existing Questions</span>
+                </h3>
+                <div id="questionsContainer"></div>
+            </div>
+        </div>
+    </div>
+    <div id="imageModal" class="image-modal" onclick="closeImageModal()">
+        <span class="image-modal-close">&times;</span>
+        <img id="modalImage" alt="Full size image">
+    </div>
+    <div class="shortcut-hint">
+        <i class="fas fa-keyboard"></i>
+        <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to save
+    </div>
+    <script>
+        let currentSelections = {};
+        let uploadedImage = null;  // Changed from array to single image
+        document.addEventListener('DOMContentLoaded', async () => {
+            currentSelections = {
+                compCode: localStorage.getItem('selectedCompCode'),
+                compDesc: localStorage.getItem('selectedCompDesc'),
+                domainName: localStorage.getItem('selectedDomainName'),
+                knowledgeLevelName: localStorage.getItem('selectedKnowledgeLevelName'),
+                questionTypeName: localStorage.getItem('selectedQuestionTypeName'),
+                difficultyName: localStorage.getItem('selectedDifficultyName'),
+                gradeName: localStorage.getItem('selectedGradeName'),
+                subjectName: localStorage.getItem('selectedSubjectName'),
+                chapterId: localStorage.getItem('selectedChapterId'),
+                chapterName: localStorage.getItem('selectedChapterName'),
+                chapterCode: localStorage.getItem('selectedChapterCode'),
+                cgCode: localStorage.getItem('selectedCGCode')
+            };
+            const grid = document.getElementById('compactGrid');
+            let compactHTML = '';
+            if (currentSelections.gradeName) {
+                compactHTML += `
+                    <div class="compact-item">
+                        <span class="compact-label">Grade:</span>
+                        <span class="compact-value">${currentSelections.gradeName}</span>
+                    </div>
+                `;
+            }
+            if (currentSelections.subjectName) {
+                compactHTML += `
+                    <div class="compact-item">
+                        <span class="compact-label">Subject:</span>
+                        <span class="compact-value">${currentSelections.subjectName}</span>
+                    </div>
+                `;
+            }
+            if (currentSelections.chapterName && currentSelections.chapterName !== 'null') {
+                compactHTML += `
+                    <div class="compact-item">
+                        <span class="compact-label">Chapter:</span>
+                        <span class="compact-value">${currentSelections.chapterName}</span>
+                    </div>
+                `;
+            }
+            if (currentSelections.cgCode) {
+                compactHTML += `
+                    <div class="compact-item">
+                        <span class="compact-label">CG:</span>
+                        <span class="compact-value">${currentSelections.cgCode}</span>
+                    </div>
+                `;
+            }
+            if (currentSelections.compCode) {
+                compactHTML += `
+                    <div class="compact-item">
+                        <span class="compact-label">Competency:</span>
+                        <span class="compact-value">${currentSelections.compCode}</span>
+                    </div>
+                `;
+            }
+            if (currentSelections.domainName) {
+                compactHTML += `
+                    <div class="compact-item">
+                        <span class="compact-label">Domain:</span>
+                        <span class="compact-value">${currentSelections.domainName}</span>
+                    </div>
+                `;
+            }
+            if (currentSelections.knowledgeLevelName) {
+                compactHTML += `
+                    <div class="compact-item">
+                        <span class="compact-label">Knowledge:</span>
+                        <span class="compact-value">${currentSelections.knowledgeLevelName}</span>
+                    </div>
+                `;
+            }
+            if (currentSelections.questionTypeName) {
+                compactHTML += `
+                    <div class="compact-item">
+                        <span class="compact-label">Type:</span>
+                        <span class="compact-value">${currentSelections.questionTypeName}</span>
+                    </div>
+                `;
+            }
+            if (currentSelections.difficultyName) {
+                compactHTML += `
+                    <div class="compact-item">
+                        <span class="compact-label">Difficulty:</span>
+                        <span class="compact-value">${currentSelections.difficultyName}</span>
+                    </div>
+                `;
+            }
+            grid.innerHTML = compactHTML;
+            initImageUpload();
+            await loadExistingQuestions();
+            document.getElementById('questionText').focus();
+        });
+        function initImageUpload() {
+            const uploadArea = document.getElementById('imageUploadArea');
+            const imageInput = document.getElementById('imageInput');
+            uploadArea.addEventListener('click', () => {
+                imageInput.click();
+            });
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('drag-over');
+            });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('drag-over');
+            });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('drag-over');
+                const files = Array.from(e.dataTransfer.files);
+                handleSingleImageFile(files);
+            });
+            imageInput.addEventListener('change', (e) => {
+                const files = Array.from(e.target.files);
+                handleSingleImageFile(files);
+                imageInput.value = '';
+            });
+        }
+        function handleSingleImageFile(files) {
+            const imageFiles = files.filter(file => file.type.startsWith('image/'));
+            if (imageFiles.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No Image',
+                    text: 'Please select a valid image file',
+                    confirmButtonColor: '#3498db'
+                });
+                return;
+            }
+            // Only take the first image if multiple are selected
+            const file = imageFiles[0];
+            if (file.size > 5 * 1024 * 1024) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'File Too Large',
+                    text: `${file.name} exceeds 5MB limit`,
+                    confirmButtonColor: '#3498db'
+                });
+                return;
+            }
+            // If there's already an uploaded image, revoke its URL
+            if (uploadedImage && uploadedImage.preview) {
+                URL.revokeObjectURL(uploadedImage.preview);
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                uploadedImage = {
+                    file: file,
+                    preview: URL.createObjectURL(file),
+                    dataUrl: e.target.result
+                };
+                renderImagePreview();
+            };
+            reader.readAsDataURL(file);
+        }
+        function renderImagePreview() {
+            const container = document.getElementById('imagePreviewContainer');
+            container.innerHTML = '';
+            if (uploadedImage) {
+                const previewDiv = document.createElement('div');
+                previewDiv.className = 'compact-image-preview';
+                previewDiv.innerHTML = `
+                    <img src="${uploadedImage.preview}" alt="Image Preview">
+                    <button class="compact-remove-btn" onclick="removeImage()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                container.appendChild(previewDiv);
+            }
+        }
+        function removeImage() {
+            if (uploadedImage && uploadedImage.preview) {
+                URL.revokeObjectURL(uploadedImage.preview);
+            }
+            uploadedImage = null;
+            renderImagePreview();
+        }
+        function goBackToSelection() {
+            localStorage.setItem('restoreSelections', 'true');
+            window.location.href = '/complete-selection';
+        }
+        async function loadExistingQuestions() {
+            try {
+                const compId = localStorage.getItem('selectedCompId');
+                if (!compId || compId === 'null') {
+                    return;
+                }
+                const response = await fetch(`/api/page2-questions?comp_id=${compId}`);
+                const data = await response.json();
+                if (data.questions && data.questions.length > 0) {
+                    document.getElementById('questionsList').style.display = 'block';
+                    displayQuestions(data.questions);
+                }
+            } catch (error) {
+                console.error('Error loading questions:', error);
+            }
+        }
+        function displayQuestions(questions) {
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = '';
+            if (questions.length === 0) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-question-circle"></i><p>No questions found for this competency yet.</p></div>';
+                return;
+            }
+            questions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            questions.forEach((q, index) => {
+                const div = document.createElement('div');
+                div.className = 'question-item';
+                let answer = '';
+                if (q.answer) {
+                    answer = q.answer;
+                } else if (q.correct_option) {
+                    answer = q.correct_option;
+                }
+                const marks = q.marks || '0';
+                const duration = q.duration_minutes || 0;
+                const chapter = q.chapter_name || 'No chapter';
+                let imagesHtml = '';
+                if (q.images) {
+                    try {
+                        const images = typeof q.images === 'string' ? JSON.parse(q.images) : q.images;
+                        if (images && images.length > 0) {
+                            imagesHtml = `
+                                <div class="question-images">
+                                    ${images.map(img => `
+                                        <div class="question-image-thumb" onclick="showImageModal('${img}')">
+                                            <img src="${img}" alt="Question image">
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `;
+                        }
+                    } catch(e) {}
+                }
+                div.innerHTML = `
+                    <div class="question-header">
+                        <span class="question-number">Q${index + 1}</span>
+                        <div class="question-badges">
+                            <span class="badge marks-badge">
+                                <i class="fas fa-star"></i> ${marks}
+                            </span>
+                            ${duration > 0 ? `
+                                <span class="badge time-badge">
+                                    <i class="fas fa-clock"></i> ${duration} min
+                                </span>
+                            ` : ''}
+                            ${chapter !== 'No chapter' ? `
+                                <span class="badge chapter-badge">
+                                    <i class="fas fa-book"></i> ${chapter.substring(0, 30)}${chapter.length > 30 ? '...' : ''}
+                                </span>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <div class="question-text">${q.question_text || 'No question text'}</div>
+                    ${imagesHtml}
+                    <div class="answer-display">
+                        <strong>Answer:</strong> ${answer.substring(0, 150)}${answer.length > 150 ? '...' : ''}
+                    </div>
+                    <div class="criteria-info">
+                        <span><i class="fas fa-user"></i> ${q.created_by || 'Unknown'}</span>
+                        <span><i class="fas fa-calendar"></i> ${new Date(q.created_at).toLocaleDateString() || 'Unknown'}</span>
+                        ${q.difficulty_name ? `<span><i class="fas fa-chart-line"></i> ${q.difficulty_name}</span>` : ''}
+                        ${q.question_type_name ? `<span><i class="fas fa-question-circle"></i> ${q.question_type_name}</span>` : ''}
+                        <span><i class="fas fa-tag"></i> ${q.status || 'pending'}</span>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        function showImageModal(imageUrl) {
+            const modal = document.getElementById('imageModal');
+            const modalImg = document.getElementById('modalImage');
+            modal.style.display = 'block';
+            modalImg.src = imageUrl;
+        }
+        function closeImageModal() {
+            document.getElementById('imageModal').style.display = 'none';
+        }
+        async function saveQuestion() {
+            const questionText = document.getElementById('questionText').value.trim();
+            const answer = document.getElementById('answer').value.trim();
+            const marks = document.getElementById('marks').value.trim();
+            const durationMinutes = document.getElementById('duration_minutes').value.trim() || '0';
+            if (!questionText) {
+                Swal.fire({ icon: 'warning', title: 'Missing Question', text: 'Please enter a question!', confirmButtonColor: '#3498db' });
+                document.getElementById('questionText').focus();
+                return;
+            }
+            if (!answer) {
+                Swal.fire({ icon: 'warning', title: 'Missing Answer', text: 'Please enter an answer!', confirmButtonColor: '#3498db' });
+                document.getElementById('answer').focus();
+                return;
+            }
+            if (!marks || isNaN(marks) || marks < 0 || marks > 100) {
+                Swal.fire({ icon: 'warning', title: 'Invalid Marks', text: 'Please enter valid marks between 0 and 100!', confirmButtonColor: '#3498db' });
+                document.getElementById('marks').focus();
+                return;
+            }
+            const durationInt = parseInt(durationMinutes);
+            if (isNaN(durationInt) || durationInt < 0 || durationInt > 180) {
+                Swal.fire({ icon: 'warning', title: 'Invalid Duration', text: 'Please enter valid duration between 0 and 180 minutes!', confirmButtonColor: '#3498db' });
+                document.getElementById('duration_minutes').focus();
+                return;
+            }
+            const compId = localStorage.getItem('selectedCompId');
+            if (!compId || compId === 'null') {
+                Swal.fire({ icon: 'error', title: 'No Competency Selected', text: 'Please go back and select a competency first.', confirmButtonColor: '#3498db' })
+                    .then(() => { window.location.href = '/complete-selection'; });
+                return;
+            }
+            const chapterId = localStorage.getItem('selectedChapterId');
+            const chapterName = localStorage.getItem('selectedChapterName');
+            const chapterCode = localStorage.getItem('selectedChapterCode');
+            let imageUrl = null;
+            // Upload single image if present
+            if (uploadedImage) {
+                Swal.fire({ title: 'Uploading Image...', text: 'Please wait', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+                const formData = new FormData();
+                formData.append('images', uploadedImage.file);  // Keep field name as 'images' for backend compatibility
+                try {
+                    const uploadResponse = await fetch('/api/upload-question-images', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const uploadResult = await uploadResponse.json();
+                    Swal.close();
+                    if (uploadResult.success && uploadResult.image_urls && uploadResult.image_urls.length > 0) {
+                        imageUrl = uploadResult.image_urls[0];  // Take the first (only) image URL
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Upload Failed', text: uploadResult.error || 'Failed to upload image', confirmButtonColor: '#3498db' });
+                        return;
+                    }
+                } catch (error) {
+                    Swal.close();
+                    Swal.fire({ icon: 'error', title: 'Upload Error', text: 'Failed to upload image. Please try again.', confirmButtonColor: '#3498db' });
+                    return;
+                }
+            }
+            const questionData = {
+                question_text: questionText,
+                answer: answer,
+                marks: parseInt(marks),
+                duration_minutes: parseInt(durationMinutes),
+                images: JSON.stringify(imageUrl ? [imageUrl] : []),  // Store as array for consistency
+                comp_id: localStorage.getItem('selectedCompId'),
+                grade_id: localStorage.getItem('selectedGradeId'),
+                subject_id: localStorage.getItem('selectedSubjectId'),
+                chapter_id: chapterId && chapterId !== 'null' ? chapterId : null,
+                cg_id: localStorage.getItem('selectedCGId'),
+                domain_id: localStorage.getItem('selectedDomainId'),
+                knowledge_level_id: localStorage.getItem('selectedKnowledgeLevelId'),
+                question_type_id: localStorage.getItem('selectedQuestionTypeId'),
+                difficulty_id: localStorage.getItem('selectedDifficultyId'),
+                competency_code: localStorage.getItem('selectedCompCode'),
+                grade_name: localStorage.getItem('selectedGradeName'),
+                subject_name: localStorage.getItem('selectedSubjectName'),
+                chapter_name: chapterName && chapterName !== 'null' ? chapterName : null,
+                chapter_code: chapterCode && chapterCode !== 'null' ? chapterCode : null,
+                cg_code: localStorage.getItem('selectedCGCode'),
+                domain_name: localStorage.getItem('selectedDomainName'),
+                knowledge_level_name: localStorage.getItem('selectedKnowledgeLevelName'),
+                question_type_name: localStorage.getItem('selectedQuestionTypeName'),
+                difficulty_name: localStorage.getItem('selectedDifficultyName')
+            };
+            Swal.fire({ title: 'Saving...', text: 'Please wait', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            try {
+                const response = await fetch('/api/create-question', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(questionData)
+                });
+                const result = await response.json();
+                Swal.close();
+                if (result.success) {
+                    const successMsg = document.getElementById('successMessage');
+                    const imageText = imageUrl ? ' | 1 image attached' : '';
+                    successMsg.style.display = 'block';
+                    successMsg.innerHTML = `<i class="fas fa-check-circle"></i> <strong>Question saved!</strong> (Marks: ${marks} | Time: ${durationMinutes} min${imageText})`;
+                    resetForm();
+                    await loadExistingQuestions();
+                    setTimeout(() => { successMsg.style.display = 'none'; }, 3000);
+                    Swal.fire({ icon: 'success', title: 'Success!', text: 'Question saved successfully', timer: 1500, showConfirmButton: false });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: result.error || 'Unknown error occurred', confirmButtonColor: '#3498db' });
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.close();
+                Swal.fire({ icon: 'error', title: 'Connection Error', text: 'Failed to save question. Please check your connection.', confirmButtonColor: '#3498db' });
+            }
+        }
+        function resetForm() {
+            document.getElementById('questionForm').reset();
+            document.getElementById('marks').value = 1;
+            document.getElementById('duration_minutes').value = 5;
+            if (uploadedImage && uploadedImage.preview) {
+                URL.revokeObjectURL(uploadedImage.preview);
+            }
+            uploadedImage = null;
+            renderImagePreview();
+            document.getElementById('questionText').focus();
+        }
+        document.addEventListener('keydown', function(event) {
+            if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                event.preventDefault();
+                saveQuestion();
+            }
+        });
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeImageModal();
+            }
+        });
+    </script>
+</body>
+</html>
