@@ -1559,6 +1559,10 @@ def rework_question(question_id):
     perm_rc = session.get('perm_rc', False)
     perm_ap = session.get('perm_ap', False)
     
+    # Get comment from request body
+    data = request.json
+    rework_comment = data.get('comment', '') if data else ''
+    
     db = get_db()
     cur = db.cursor(dictionary=True)
     
@@ -1582,22 +1586,32 @@ def rework_question(question_id):
         if not can_rework:
             return jsonify({'error': 'You are not authorized to rework this question'}), 403
         
+        # Check if reviewed_comment column exists, if not add it
+        cur.execute("SHOW COLUMNS FROM simple_questions LIKE 'reviewed_comment'")
+        if not cur.fetchone():
+            cur.execute("ALTER TABLE simple_questions ADD COLUMN reviewed_comment TEXT")
+            db.commit()
+        
+        # Prepare the comment with timestamp and user info
+        comment_with_meta = f"[REWORK by {username} on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {rework_comment}"
+        
+        # Update question: reset status and save the rework comment
         cur.execute("""
             UPDATE simple_questions 
             SET status = 'under_review',
                 reviewed_by = NULL,
                 reviewed_at = NULL,
-                reviewed_comment = NULL,
+                reviewed_comment = %s,
                 rejection_reason = NULL,
                 rejected_by = NULL,
                 rejected_at = NULL,
                 approved_by = NULL,
                 approved_at = NULL
             WHERE id = %s
-        """, (question_id,))
+        """, (comment_with_meta, question_id))
         db.commit()
         
-        return jsonify({'success': True, 'message': 'Question resubmitted for review'})
+        return jsonify({'success': True, 'message': 'Question resubmitted for review with comment'})
         
     except Exception as e:
         print(f"Error in rework_question: {e}")

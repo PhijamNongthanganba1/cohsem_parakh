@@ -965,106 +965,135 @@
         }
         
         async function reworkQuestion(id) {
-            const question = allQuestions.find(q => q.id === id);
-            if (!question) {
-                Swal.fire('Error', 'Question not found', 'error');
+    const question = allQuestions.find(q => q.id === id);
+    if (!question) {
+        Swal.fire('Error', 'Question not found', 'error');
+        return;
+    }
+    
+    const reasonDisplay = question.rejection_reason ? 
+        `<div style="margin-bottom: 15px; background: #fff3e0; padding: 12px; border-radius: 8px; border-left: 4px solid #f39c12; text-align: left;">
+            <strong style="color: #e67e22;">Previous Rejection Reason:</strong><br>
+            <span style="color: #666;">${escapeHtml(question.rejection_reason)}</span>
+        </div>` : '';
+    
+    const { value: formValues } = await Swal.fire({
+        title: 'Rework & Resubmit',
+        html: `
+            <div style="max-height: 400px; overflow-y: auto; padding-right: 10px; text-align: left;">
+                ${reasonDisplay}
+                
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 5px;">Question *</label>
+                    <textarea id="swal-question" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" rows="2">${escapeHtml(question.question)}</textarea>
+                </div>
+                
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 5px;">Answer *</label>
+                    <textarea id="swal-answer" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" rows="2">${escapeHtml(question.answer || '')}</textarea>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                    <div style="flex: 1;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">Marks *</label>
+                        <input id="swal-marks" type="number" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" value="${question.marks || 1}" min="1" max="100">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">Duration (min)</label>
+                        <input id="swal-duration" type="number" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" value="${question.duration_minutes || 0}" min="0" max="180">
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 5px;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #e74c3c;">Rework Comment *</label>
+                    <textarea id="swal-comment" style="width: 100%; padding: 8px; border: 2px solid #e74c3c; border-radius: 4px; background: #fff5f5;" rows="3" placeholder="Please explain what changes you made..."></textarea>
+                    <small style="color: #e74c3c;">Comment is required</small>
+                </div>
+            </div>
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonColor: '#f39c12',
+        confirmButtonText: 'Save & Resubmit',
+        cancelButtonText: 'Cancel',
+        width: '550px',
+        preConfirm: () => {
+            const newQuestion = document.getElementById('swal-question')?.value;
+            const newAnswer = document.getElementById('swal-answer')?.value;
+            const newMarks = parseInt(document.getElementById('swal-marks')?.value);
+            const newDuration = parseInt(document.getElementById('swal-duration')?.value);
+            const comment = document.getElementById('swal-comment')?.value.trim();
+            
+            if (!newQuestion) {
+                Swal.showValidationMessage('Question is required');
+                return false;
+            }
+            if (!newAnswer) {
+                Swal.showValidationMessage('Answer is required');
+                return false;
+            }
+            if (isNaN(newMarks) || newMarks < 0 || newMarks > 100) {
+                Swal.showValidationMessage('Marks must be between 0-100');
+                return false;
+            }
+            if (!comment) {
+                Swal.showValidationMessage('Rework comment is required');
+                return false;
+            }
+            
+            return {
+                question: newQuestion,
+                answer: newAnswer,
+                marks: newMarks,
+                duration: newDuration,
+                comment: comment
+            };
+        }
+    });
+    
+    if (formValues) {
+        try {
+            Swal.fire({
+                title: 'Submitting...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+            
+            const updateResponse = await fetch(`/api/update-question/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    question: formValues.question,
+                    answer: formValues.answer,
+                    marks: formValues.marks,
+                    duration_minutes: formValues.duration
+                })
+            });
+            const updateData = await updateResponse.json();
+            
+            if (!updateData.success) {
+                Swal.fire('Error!', updateData.error || 'Update failed', 'error');
                 return;
             }
-            const reasonDisplay = question.rejection_reason ? 
-                `<div style="margin-bottom: 15px; background: #fff3e0; padding: 12px; border-radius: 8px; border-left: 4px solid #f39c12;">
-                    <strong style="color: #e67e22;"><i class="fas fa-info-circle"></i> Previous Rejection Reason:</strong><br>
-                    <span style="color: #666;">${escapeHtml(question.rejection_reason)}</span>
-                </div>` : '';
-            const { value: formValues } = await Swal.fire({
-                title: 'Rework & Resubmit Question',
-                html: `
-                    ${reasonDisplay}
-                    <textarea id="swal-question" class="swal2-textarea" placeholder="Question" style="margin-bottom: 10px;">${escapeHtml(question.question)}</textarea>
-                    <textarea id="swal-answer" class="swal2-textarea" placeholder="Answer" style="margin-bottom: 10px;">${escapeHtml(question.answer || '')}</textarea>
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <input id="swal-marks" class="swal2-input" type="number" placeholder="Marks" value="${question.marks || 1}" min="1" max="100" style="flex: 1;">
-                        <input id="swal-duration" class="swal2-input" type="number" placeholder="Duration (min)" value="${question.duration_minutes || 0}" min="0" max="180" style="flex: 1;">
-                    </div>
-                    <div style="margin-top: 15px; padding: 10px; background: #d4edda; border-radius: 8px; border-left: 4px solid #2ecc71;">
-                        <small><i class="fas fa-info-circle"></i> Make necessary changes and click "Save & Resubmit" to send this question back for review.</small>
-                    </div>
-                `,
-                focusConfirm: false,
-                showCancelButton: true,
-                confirmButtonColor: '#f39c12',
-                confirmButtonText: 'Save & Resubmit',
-                cancelButtonText: 'Cancel',
-                preConfirm: () => {
-                    const newQuestion = document.getElementById('swal-question').value;
-                    const newAnswer = document.getElementById('swal-answer').value;
-                    const newMarks = parseInt(document.getElementById('swal-marks').value);
-                    const newDuration = parseInt(document.getElementById('swal-duration').value);
-                    if (!newQuestion) {
-                        Swal.showValidationMessage('Question text is required');
-                        return false;
-                    }
-                    if (!newAnswer) {
-                        Swal.showValidationMessage('Answer is required');
-                        return false;
-                    }
-                    if (isNaN(newMarks) || newMarks < 0 || newMarks > 100) {
-                        Swal.showValidationMessage('Marks must be between 0 and 100');
-                        return false;
-                    }
-                    if (isNaN(newDuration) || newDuration < 0 || newDuration > 180) {
-                        Swal.showValidationMessage('Duration must be between 0 and 180 minutes');
-                        return false;
-                    }
-                    return {
-                        question: newQuestion,
-                        answer: newAnswer,
-                        marks: newMarks,
-                        duration_minutes: newDuration
-                    };
-                }
+            
+            const reworkResponse = await fetch(`/api/rework-question/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ comment: formValues.comment })
             });
-            if (formValues) {
-                try {
-                    Swal.fire({
-                        title: 'Submitting...',
-                        text: 'Please wait',
-                        allowOutsideClick: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
-                    });
-                    const updateResponse = await fetch(`/api/update-question/${id}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(formValues)
-                    });
-                    const updateData = await updateResponse.json();
-                    if (!updateData.success) {
-                        Swal.fire('Error!', updateData.error || 'Failed to update question', 'error');
-                        return;
-                    }
-                    const reworkResponse = await fetch(`/api/rework-question/${id}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-                    const reworkData = await reworkResponse.json();
-                    if (reworkData.success) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Resubmitted!',
-                            text: 'Your question has been resubmitted for review.',
-                            confirmButtonColor: '#2ecc71'
-                        });
-                        fetchQuestions(true);
-                    } else {
-                        Swal.fire('Error!', reworkData.error || 'Failed to resubmit question', 'error');
-                    }
-                } catch (error) {
-                    console.error('Error reworking question:', error);
-                    Swal.fire('Error!', 'Failed to process request', 'error');
-                }
+            const reworkData = await reworkResponse.json();
+            
+            if (reworkData.success) {
+                Swal.fire('Success!', 'Question resubmitted for review', 'success');
+                fetchQuestions(true);
+            } else {
+                Swal.fire('Error!', reworkData.error || 'Resubmit failed', 'error');
             }
+        } catch (error) {
+            Swal.fire('Error!', 'Something went wrong', 'error');
         }
+    }
+}
         
         // Event Listeners
         document.getElementById('gradeFilter').addEventListener('change', function() {
