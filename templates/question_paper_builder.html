@@ -328,6 +328,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
         }
         .subject-info h3 {
             color: white;
@@ -337,6 +339,38 @@
             color: #e67e22;
             font-weight: 600;
             font-size: 16px;
+        }
+        .table-container {
+            overflow-x: auto;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            margin-top: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            text-align: left;
+            padding: 12px 15px;
+            color: rgba(255,255,255,0.7);
+            font-weight: 600;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.2);
+        }
+        td {
+            padding: 12px 15px;
+            color: white;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            vertical-align: top;
+        }
+        tr:hover {
+            background: rgba(255,255,255,0.05);
+            cursor: pointer;
+        }
+        tr.selected-chapter {
+            background: rgba(230,126,34,0.2);
         }
         .cg-info-card {
             background: rgba(255,255,255,0.05);
@@ -544,33 +578,9 @@
             border-radius: 20px;
             font-size: 12px;
         }
-        .table-container {
+        .question-table-container {
             max-height: 450px;
             overflow-y: auto;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th {
-            text-align: left;
-            padding: 12px 15px;
-            color: rgba(255,255,255,0.7);
-            font-weight: 600;
-            font-size: 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            background: rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-        }
-        td {
-            padding: 12px 15px;
-            color: white;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            vertical-align: top;
-        }
-        tr:hover {
-            background: rgba(255,255,255,0.05);
         }
         .checkbox {
             width: 18px;
@@ -627,6 +637,13 @@
             font-size: 48px;
             margin-bottom: 15px;
             opacity: 0.3;
+        }
+        .filter-badge {
+            background: rgba(230,126,34,0.3);
+            color: #e67e22;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 13px;
         }
         .modal {
             display: none;
@@ -848,7 +865,7 @@
         }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.debug.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
@@ -861,6 +878,7 @@
                     Question Paper Builder
                 </h1>
             </div>
+            <a href="https://parakh.ncert.gov.in/about-parakh" target="_blank" style="color: #ff2f2f; text-decoration: none; text-align: left;">🔗 Click here for more info</a>
             <div class="header-right">
                 <a href="/dashboard" class="btn btn-primary">
                     <i class="fas fa-home"></i> Dashboard
@@ -890,24 +908,31 @@
                             <div class="step-value" id="tracker-subject-value">Select Subject</div>
                         </div>
                     </div>
-                    <div class="tracker-step" id="tracker-chain" onclick="navigateToStage(3)">
+                    <div class="tracker-step" id="tracker-chapter" onclick="navigateToStage(3)">
                         <div class="step-number">3</div>
                         <div class="step-info">
                             <div class="step-label">Step 3</div>
-                            <div class="step-value" id="tracker-chain-value">Select Competencies</div>
+                            <div class="step-value" id="tracker-chapter-value">Select Chapter</div>
                         </div>
                     </div>
-                    <div class="tracker-step" id="tracker-config" onclick="navigateToStage(4)">
+                    <div class="tracker-step" id="tracker-cg" onclick="navigateToStage(4)">
                         <div class="step-number">4</div>
                         <div class="step-info">
                             <div class="step-label">Step 4</div>
-                            <div class="step-value" id="tracker-config-value">Configure Paper</div>
+                            <div class="step-value" id="tracker-cg-value">Select Curricular Goal</div>
                         </div>
                     </div>
-                    <div class="tracker-step" id="tracker-questions" onclick="navigateToStage(5)">
+                    <div class="tracker-step" id="tracker-config" onclick="navigateToStage(5)">
                         <div class="step-number">5</div>
                         <div class="step-info">
                             <div class="step-label">Step 5</div>
+                            <div class="step-value" id="tracker-config-value">Configure Paper</div>
+                        </div>
+                    </div>
+                    <div class="tracker-step" id="tracker-questions" onclick="navigateToStage(6)">
+                        <div class="step-number">6</div>
+                        <div class="step-info">
+                            <div class="step-label">Step 6</div>
                             <div class="step-value" id="tracker-questions-value">Select Questions</div>
                         </div>
                     </div>
@@ -918,8 +943,10 @@
                     <div class="progress-bar">
                         <div class="progress-fill" id="progressFill"></div>
                     </div>
-                    <div class="progress-text" id="progressText">Step 1 of 5</div>
+                    <div class="progress-text" id="progressText">Step 1 of 6</div>
                 </div>
+                
+                <!-- Step 1: Grade -->
                 <div class="stage-container" id="stage1">
                     <div class="stage-header">
                         <h2>Select Grade</h2>
@@ -929,10 +956,12 @@
                         <div class="loading">Loading grades...</div>
                     </div>
                 </div>
+                
+                <!-- Step 2: Subject -->
                 <div class="stage-container" id="stage2" style="display: none;">
                     <div class="stage-header">
                         <h2>Select Subject</h2>
-                        <p>Choose a subject to select competencies</p>
+                        <p>Choose a subject for <span id="selectedGradeNameDisplay"></span></p>
                     </div>
                     <div class="grid-3" id="subjectGrid"></div>
                     <div class="nav-buttons">
@@ -941,14 +970,51 @@
                         </button>
                     </div>
                 </div>
+                
+                <!-- Step 3: Chapter -->
                 <div class="stage-container" id="stage3" style="display: none;">
                     <div class="stage-header">
+                        <h2>Select Chapter</h2>
+                        <p>Choose a chapter for <span id="selectedChapterSubjectName"></span></p>
+                    </div>
+                    <div class="subject-info" id="chapterSubjectInfo">
+                        <h3 id="chapterSubjectHeading"></h3>
+                        <span id="chapterCount">Loading chapters...</span>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Chapter Code</th>
+                                    <th>Chapter Name</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody id="chaptersTableBody">
+                                <tr><td colspan="4" class="loading">Select a subject to view chapters</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="nav-buttons">
+                        <button class="btn btn-warning" onclick="goToStage(2)">
+                            <i class="fas fa-arrow-left"></i> Back to Subjects
+                        </button>
+                        <button class="btn btn-success" id="nextAfterChapterBtn" onclick="confirmChapterSelection()" disabled>
+                            Next: Select Curricular Goal <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Step 4: Curricular Goal (CG) with Competencies -->
+                <div class="stage-container" id="stage4" style="display: none;">
+                    <div class="stage-header">
                         <h2>Select Competencies</h2>
-                        <p>For each Curricular Goal, select ONE Competency (CGs with no competencies will be skipped)</p>
+                        <p>For each Curricular Goal, select ONE Competency</p>
                     </div>
                     <div class="subject-info" id="subjectInfo">
-                        <h3 id="currentSubjectName"></h3>
-                        <span id="chainProgress">CG 1/X</span>
+                        <h3 id="currentSubjectForCG"></h3>
+                        <span id="cgProgress">CG 0/0</span>
                     </div>
                     <div class="cg-info-card" id="currentCGCard">
                         <div class="cg-code" id="currentCGCode"></div>
@@ -970,8 +1036,8 @@
                         <button class="btn btn-warning" onclick="previousCG()" id="prevCGBtn" disabled>
                             <i class="fas fa-arrow-left"></i> Previous CG
                         </button>
-                        <button class="btn btn-warning" onclick="goToStage(2)">
-                            <i class="fas fa-arrow-left"></i> Back to Subjects
+                        <button class="btn btn-warning" onclick="goToStage(3)">
+                            <i class="fas fa-arrow-left"></i> Back to Chapters
                         </button>
                         <button class="btn btn-success" onclick="nextCG()" id="nextCGBtn">
                             Next CG <i class="fas fa-arrow-right"></i>
@@ -985,7 +1051,9 @@
                         <div class="summary-grid" id="cgSummaryGrid"></div>
                     </div>
                 </div>
-                <div class="stage-container" id="stage4" style="display: none;">
+                
+                <!-- Step 5: Configure Paper -->
+                <div class="stage-container" id="stage5" style="display: none;">
                     <div class="stage-header">
                         <h2>Configure Paper Structure</h2>
                         <p>Set marks distribution for the paper</p>
@@ -1086,7 +1154,7 @@
                         </div>
                     </div>
                     <div class="nav-buttons">
-                        <button class="btn btn-warning" onclick="goToStage(3)">
+                        <button class="btn btn-warning" onclick="goToStage(4)">
                             <i class="fas fa-arrow-left"></i> Back to Competency Selection
                         </button>
                         <button class="btn btn-success" onclick="finishConfiguration()">
@@ -1094,10 +1162,16 @@
                         </button>
                     </div>
                 </div>
-                <div class="stage-container" id="stage5" style="display: none;">
+                
+                <!-- Step 6: Select Questions -->
+                <div class="stage-container" id="stage6" style="display: none;">
                     <div class="stage-header">
                         <h2>Select Questions</h2>
                         <p>Choose questions from the available pool</p>
+                    </div>
+                    <div class="subject-info" id="questionsSubjectInfo">
+                        <h3 id="questionsSubjectName"></h3>
+                        <span id="chapterFilterInfo" class="filter-badge">All Chapters</span>
                     </div>
                     <div class="questions-section">
                         <div class="questions-card">
@@ -1105,7 +1179,7 @@
                                 Available Approved Questions
                                 <span id="availableCount">0</span>
                             </div>
-                            <div class="table-container">
+                            <div class="question-table-container">
                                 <table>
                                     <thead>
                                         <tr>
@@ -1113,13 +1187,12 @@
                                             <th>Question</th>
                                             <th style="width: 60px">Marks</th>
                                             <th style="width: 80px">Type</th>
-                                            <th style="width: 100px">Subject</th>
                                         </tr>
                                     </thead>
                                     <tbody id="availableQuestionsBody">
                                         <tr>
-                                            <td colspan="5" style="text-align: center; padding: 30px;">
-                                                Complete competency selection first
+                                            <td colspan="4" style="text-align: center; padding: 30px;">
+                                                Complete previous steps first
                                             </td>
                                         </tr>
                                     </tbody>
@@ -1131,7 +1204,7 @@
                                 Selected Questions
                                 <span id="selectedCount">0</span>
                             </div>
-                            <div class="table-container">
+                            <div class="question-table-container">
                                 <table>
                                     <thead>
                                         <tr>
@@ -1139,13 +1212,12 @@
                                             <th>Question</th>
                                             <th>Marks</th>
                                             <th>Type</th>
-                                            <th>Subject</th>
                                             <th style="width: 40px">Remove</th>
                                         </tr>
                                     </thead>
                                     <tbody id="selectedQuestionsBody">
                                         <tr>
-                                            <td colspan="6" style="text-align: center; padding: 30px;">
+                                            <td colspan="5" style="text-align: center; padding: 30px;">
                                                 No questions selected
                                             </td>
                                         </tr>
@@ -1163,6 +1235,8 @@
             </div>
         </div>
     </div>
+    
+    <!-- Modals -->
     <div id="imageModal" class="image-modal" onclick="closeImageModal()">
         <span class="image-modal-close">&times;</span>
         <img id="modalImage" alt="Full size image">
@@ -1198,18 +1272,25 @@
             </div>
         </div>
     </div>
+
     <script>
         let currentStage = 1;
         let page1NavigationData = {};
+        let gradesData = [];
+        let subjectsList = [];
+        let chaptersData = [];
+        let cgsList = [];
         let approvedQuestions = [];
         let selectedQuestions = [];
         let generatedPDF = null;
         let generatedPDFName = null;
-        let gradesData = [];
+        
         let currentSelections = {
             grade: null,
-            subject: null
+            subject: null,
+            chapter: null
         };
+        
         let chainData = {
             subjectId: null,
             subjectName: null,
@@ -1219,6 +1300,7 @@
             skippedCGs: []
         };
         
+        // Load grades on page load
         document.addEventListener('DOMContentLoaded', async () => {
             await loadGrades();
             await loadNavigationData();
@@ -1226,15 +1308,25 @@
             updateProgress();
         });
         
+        async function loadNavigationData() {
+            try {
+                const response = await fetch('/api/page1-data');
+                if (!response.ok) throw new Error('Failed to load data');
+                page1NavigationData = await response.json();
+                console.log('Navigation data loaded');
+            } catch (error) {
+                console.error('Error loading navigation data:', error);
+            }
+        }
+        
         async function loadGrades() {
             try {
                 const response = await fetch('/api/grades');
                 const data = await response.json();
                 gradesData = data.grades || [];
-                console.log('Loaded grades:', gradesData);
                 const gradeGrid = document.getElementById('gradeGrid');
                 if (gradesData.length === 0) {
-                    gradeGrid.innerHTML = '<div class="empty-state">No grades available. Please create grades in Configuration Dashboard.</div>';
+                    gradeGrid.innerHTML = '<div class="empty-state">No grades available</div>';
                     return;
                 }
                 gradeGrid.innerHTML = gradesData.map(grade => `
@@ -1247,102 +1339,8 @@
                 `).join('');
             } catch (error) {
                 console.error('Error loading grades:', error);
-                document.getElementById('gradeGrid').innerHTML = '<div class="empty-state">Error loading grades. Please refresh.</div>';
+                document.getElementById('gradeGrid').innerHTML = '<div class="empty-state">Error loading grades</div>';
             }
-        }
-        
-        async function loadNavigationData() {
-            try {
-                const response = await fetch('/api/page1-data');
-                if (!response.ok) throw new Error('Failed to load data');
-                page1NavigationData = await response.json();
-                console.log('Navigation data loaded:', page1NavigationData);
-            } catch (error) {
-                console.error('Error loading navigation data:', error);
-                Swal.fire('Error', 'Failed to load data. Please refresh.', 'error');
-            }
-        }
-        
-        function navigateToStage(stage) {
-            if (stage === 1) {
-                goToStage(1);
-                return;
-            }
-            if (stage === 2) {
-                if (currentSelections.grade) {
-                    goToStage(2);
-                    loadSubjects();
-                } else {
-                    Swal.fire('Warning', 'Please complete previous steps first!', 'warning');
-                }
-                return;
-            }
-            if (stage === 3) {
-                if (currentSelections.subject) {
-                    goToStage(3);
-                    startChain();
-                } else {
-                    Swal.fire('Warning', 'Please complete previous steps first!', 'warning');
-                }
-                return;
-            }
-            if (stage === 4) {
-                if (Object.keys(chainData.selectedCompetencies).length > 0) {
-                    goToStage(4);
-                } else {
-                    Swal.fire('Warning', 'Please complete previous steps first!', 'warning');
-                }
-                return;
-            }
-            if (stage === 5) {
-                goToStage(5);
-                loadAllApprovedQuestions();
-                return;
-            }
-        }
-        
-        function updateTracker() {
-            const gradeObj = gradesData.find(g => g.id == currentSelections.grade?.id);
-            document.getElementById('tracker-grade-value').textContent = currentSelections.grade ? (gradeObj?.grade_name || currentSelections.grade.display_name) : 'Select Grade';
-            document.getElementById('tracker-subject-value').textContent = currentSelections.subject ? currentSelections.subject.subject_name : 'Select Subject';
-            let chainStatus = 'Not Started';
-            if (chainData.cgList.length > 0) {
-                const selected = Object.keys(chainData.selectedCompetencies).length;
-                chainStatus = `${selected}/${chainData.cgList.length} CGs completed (${chainData.skippedCGs.length} skipped)`;
-            }
-            document.getElementById('tracker-chain-value').textContent = chainStatus;
-            document.getElementById('tracker-config-value').textContent = 'Configure';
-            document.getElementById('tracker-questions-value').textContent = selectedQuestions.length > 0 ? `${selectedQuestions.length} Selected` : 'Select Questions';
-            
-            const steps = ['grade', 'subject', 'chain', 'config', 'questions'];
-            steps.forEach((step, index) => {
-                const element = document.getElementById(`tracker-${step}`);
-                if (element) {
-                    element.classList.remove('active', 'completed');
-                    if (index + 1 < currentStage) element.classList.add('completed');
-                    else if (index + 1 === currentStage) element.classList.add('active');
-                }
-            });
-            if (currentSelections.grade) document.getElementById('tracker-grade').classList.add('completed');
-            if (currentSelections.subject) document.getElementById('tracker-subject').classList.add('completed');
-            if (Object.keys(chainData.selectedCompetencies).length > 0) document.getElementById('tracker-chain').classList.add('completed');
-            if (selectedQuestions.length > 0) document.getElementById('tracker-questions').classList.add('completed');
-        }
-        
-        function updateProgress() {
-            const percent = ((currentStage - 1) / 4) * 100;
-            document.getElementById('progressFill').style.width = percent + '%';
-            document.getElementById('progressText').textContent = `Step ${currentStage} of 5`;
-        }
-        
-        function goToStage(stage) {
-            for (let i = 1; i <= 5; i++) {
-                document.getElementById(`stage${i}`).style.display = 'none';
-            }
-            document.getElementById(`stage${stage}`).style.display = 'block';
-            currentStage = stage;
-            updateTracker();
-            updateProgress();
         }
         
         function selectGrade(id, name, element) {
@@ -1350,55 +1348,111 @@
             element.classList.add('selected');
             currentSelections.grade = { id, display_name: name };
             currentSelections.subject = null;
-            resetChain();
+            currentSelections.chapter = null;
+            document.getElementById('selectedGradeNameDisplay').textContent = name;
             updateTracker();
-            setTimeout(() => { goToStage(2); loadSubjects(); }, 300);
+            goToStage(2);
+            loadSubjects();
         }
         
-        function resetChain() {
-            chainData = {
-                subjectId: null,
-                subjectName: null,
-                cgList: [],
-                currentCGIndex: 0,
-                selectedCompetencies: {},
-                skippedCGs: []
-            };
-        }
-        
-        function loadSubjects() {
+        async function loadSubjects() {
             const container = document.getElementById('subjectGrid');
             const gradeId = currentSelections.grade.id;
-            let subjectList = page1NavigationData.subjects?.filter(s => s.grade_id == gradeId) || [];
-            if (subjectList.length === 0) {
+            subjectsList = page1NavigationData.subjects?.filter(s => s.grade_id == gradeId) || [];
+            
+            if (subjectsList.length === 0) {
                 container.innerHTML = '<div class="empty-state">No subjects available for this grade</div>';
                 return;
             }
-            container.innerHTML = subjectList.map(subject => {
-                const isSelected = currentSelections.subject && currentSelections.subject.id === subject.id;
-                return `
-                    <div class="card ${isSelected ? 'selected' : ''}" onclick="selectSubject(${subject.id}, '${subject.subject_name}', this)">
-                        <div class="card-icon"><i class="fas fa-book"></i></div>
-                        <h3>${subject.subject_name}</h3>
-                        <p>${subject.subject_name} for ${currentSelections.grade.display_name}</p>
-                    </div>
-                `;
-            }).join('');
+            container.innerHTML = subjectsList.map(subject => `
+                <div class="card" onclick="selectSubject(${subject.id}, '${subject.subject_name}', this)">
+                    <div class="card-icon"><i class="fas fa-book"></i></div>
+                    <h3>${subject.subject_name}</h3>
+                    <p>${subject.subject_name} for ${currentSelections.grade.display_name}</p>
+                </div>
+            `).join('');
         }
         
         function selectSubject(id, name, element) {
             document.querySelectorAll('#stage2 .card').forEach(c => c.classList.remove('selected'));
             element.classList.add('selected');
-            currentSelections.subject = { id, subject_name: name };
-            chainData.subjectId = id;
-            chainData.subjectName = name;
-            chainData.cgList = page1NavigationData.cgs?.filter(cg => cg.subject_id == id) || [];
+            currentSelections.subject = { id, name };
+            currentSelections.chapter = null;
+            updateTracker();
+            goToStage(3);
+            loadChapters();
+        }
+        
+        async function loadChapters() {
+            const tbody = document.getElementById('chaptersTableBody');
+            const subjectId = currentSelections.subject.id;
+            document.getElementById('chapterSubjectHeading').textContent = currentSelections.subject.name;
+            document.getElementById('selectedChapterSubjectName').textContent = currentSelections.subject.name;
+            document.getElementById('currentSubjectForCG').textContent = currentSelections.subject.name;
+            
+            try {
+                const response = await fetch(`/api/subjects/${subjectId}/chapters`);
+                const data = await response.json();
+                chaptersData = data.chapters || [];
+                document.getElementById('chapterCount').textContent = `${chaptersData.length} chapter(s) available`;
+                
+                if (chaptersData.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No chapters found for this subject</td></tr>';
+                    document.getElementById('nextAfterChapterBtn').disabled = true;
+                    return;
+                }
+                
+                tbody.innerHTML = chaptersData.map((ch, idx) => `
+                    <tr onclick="selectChapter(${ch.id}, '${ch.chapter_name.replace(/'/g, "\\'")}', this)" data-chapter-id="${ch.id}">
+                        <td>${ch.chapter_number || idx + 1}</td>
+                        <td><code>${ch.chapter_code || '-'}</code></td>
+                        <td><strong>${ch.chapter_name}</strong></td>
+                        <td>${ch.description ? ch.description.substring(0, 60) + (ch.description.length > 60 ? '...' : '') : '-'}</td>
+                    </tr>
+                `).join('');
+                document.getElementById('nextAfterChapterBtn').disabled = true;
+            } catch (error) {
+                console.error('Error loading chapters:', error);
+                tbody.innerHTML = '<tr><td colspan="4" style="color: #e74c3c;">Error loading chapters</td></tr>';
+            }
+        }
+        
+        function selectChapter(id, name, element) {
+            document.querySelectorAll('#chaptersTableBody tr').forEach(row => {
+                row.classList.remove('selected-chapter');
+            });
+            element.classList.add('selected-chapter');
+            currentSelections.chapter = { id, name };
+            updateTracker();
+            document.getElementById('nextAfterChapterBtn').disabled = false;
+            Swal.fire({
+                icon: 'success',
+                title: 'Chapter Selected',
+                text: `Selected: ${name}`,
+                timer: 1500,
+                showConfirmButton: false
+            });
+        }
+        
+        function confirmChapterSelection() {
+            if (currentSelections.chapter) {
+                goToStage(4);
+                startCGSelection();
+            } else {
+                Swal.fire('Error', 'Please select a chapter first', 'error');
+            }
+        }
+        
+        function startCGSelection() {
+            chainData.subjectId = currentSelections.subject.id;
+            chainData.subjectName = currentSelections.subject.name;
+            
+            let allCGs = page1NavigationData.cgs?.filter(cg => cg.subject_id == currentSelections.subject.id) || [];
+            chainData.cgList = allCGs;
             chainData.currentCGIndex = 0;
             chainData.selectedCompetencies = {};
             chainData.skippedCGs = [];
             findNextValidCG();
-            updateTracker();
-            goToStage(3);
             loadCurrentCG();
         }
         
@@ -1419,19 +1473,14 @@
             }
         }
         
-        function startChain() {
-            findNextValidCG();
-            loadCurrentCG();
-        }
-        
         function loadCurrentCG() {
             if (chainData.currentCGIndex >= chainData.cgList.length) {
                 showAllCGsCompleted();
                 return;
             }
+            
             const currentCG = chainData.cgList[chainData.currentCGIndex];
-            document.getElementById('currentSubjectName').textContent = chainData.subjectName;
-            document.getElementById('chainProgress').textContent = `CG ${chainData.currentCGIndex + 1}/${chainData.cgList.length} (${chainData.skippedCGs.length} skipped)`;
+            document.getElementById('cgProgress').textContent = `CG ${chainData.currentCGIndex + 1}/${chainData.cgList.length} (${chainData.skippedCGs.length} skipped)`;
             document.getElementById('currentCGCode').textContent = currentCG.cg_code || `CG ${currentCG.id}`;
             document.getElementById('currentCGDesc').textContent = currentCG.cg_description || '';
             
@@ -1442,6 +1491,7 @@
                 document.getElementById('emptyCGMessage').style.display = 'block';
                 return;
             }
+            
             document.getElementById('currentCGCard').style.display = 'block';
             document.getElementById('compGrid').style.display = 'grid';
             document.getElementById('emptyCGMessage').style.display = 'none';
@@ -1499,7 +1549,7 @@
         function previousCG() {
             if (chainData.currentCGIndex > 0) {
                 chainData.currentCGIndex--;
-                while (chainData.currentCGIndex >= 0 && chainData.skippedCGs.includes(chainData.cgList[chainData.currentCGIndex].id)) {
+                while (chainData.currentCGIndex >= 0 && chainData.skippedCGs.includes(chainData.cgList[chainData.currentCGIndex]?.id)) {
                     chainData.currentCGIndex--;
                 }
                 if (chainData.currentCGIndex >= 0) {
@@ -1532,10 +1582,10 @@
             Swal.fire({
                 icon: 'success',
                 title: 'All CGs Processed!',
-                text: `You have selected competencies for ${Object.keys(chainData.selectedCompetencies).length} CGs and skipped ${chainData.skippedCGs.length} CGs. Proceed to configure the paper.`,
+                text: `You have selected competencies for ${Object.keys(chainData.selectedCompetencies).length} CGs. Proceed to configure the paper.`,
                 confirmButtonText: 'Configure Paper'
             }).then(() => {
-                goToStage(4);
+                goToStage(5);
             });
         }
         
@@ -1547,7 +1597,7 @@
                     summaryHtml += `
                         <div class="summary-item" style="border-left: 3px solid #95a5a6;">
                             <strong>${cg.cg_code || 'CG ' + cg.id}</strong>
-                            <small style="color: #95a5a6;">Skipped (no competencies)</small>
+                            <small style="color: #95a5a6;">Skipped</small>
                         </div>
                     `;
                 } else {
@@ -1562,14 +1612,69 @@
                     }
                 }
             });
-            if (summaryHtml) {
-                summaryGrid.innerHTML = summaryHtml;
-            } else {
-                summaryGrid.innerHTML = '<div class="summary-item">No competencies selected yet</div>';
-            }
+            summaryGrid.innerHTML = summaryHtml || '<div class="summary-item">No competencies selected yet</div>';
             document.getElementById('skippedCount').textContent = `${chainData.skippedCGs.length} skipped`;
         }
         
+        // Navigation functions
+        function navigateToStage(stage) {
+            if (stage === 1) { goToStage(1); return; }
+            if (stage === 2) { if (currentSelections.grade) { goToStage(2); loadSubjects(); } else { Swal.fire('Warning', 'Please select a grade first', 'warning'); } return; }
+            if (stage === 3) { if (currentSelections.subject) { goToStage(3); loadChapters(); } else { Swal.fire('Warning', 'Please select a subject first', 'warning'); } return; }
+            if (stage === 4) { if (currentSelections.chapter) { goToStage(4); startCGSelection(); } else { Swal.fire('Warning', 'Please select a chapter first', 'warning'); } return; }
+            if (stage === 5) { if (Object.keys(chainData.selectedCompetencies).length > 0) { goToStage(5); } else { Swal.fire('Warning', 'Please complete competency selection first', 'warning'); } return; }
+            if (stage === 6) { goToStage(6); loadAllApprovedQuestions(); return; }
+        }
+        
+        function goToStage(stage) {
+            for (let i = 1; i <= 6; i++) {
+                const stageEl = document.getElementById(`stage${i}`);
+                if (stageEl) stageEl.style.display = 'none';
+            }
+            const targetStage = document.getElementById(`stage${stage}`);
+            if (targetStage) targetStage.style.display = 'block';
+            currentStage = stage;
+            updateTracker();
+            updateProgress();
+        }
+        
+        function updateTracker() {
+            document.getElementById('tracker-grade-value').textContent = currentSelections.grade ? currentSelections.grade.display_name : 'Select Grade';
+            document.getElementById('tracker-subject-value').textContent = currentSelections.subject ? currentSelections.subject.name : 'Select Subject';
+            document.getElementById('tracker-chapter-value').textContent = currentSelections.chapter ? currentSelections.chapter.name : 'Select Chapter';
+            
+            let cgStatus = 'Not Started';
+            if (chainData.cgList.length > 0) {
+                const selected = Object.keys(chainData.selectedCompetencies).length;
+                cgStatus = `${selected}/${chainData.cgList.length} CGs completed`;
+            }
+            document.getElementById('tracker-cg-value').textContent = cgStatus;
+            document.getElementById('tracker-config-value').textContent = 'Configure';
+            document.getElementById('tracker-questions-value').textContent = selectedQuestions.length > 0 ? `${selectedQuestions.length} Selected` : 'Select Questions';
+            
+            const steps = ['grade', 'subject', 'chapter', 'cg', 'config', 'questions'];
+            steps.forEach((step, index) => {
+                const element = document.getElementById(`tracker-${step}`);
+                if (element) {
+                    element.classList.remove('active', 'completed');
+                    if (index + 1 < currentStage) element.classList.add('completed');
+                    else if (index + 1 === currentStage) element.classList.add('active');
+                }
+            });
+            if (currentSelections.grade) document.getElementById('tracker-grade').classList.add('completed');
+            if (currentSelections.subject) document.getElementById('tracker-subject').classList.add('completed');
+            if (currentSelections.chapter) document.getElementById('tracker-chapter').classList.add('completed');
+            if (Object.keys(chainData.selectedCompetencies).length > 0) document.getElementById('tracker-cg').classList.add('completed');
+            if (selectedQuestions.length > 0) document.getElementById('tracker-questions').classList.add('completed');
+        }
+        
+        function updateProgress() {
+            const percent = ((currentStage - 1) / 5) * 100;
+            document.getElementById('progressFill').style.width = percent + '%';
+            document.getElementById('progressText').textContent = `Step ${currentStage} of 6`;
+        }
+        
+        // Configure functions
         function calculateTotals() {
             const awareness = parseInt(document.getElementById('awarenessPercent').value) || 0;
             const sensitivity = parseInt(document.getElementById('sensitivityPercent').value) || 0;
@@ -1594,35 +1699,52 @@
         }
         
         function finishConfiguration() {
-            goToStage(5);
+            goToStage(6);
             loadAllApprovedQuestions();
         }
         
+        // Question loading and selection
         async function loadAllApprovedQuestions() {
             if (!currentSelections.subject) {
                 Swal.fire('Error', 'No subject selected', 'error');
                 return;
             }
+            
+            document.getElementById('questionsSubjectName').textContent = currentSelections.subject.name;
+            const chapterFilterInfo = document.getElementById('chapterFilterInfo');
+            if (currentSelections.chapter && currentSelections.chapter.id) {
+                chapterFilterInfo.textContent = currentSelections.chapter.name;
+                chapterFilterInfo.style.background = 'rgba(230,126,34,0.3)';
+            } else {
+                chapterFilterInfo.textContent = 'All Chapters';
+                chapterFilterInfo.style.background = 'rgba(39,174,96,0.3)';
+            }
+            
             const tbody = document.getElementById('availableQuestionsBody');
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 30px;"><i class="fas fa-spinner fa-pulse"></i> Loading approved questions...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 30px;"><i class="fas fa-spinner fa-pulse"></i> Loading approved questions...</td></tr>';
+            
             try {
-                const response = await fetch(`/api/builder-questions?subject_id=${currentSelections.subject.id}`);
+                let url = `/api/builder-questions?subject_id=${currentSelections.subject.id}`;
+                if (currentSelections.chapter && currentSelections.chapter.id) {
+                    url += `&chapter_id=${currentSelections.chapter.id}`;
+                }
+                
+                const response = await fetch(url);
                 if (!response.ok) throw new Error('Failed to load questions');
                 const data = await response.json();
                 approvedQuestions = (data.questions || []).map(q => ({
                     ...q,
                     images: q.images ? (typeof q.images === 'string' ? JSON.parse(q.images) : q.images) : []
                 }));
-                approvedQuestions.forEach(q => q.subject_name = currentSelections.subject.subject_name);
                 document.getElementById('availableCount').textContent = approvedQuestions.length;
                 if (approvedQuestions.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 30px;">No approved questions found</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 30px;">No approved questions found</td></tr>';
                 } else {
                     displayAvailableQuestions();
                 }
             } catch (error) {
                 console.error('Error loading approved questions:', error);
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 30px; color: #e74c3c;">Error: ${error.message}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 30px; color: #e74c3c;">Error: ${error.message}</td></tr>`;
             }
         }
         
@@ -1652,7 +1774,6 @@
                         </td>
                         <td style="color: #27ae60; font-weight: 600;">${q.marks || 1}</td>
                         <td>${q.question_type_name || 'Objective'}</td>
-                        <td>${q.subject_name || 'N/A'}</td>
                     </tr>
                 `;
             }).join('');
@@ -1673,7 +1794,7 @@
             const tbody = document.getElementById('selectedQuestionsBody');
             const countSpan = document.getElementById('selectedCount');
             if (selectedQuestions.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px;">No questions selected</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 30px;">No questions selected</td></tr>';
                 countSpan.textContent = '0';
                 return;
             }
@@ -1695,10 +1816,10 @@
                                     `).join('')}
                                 </div>
                             ` : ''}
+                          </div>
                         </td>
                         <td style="color: #27ae60; font-weight: 600;">${q.marks || 1}</td>
                         <td>${q.question_type_name || 'Objective'}</td>
-                        <td>${q.subject_name || 'N/A'}</td>
                         <td>
                             <button class="remove-btn" onclick="removeQuestion(${q.id})">
                                 <i class="fas fa-times"></i>
@@ -1732,10 +1853,10 @@
             let html = `
                 <div class="paper-header">
                     <h2>COHSEM | PARAKH</h2>
-                    <h3>${currentSelections.grade.display_name} - ${currentSelections.subject.subject_name}</h3>
+                    <h3>${currentSelections.grade.display_name} - ${currentSelections.subject.name}</h3>
                     <div class="paper-meta">
                         <span><i class="far fa-clock"></i> Time: 3 Hours</span>
-                        <span><i class="fas fa-star"></i> Full Marks: ${document.getElementById('grandTotal').textContent}</span>
+                        <span><i class="fas fa-star"></i> Total Marks: ${document.getElementById('grandTotal').textContent}</span>
                     </div>
                 </div>
             `;
@@ -1773,6 +1894,7 @@
             try {
                 generatePreview();
                 await new Promise(resolve => setTimeout(resolve, 1500));
+                
                 const tempDiv = document.createElement('div');
                 tempDiv.style.position = 'absolute';
                 tempDiv.style.left = '-9999px';
@@ -1782,6 +1904,7 @@
                 tempDiv.style.padding = '40px';
                 tempDiv.innerHTML = createPaperContent();
                 document.body.appendChild(tempDiv);
+                
                 const tempImages = tempDiv.querySelectorAll('img');
                 await Promise.all(Array.from(tempImages).map(img => {
                     if (img.complete) return Promise.resolve();
@@ -1790,48 +1913,51 @@
                         img.onerror = resolve;
                     });
                 }));
+                
                 await new Promise(resolve => setTimeout(resolve, 500));
+                
                 const canvas = await html2canvas(tempDiv, {
                     scale: 2,
                     backgroundColor: '#ffffff',
                     useCORS: true,
                     logging: false,
                     allowTaint: false,
-                    imageTimeout: 0,
-                    onclone: (clonedDoc, element) => {
-                        const clonedImages = clonedDoc.querySelectorAll('img');
-                        clonedImages.forEach(img => {
-                            if (img.src && img.src.startsWith('http')) {
-                                img.crossOrigin = 'Anonymous';
-                            }
-                        });
-                    }
+                    imageTimeout: 0
                 });
+                
                 document.body.removeChild(tempDiv);
+                
                 const imgData = canvas.toDataURL('image/jpeg', 0.95);
                 if (!imgData || imgData === 'data:,') {
                     throw new Error('Failed to capture preview image');
                 }
+                
+                // Use global jspdf object (correct way for UMD bundle)
+                const { jsPDF } = window.jspdf;
                 const doc = new jsPDF('p', 'mm', 'a4');
                 const imgWidth = 210;
                 const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                doc.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
-                let heightLeft = imgHeight;
                 let position = 0;
-                while (heightLeft > 297) {
-                    position = heightLeft - 297;
+                
+                doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+                let remainingHeight = imgHeight;
+                
+                while (remainingHeight > 297) {
+                    position = position - 297;
                     doc.addPage();
-                    doc.addImage(imgData, 'JPEG', 0, -position, imgWidth, imgHeight);
-                    heightLeft -= 297;
+                    doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+                    remainingHeight -= 297;
                 }
+                
                 generatedPDF = doc.output('datauristring');
-                generatedPDFName = `${currentSelections.grade.display_name}_${currentSelections.subject.subject_name}_Question_Paper.pdf`;
+                generatedPDFName = `${currentSelections.grade.display_name}_${currentSelections.subject.name}_Question_Paper.pdf`;
+                
                 document.getElementById('loadingModal').classList.remove('active');
                 document.getElementById('paperPreviewModal').classList.add('active');
                 Swal.fire({
                     icon: 'success',
                     title: 'PDF Generated!',
-                    text: 'Your question paper with images is ready',
+                    text: 'Your question paper is ready',
                     timer: 2000,
                     showConfirmButton: false
                 });
@@ -1844,7 +1970,7 @@
         
         function downloadPDF() {
             if (!generatedPDF) {
-                Swal.fire('Error', 'No PDF generated yet. Please click "Generate Question Paper" first.', 'error');
+                Swal.fire('Error', 'No PDF generated yet', 'error');
                 return;
             }
             const link = document.createElement('a');
@@ -1853,13 +1979,7 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            Swal.fire({
-                icon: 'success',
-                title: 'Download Started',
-                text: 'Your PDF is being downloaded',
-                timer: 2000,
-                showConfirmButton: false
-            });
+            Swal.fire('Success', 'PDF downloaded successfully', 'success');
         }
         
         function printPaper() {
@@ -1867,7 +1987,7 @@
             printWindow.document.write(`
                 <html>
                 <head>
-                    <title>${currentSelections.grade.display_name} - ${currentSelections.subject.subject_name} Question Paper</title>
+                    <title>${currentSelections.grade.display_name} - ${currentSelections.subject.name} Question Paper</title>
                     <style>
                         body { font-family: Arial, sans-serif; padding: 40px; }
                         .paper-header { text-align: center; margin-bottom: 30px; }

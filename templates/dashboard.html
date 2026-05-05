@@ -1003,7 +1003,7 @@
             }
         ];
         const roleDescriptions = {
-            'uploader': 'You are an <strong>Uploader (RE)</strong>. You can create and edit your own questions. Click <strong>Q-MY</strong> to view your pending/rejected questions.',
+            'uploader': 'You are an <strong>Uploader (RE)</strong>. You can create and edit your own questions. Click <strong>Q-LIST</strong> to view your pending/rejected questions.',
             'master': 'You are a <strong>Master (RC)</strong>. You can review pending questions. Click <strong>Q-LIST</strong> to see questions waiting for your review.',
             'approver': 'You are an <strong>Approver (AP)</strong>. You can approve reviewed questions. Click <strong>Q-APPROVE</strong> to see questions ready for final approval.',
             'builder': 'You are a <strong>Builder (RA)</strong>. You can build question papers. Click <strong>Q-LIST</strong> to browse approved questions.',
@@ -1053,7 +1053,7 @@
             }
             if (permissions.RE && !permissions.RA && !permissions.RC && !permissions.AP) {
                 return {
-                    name: 'Q-MY',
+                    name: 'Q-LIST',
                     href: '/review',
                     description: 'My Questions',
                     icon: 'fa-user-edit',
@@ -1149,7 +1149,7 @@
                     extraStyle = 'border: 1px solid rgba(52,152,219,0.5); box-shadow: 0 0 5px rgba(52,152,219,0.3);';
                 } else if (card.name === 'Q-APPROVE') {
                     extraStyle = 'border: 1px solid rgba(46,204,113,0.5); box-shadow: 0 0 5px rgba(46,204,113,0.3);';
-                } else if (card.name === 'Q-MY') {
+                } else if (card.name === 'Q-LIST') {
                     extraStyle = 'border: 1px solid rgba(39,174,96,0.5); box-shadow: 0 0 5px rgba(39,174,96,0.3);';
                 } else if (card.name === 'Q-LIST (ALL)') {
                     extraStyle = 'border: 1px solid rgba(231,76,60,0.5); box-shadow: 0 0 5px rgba(231,76,60,0.3);';
