@@ -502,10 +502,7 @@
         }
         .preview-label { font-size: 11px; color: #666; }
         .nav-buttons {
-            display: flex;
-            gap: 12px;
-            margin-top: 20px;
-            flex-wrap: wrap;
+            display: none;
         }
         .top-actions {
             display: flex;
@@ -596,6 +593,44 @@
             .btn { padding: 8px 16px; font-size: 12px; min-height: 36px; }
             .btn-sm { padding: 6px 14px; font-size: 12px; min-height: 34px; }
         }
+        /* Radio button styles */
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 5px;
+            flex-wrap: wrap;
+        }
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            color: #333;
+            font-weight: 500;
+            padding: 8px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            margin-bottom: 0;
+        }
+        .radio-group label:hover {
+            border-color: #3498db;
+            background: #f0f8ff;
+        }
+        .radio-group input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #3498db;
+            cursor: pointer;
+        }
+        .radio-group label.active-textbook {
+            border-color: #27ae60;
+            background: #e8f5e9;
+        }
+        .radio-group label.active-reference {
+            border-color: #8e44ad;
+            background: #f3e5f5;
+        }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -656,24 +691,14 @@
                         <div class="tracker-sidebar">
                             <div class="tracker-title"><i class="fas fa-tasks"></i> Quick Navigation</div>
                             <div class="tracker-steps">
-                                <div class="tracker-step" id="tracker-grade" onclick="navigateToStage(1)"><div class="step-number">1</div><div class="step-info"><div class="step-label">Step 1</div><div class="step-value" id="tracker-grade-value">Select Grade</div></div></div>
-                                <div class="tracker-step" id="tracker-subject" onclick="navigateToStage(2)"><div class="step-number">2</div><div class="step-info"><div class="step-label">Step 2</div><div class="step-value" id="tracker-subject-value">Select Subject</div></div></div>
-                                <div class="tracker-step" id="tracker-textbook" onclick="navigateToStage(3)"><div class="step-number">3</div><div class="step-info"><div class="step-label">Step 3</div><div class="step-value" id="tracker-textbook-value">Select Textbook</div></div></div>
-                                <div class="tracker-step" id="tracker-chapter" onclick="navigateToStage(4)"><div class="step-number">4</div><div class="step-info"><div class="step-label">Step 4</div><div class="step-value" id="tracker-chapter-value">Select Chapter</div></div></div>
-                                <div class="tracker-step" id="tracker-cg" onclick="navigateToStage(5)"><div class="step-number">5</div><div class="step-info"><div class="step-label">Step 5</div><div class="step-value" id="tracker-cg-value">Select Curricular Goal</div></div></div>
-                                <div class="tracker-step" id="tracker-competency" onclick="navigateToStage(6)"><div class="step-number">6</div><div class="step-info"><div class="step-label">Step 6</div><div class="step-value" id="tracker-competency-value">Select Sub-Competency</div></div></div>
+                                <div class="tracker-step" id="tracker-grade" onclick="navigateToStage(1)"><div class="step-number">1</div><div class="step-info"><div class="step-label">Step 1 (GRADE)</div><div class="step-value" id="tracker-grade-value">Select Grade</div></div></div>
+                                <div class="tracker-step" id="tracker-subject" onclick="navigateToStage(2)"><div class="step-number">2</div><div class="step-info"><div class="step-label">Step 2 (SUBJECT)</div><div class="step-value" id="tracker-subject-value">Select Subject</div></div></div>
+                                <div class="tracker-step" id="tracker-textbook" onclick="navigateToStage(3)"><div class="step-number">3</div><div class="step-info"><div class="step-label">Step 3 (TEXTBOOK)</div><div class="step-value" id="tracker-textbook-value">Select Textbook</div></div></div>
+                                <div class="tracker-step" id="tracker-chapter" onclick="navigateToStage(4)"><div class="step-number">4</div><div class="step-info"><div class="step-label">Step 4 (CHAPTER)</div><div class="step-value" id="tracker-chapter-value">Select Chapter</div></div></div>
+                                <div class="tracker-step" id="tracker-cg" onclick="navigateToStage(5)"><div class="step-number">5</div><div class="step-info"><div class="step-label">Step 5 (CURRICULAR GOAL)</div><div class="step-value" id="tracker-cg-value">Select Curricular Goal</div></div></div>
+                                <div class="tracker-step" id="tracker-competency" onclick="navigateToStage(6)"><div class="step-number">6</div><div class="step-info"><div class="step-label">Step 6 (COMPETENCY)</div><div class="step-value" id="tracker-competency-value">Select Competency</div></div></div>
                             </div>
-                            <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
-                                <div style="color: rgba(255,255,255,0.5); font-size: 12px; margin-bottom: 5px;">Current Selection:</div>
-                                <div id="selectionSummary" style="color: white; font-size: 13px;">
-                                    <div>Grade: <span id="selGrade" style="color: #3498db;">None</span></div>
-                                    <div>Subject: <span id="selSubject" style="color: #3498db;">None</span></div>
-                                    <div>Textbook: <span id="selTextbook" style="color: #3498db;">None</span></div>
-                                    <div>Chapter: <span id="selChapter" style="color: #3498db;">None</span></div>
-                                    <div>CG: <span id="selCG" style="color: #3498db;">None</span></div>
-                                    <div>Competency: <span id="selCompetency" style="color: #3498db;">None</span></div>
-                                </div>
-                            </div>
+                            
                         </div>
                         <div class="content-area">
                             <div class="progress-container">
@@ -689,68 +714,55 @@
                             <!-- Stage 2: Subjects -->
                             <div class="stage-container" id="stage2" style="display: none;">
                                 <div class="stage-header"><h2>Step 2: Select Subject</h2><p>Choose a subject for <span id="selectedGradeName"></span></p></div>
-                                <div class="top-actions"><button class="btn btn-success" id="addSubjectBtn" onclick="openAddModal('subject')"><i class="fas fa-plus"></i> Add New Subject</button></div>
+                                <div class="top-actions">
+                                    <button class="btn btn-warning" onclick="goToStage(1)"><i class="fas fa-arrow-left"></i> Back to Grades</button>
+                                    <button class="btn btn-success" id="addSubjectBtn" onclick="openAddModal('subject')"><i class="fas fa-plus"></i> Add New Subject</button>
+                                </div>
                                 <div class="grid-3" id="subjectGrid"></div>
-                                <div class="nav-buttons"><button class="btn btn-warning" onclick="goToStage(1)"><i class="fas fa-arrow-left"></i> Back to Grades</button></div>
                             </div>
                             <!-- Stage 3: Textbooks -->
                             <div class="stage-container" id="stage3" style="display: none;">
                                 <div class="stage-header"><h2>Step 3: Select Textbook</h2><p>Choose a textbook for <span id="selectedTextbookSubjectName"></span></p></div>
                                 <div class="top-actions">
-                                    <button class="btn btn-success" onclick="openTextbookModal()"><i class="fas fa-plus"></i> Add New Textbook</button>
-                                    <button class="btn btn-info" onclick="refreshTextbooks()"><i class="fas fa-sync"></i> Refresh</button>
+                                    <button class="btn btn-warning" onclick="goToStage(2)"><i class="fas fa-arrow-left"></i> Back to Subjects</button>
+                                    <button class="btn btn-success" onclick="openTextbookModal()"><i class="fas fa-plus"></i> Add New Book</button>
                                 </div>
                                 <div class="grid-3" id="textbookGrid">
-                                    <div class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading textbooks...</div>
-                                </div>
-                                <div class="nav-buttons">
-                                    <button class="btn btn-warning" onclick="goToStage(2)"><i class="fas fa-arrow-left"></i> Back to Subjects</button>
+                                    <div class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading books...</div>
                                 </div>
                             </div>
                             <!-- Stage 4: Chapters -->
                             <div class="stage-container" id="stage4" style="display: none;">
                                 <div class="stage-header"><h2>Step 4: Select Chapter</h2><p>Choose a chapter from <span id="selectedChapterSubjectName"></span></p></div>
                                 <div class="top-actions">
-                                    <button class="btn btn-info" onclick="goToStage(3)"><i class="fas fa-arrow-left"></i> Back to Textbooks</button>
+                                    <button class="btn btn-warning" onclick="goToStage(3)"><i class="fas fa-arrow-left"></i> Back to Textbooks</button>
                                     <button class="btn btn-success" id="addChapterBtn" onclick="openChapterModal()"><i class="fas fa-plus"></i> Add New Chapter</button>
-                                    <button class="btn btn-info" onclick="refreshChapters()"><i class="fas fa-sync"></i> Refresh</button>
                                 </div>
                                 <div class="grid-3" id="chapterGrid">
                                     <div class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading chapters...</div>
-                                </div>
-                                <div class="nav-buttons">
-                                    <button class="btn btn-warning" onclick="goToStage(3)"><i class="fas fa-arrow-left"></i> Back to Textbooks</button>
-                                    <button class="btn btn-success" onclick="goToStage(5)">Next: Curricular Goals <i class="fas fa-arrow-right"></i></button>
                                 </div>
                             </div>
                             <!-- Stage 5: Curricular Goals -->
                             <div class="stage-container" id="stage5" style="display: none;">
                                 <div class="stage-header"><h2>Step 5: Select Curricular Goal</h2><p>Choose a curricular goal for <span id="selectedSubjectNameCG"></span></p></div>
                                 <div class="top-actions">
+                                    <button class="btn btn-warning" onclick="goToStage(4)"><i class="fas fa-arrow-left"></i> Back to Chapters</button>
                                     <button class="btn btn-success" id="addCGBtn" onclick="openAddModal('cg')"><i class="fas fa-plus"></i> Add New Curricular Goal</button>
-                                    <button class="btn btn-info" onclick="refreshCGs()"><i class="fas fa-sync"></i> Refresh</button>
                                 </div>
                                 <div class="grid-3" id="cgGrid">
                                     <div class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading curricular goals...</div>
                                 </div>
-                                <div class="nav-buttons">
-                                    <button class="btn btn-warning" onclick="goToStage(4)"><i class="fas fa-arrow-left"></i> Back to Chapters</button>
-                                    <button class="btn btn-success" onclick="goToStage(6)">Next: Sub-Competencies <i class="fas fa-arrow-right"></i></button>
-                                </div>
                             </div>
                             <!-- Stage 6: Competencies -->
                             <div class="stage-container" id="stage6" style="display: none;">
-                                <div class="stage-header"><h2>Step 6: Select Sub-Competency</h2><p>Choose a sub-competency for <span id="selectedCGName"></span></p></div>
+                                <div class="stage-header"><h2>Step 6: Select Competency</h2><p>Choose a Competency for <span id="selectedCGName"></span></p></div>
                                 <div class="top-actions">
-                                    <button class="btn btn-success" id="addCompetencyBtn" onclick="openAddModal('competency')"><i class="fas fa-plus"></i> Add New Sub-Competency</button>
-                                    <button class="btn btn-info" onclick="refreshCompetencies()"><i class="fas fa-sync"></i> Refresh</button>
+                                    <button class="btn btn-warning" onclick="goToStage(5)"><i class="fas fa-arrow-left"></i> Back to Curricular Goals</button>
+                                    <button class="btn btn-success" id="addCompetencyBtn" onclick="openAddModal('competency')"><i class="fas fa-plus"></i> Add New Competency</button>
+                                    <button class="btn btn-success" onclick="completeSelection()"><i class="fas fa-check-circle"></i> Complete Selection</button>
                                 </div>
                                 <div class="grid-3" id="competencyGrid">
-                                    <div class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading sub-competencies...</div>
-                                </div>
-                                <div class="nav-buttons">
-                                    <button class="btn btn-warning" onclick="goToStage(5)"><i class="fas fa-arrow-left"></i> Back to Curricular Goals</button>
-                                    <button class="btn btn-success" onclick="completeSelection()"><i class="fas fa-check-circle"></i> Complete Selection</button>
+                                    <div class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading Competencies...</div>
                                 </div>
                             </div>
                         </div>
@@ -777,45 +789,76 @@
         </div>
     </div>
 
-    <!-- Chapter Modal - NO REFERENCE BOOK -->
+    <!-- Chapter Modal -->
     <div class="modal" id="chapterModal">
         <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header" style="background: linear-gradient(135deg, #27ae60, #2ecc71);"><h3><i class="fas fa-book"></i> <span id="chapterModalTitle">Add Chapter</span></h3><button class="close-btn" onclick="closeModal('chapterModal')">&times;</button></div>
             <div class="modal-body">
                 <form id="chapterForm">
                     <input type="hidden" id="chapterId"><input type="hidden" id="chapterSubjectId">
-                    <div class="form-group"><label>Chapter Name *</label><input type="text" id="chapterName" class="form-control" placeholder="e.g., Physical World, Sets" required></div>
-                    <div class="form-group"><label>Chapter Number (Optional)</label><input type="number" id="chapterNumber" class="form-control" placeholder="e.g., 1, 2, 3..." min="0"></div>
+                    <div class="form-group"><label>Chapter Name *</label><input type="text" id="chapterName" class="form-control" placeholder="" required></div>
+                    <div class="form-group"><label>Chapter Number (Optional)</label><input type="number" id="chapterNumber" class="form-control" placeholder="" min="0"></div>
                     <div class="form-group"><label>Textbook *</label>
                         <select id="chapterTextbook" class="form-control" required>
                             <option value="">Select Textbook</option>
                         </select>
                         <small>Select the textbook this chapter belongs to</small>
                     </div>
-                    <!-- NO REFERENCE BOOK HERE - REMOVED -->
                 </form>
             </div>
             <div class="modal-footer"><button class="btn btn-danger" onclick="closeModal('chapterModal')">Cancel</button><button class="btn btn-success" onclick="saveChapter()">Save Chapter</button></div>
         </div>
     </div>
 
-    <!-- Textbook Modal - NOW HAS REFERENCE BOOK -->
+    <!-- Textbook Modal with Textbook/Reference Book Radio -->
     <div class="modal" id="textbookModal">
         <div class="modal-content" style="max-width: 500px;">
-            <div class="modal-header" style="background: linear-gradient(135deg, #8e44ad, #9b59b6);"><h3><i class="fas fa-book-open"></i> <span id="textbookModalTitle">Add Textbook</span></h3><button class="close-btn" onclick="closeModal('textbookModal')">&times;</button></div>
+            <div class="modal-header" style="background: linear-gradient(135deg, #8e44ad, #9b59b6);">
+                <h3><i class="fas fa-book-open"></i> <span id="textbookModalTitle">Add Book</span></h3>
+                <button class="close-btn" onclick="closeModal('textbookModal')">&times;</button>
+            </div>
             <div class="modal-body">
                 <form id="textbookForm">
-                    <input type="hidden" id="textbookId"><input type="hidden" id="textbookSubjectId"><input type="hidden" id="textbookGradeId">
-                    <div class="form-group"><label>Textbook Name *</label><input type="text" id="textbookName" class="form-control" placeholder="e.g., NCERT Physics Part 1" required></div>
-                    <div class="form-group"><label>Author / Publisher</label><input type="text" id="textbookPublisher" class="form-control" placeholder="e.g., NCERT, H.C. Verma"></div>
-                    <!-- REFERENCE BOOK ADDED TO TEXTBOOK -->
-                    <div class="form-group"><label>Reference Book</label>
-                        <input type="text" id="textbookReference" class="form-control" placeholder="e.g., Concepts of Physics by H.C. Verma">
-                        <small>Optional reference book associated with this textbook</small>
+                    <input type="hidden" id="textbookId">
+                    <input type="hidden" id="textbookSubjectId">
+                    <input type="hidden" id="textbookGradeId">
+                    
+                    <div class="form-group">
+                        <label>Book Type *</label>
+                        <div class="radio-group" id="bookTypeGroup">
+                            <label class="active-textbook" id="textbookLabel">
+                                <input type="radio" name="bookType" value="textbook" checked onchange="toggleBookType()">
+                                <i class="" style="color: #27ae60;"></i> Textbook
+                            </label>
+                            <label id="referenceLabel">
+                                <input type="radio" name="bookType" value="reference" onchange="toggleBookType()">
+                                <i class="" style="color: #8e44ad;"></i> Reference Book
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Book Name *</label>
+                        <input type="text" id="textbookName" class="form-control" placeholder="" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Author / Publisher</label>
+                        <input type="text" id="textbookPublisher" class="form-control" placeholder="">
+                    </div>
+                    
+                    <div id="bookTypeInfo" style="background: rgba(52,152,219,0.1); padding: 12px; border-radius: 8px; margin-top: 10px;">
+                        <small style="color: #3498db;">
+                            <i class="fas fa-info-circle"></i> 
+                            <span id="bookTypeDescription">Related information about the selected book type will appear here.</span>
+                        </small>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer"><button class="btn btn-danger" onclick="closeModal('textbookModal')">Cancel</button><button class="btn btn-success" onclick="saveTextbook()">Save Textbook</button></div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" onclick="closeModal('textbookModal')">Cancel</button>
+                <button class="btn btn-success" onclick="saveTextbook()">Save Book</button>
+            </div>
         </div>
     </div>
 
@@ -987,7 +1030,7 @@
             document.getElementById('tracker-textbook-value').textContent = currentSelections.textbook ? currentSelections.textbook.name : 'Select Textbook';
             document.getElementById('tracker-chapter-value').textContent = currentSelections.chapter ? currentSelections.chapter.name : 'Select Chapter';
             document.getElementById('tracker-cg-value').textContent = currentSelections.cg ? currentSelections.cg.code : 'Select CG';
-            document.getElementById('tracker-competency-value').textContent = currentSelections.competency ? currentSelections.competency.code : 'Select Sub-Competency';
+            document.getElementById('tracker-competency-value').textContent = currentSelections.competency ? currentSelections.competency.code : 'Select Competency';
             
             ['grade', 'subject', 'textbook', 'chapter', 'cg', 'competency'].forEach((step, idx) => {
                 const el = document.getElementById(`tracker-${step}`);
@@ -1015,7 +1058,7 @@
                         <p><strong>Textbook:</strong> ${currentSelections.textbook?.name || 'None'}</p>
                         <p><strong>Chapter:</strong> ${currentSelections.chapter?.name || 'None'}</p>
                         <p><strong>Curricular Goal:</strong> ${currentSelections.cg?.code || 'None'}</p>
-                        <p><strong>Sub-Competency:</strong> ${currentSelections.competency?.code || 'None'}</p>
+                        <p><strong>Competency:</strong> ${currentSelections.competency?.code || 'None'}</p>
                     </div>
                 `,
                 confirmButtonText: 'OK'
@@ -1152,9 +1195,34 @@
         }
 
         // ============ TEXTBOOK FUNCTIONS ============
+        function toggleBookType() {
+            const isReference = document.querySelector('input[name="bookType"]:checked').value === 'reference';
+            const referenceGroup = document.getElementById('referenceBookGroup');
+            const description = document.getElementById('bookTypeDescription');
+            const modalTitle = document.getElementById('textbookModalTitle');
+            const textbookLabel = document.getElementById('textbookLabel');
+            const referenceLabel = document.getElementById('referenceLabel');
+            
+            // Update label styles
+            textbookLabel.classList.remove('active-textbook');
+            referenceLabel.classList.remove('active-reference');
+            
+            if (isReference) {
+                if (referenceGroup) referenceGroup.style.display = 'block';
+                description.textContent = 'Reference Book is an additional resource book';
+                modalTitle.textContent = 'Add Reference Book';
+                referenceLabel.classList.add('active-reference');
+            } else {
+                if (referenceGroup) referenceGroup.style.display = 'none';
+                description.textContent = 'Textbook is the main curriculum book.';
+                modalTitle.textContent = 'Add Textbook';
+                textbookLabel.classList.add('active-textbook');
+            }
+        }
+
         async function loadTextbooks(subjectId) {
             const container = document.getElementById('textbookGrid');
-            container.innerHTML = `<div class="loading" style="grid-column: span 3;"><i class="fas fa-spinner fa-pulse"></i><br>Loading textbooks...<br><small style="color: rgba(255,255,255,0.3);">Subject ID: ${subjectId}</small></div>`;
+            container.innerHTML = `<div class="loading" style="grid-column: span 3;"><i class="fas fa-spinner fa-pulse"></i><br>Loading books...<br><small style="color: rgba(255,255,255,0.3);">Subject ID: ${subjectId}</small></div>`;
             
             try {
                 const response = await fetch(`/api/subjects/${subjectId}/textbooks`);
@@ -1162,39 +1230,45 @@
                 const data = await response.json();
                 textbooks = data.textbooks || [];
                 
-                console.log('📚 Textbooks loaded:', textbooks);
+                console.log('📚 Books loaded:', textbooks);
                 
                 if(textbooks.length === 0) {
                     container.innerHTML = `
                         <div class="no-data" style="grid-column: span 3; padding: 40px;">
                             <i class="fas fa-book" style="font-size: 40px; display: block; margin-bottom: 10px; opacity: 0.3;"></i>
-                            <h3 style="color: white; margin-bottom: 10px;">No Textbooks Found</h3>
-                            <p style="color: rgba(255,255,255,0.5);">No textbooks found for this subject.</p>
-                            ${isAdmin ? `<br><button class="btn btn-success" onclick="openTextbookModal()"><i class="fas fa-plus"></i> Add New Textbook</button>` : ''}
+                            <h3 style="color: white; margin-bottom: 10px;">No Books Found</h3>
+                            <p style="color: rgba(255,255,255,0.5);">No books found for this subject.</p>
+                            ${isAdmin ? `<br><button class="btn btn-success" onclick="openTextbookModal()"><i class="fas fa-plus"></i> Add New Book</button>` : ''}
                         </div>
                     `;
                     return;
                 }
                 
-                container.innerHTML = textbooks.map(t => `
-                    <div class="card" onclick="selectTextbook(${t.id}, '${t.textbook_name.replace(/'/g, "\\'")}')">
-                        <div class="card-icon"><i class="fas fa-book-open"></i></div>
-                        <h3>${t.textbook_name}</h3>
-                        <p>${t.publisher || 'No publisher specified'}</p>
-                        ${t.reference_book ? `<div class="badge-container"><span class="reference-badge"><i class="fas fa-book"></i> Ref: ${t.reference_book}</span></div>` : ''}
-                        <div class="badge-container">
-                            <span class="count-badge"><i class="fas fa-book"></i> ${t.grade_name || 'N/A'}</span>
+                container.innerHTML = textbooks.map(t => {
+                    const isReference = t.is_reference === 1 || t.is_reference === true;
+                    const bookTypeLabel = isReference ? 'Reference Book' : 'Textbook';
+                    const bookTypeIcon = isReference ? 'fa-book-open' : 'fa-book';
+                    const bookTypeColor = isReference ? '#8e44ad' : '#27ae60';
+                    
+                    return `
+                        <div class="card" onclick="selectTextbook(${t.id}, '${t.textbook_name.replace(/'/g, "\\'")}')">
+                            <div class="card-icon" style="background: linear-gradient(45deg, ${bookTypeColor}, ${bookTypeColor}dd);">
+                                <i class="fas ${bookTypeIcon}"></i>
+                            </div>
+                            <h3>${t.textbook_name}</h3>
+                            <p>${t.publisher || 'No publisher specified'}</p>
+                            
+                            <div class="metadata-actions">
+                                ${isAdmin ? `
+                                    <button class="action-btn action-edit" onclick="event.stopPropagation(); editTextbook(${t.id}, '${t.textbook_name.replace(/'/g, "\\'")}', '${(t.publisher||'').replace(/'/g, "\\'")}', ${isReference ? 1 : 0})"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn action-delete" onclick="event.stopPropagation(); deleteTextbook(${t.id})"><i class="fas fa-trash"></i></button>
+                                ` : `<button class="action-btn action-view" onclick="event.stopPropagation(); showViewOnly('textbook', '${t.textbook_name.replace(/'/g, "\\'")}')"><i class="fas fa-eye"></i></button>`}
+                            </div>
                         </div>
-                        <div class="metadata-actions">
-                            ${isAdmin ? `
-                                <button class="action-btn action-edit" onclick="event.stopPropagation(); editTextbook(${t.id}, '${t.textbook_name.replace(/'/g, "\\'")}', '${(t.publisher||'').replace(/'/g, "\\'")}', '${(t.reference_book||'').replace(/'/g, "\\'")}')"><i class="fas fa-edit"></i></button>
-                                <button class="action-btn action-delete" onclick="event.stopPropagation(); deleteTextbook(${t.id})"><i class="fas fa-trash"></i></button>
-                            ` : `<button class="action-btn action-view" onclick="event.stopPropagation(); showViewOnly('textbook', '${t.textbook_name.replace(/'/g, "\\'")}')"><i class="fas fa-eye"></i></button>`}
-                        </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             } catch (error) {
-                console.error('Error loading textbooks:', error);
+                console.error('Error loading books:', error);
                 container.innerHTML = `
                     <div class="error-message" style="grid-column: span 3;">
                         <i class="fas fa-exclamation-circle"></i>
@@ -1208,11 +1282,15 @@
         }
 
         function selectTextbook(id, name) {
-            currentSelections.textbook = { id, name };
+            // Find the textbook to check if it's a reference
+            const textbook = textbooks.find(t => t.id === id);
+            const displayName = textbook && textbook.is_reference ? `${name} (Reference)` : name;
+            
+            currentSelections.textbook = { id, name: displayName };
             currentSelections.chapter = null;
             currentSelections.cg = null;
             currentSelections.competency = null;
-            document.getElementById('selectedChapterSubjectName').textContent = name;
+            document.getElementById('selectedChapterSubjectName').textContent = displayName;
             loadChapters(id);
             goToStage(4);
             updateSelectionSummary();
@@ -1221,7 +1299,7 @@
         function refreshTextbooks() {
             if(currentSelections.subject) {
                 loadTextbooks(currentSelections.subject.id);
-                Swal.fire({ icon: 'info', title: 'Refreshing...', text: 'Loading Textbooks', timer: 1000, showConfirmButton: false });
+                Swal.fire({ icon: 'info', title: 'Refreshing...', text: 'Loading Books', timer: 1000, showConfirmButton: false });
             } else {
                 Swal.fire('Info', 'Please select a subject first', 'info');
             }
@@ -1230,37 +1308,65 @@
         function openTextbookModal(id=null) {
             if(!isAdmin) return showViewOnly('textbook', '');
             if(!currentSelections.subject) return Swal.fire('Error', 'Please select a subject first', 'error');
-            document.getElementById('textbookModalTitle').textContent = id ? 'Edit Textbook' : 'Add Textbook';
+            
+            document.getElementById('textbookModalTitle').textContent = id ? 'Edit Book' : 'Add Book';
             document.getElementById('textbookId').value = id || '';
             document.getElementById('textbookSubjectId').value = currentSelections.subject.id;
             document.getElementById('textbookGradeId').value = currentSelections.grade.id;
+            
+            // Reset form
+            document.getElementById('textbookName').value = '';
+            document.getElementById('textbookPublisher').value = '';
+            
+            // Reset radio to textbook
+            document.querySelector('input[name="bookType"][value="textbook"]').checked = true;
+            document.getElementById('bookTypeDescription').textContent = 'Textbook is the main curriculum book.';
+            document.getElementById('textbookLabel').classList.add('active-textbook');
+            document.getElementById('referenceLabel').classList.remove('active-reference');
+            
             if(!id) { 
                 document.getElementById('textbookName').value = ''; 
                 document.getElementById('textbookPublisher').value = '';
-                document.getElementById('textbookReference').value = '';
             }
             document.getElementById('textbookModal').classList.add('active');
         }
 
-        function editTextbook(id, name, publisher, referenceBook) {
-            document.getElementById('textbookModalTitle').textContent = 'Edit Textbook';
+        function editTextbook(id, name, publisher, isReference) {
+            document.getElementById('textbookModalTitle').textContent = 'Edit Book';
             document.getElementById('textbookId').value = id;
             document.getElementById('textbookName').value = name;
             document.getElementById('textbookPublisher').value = publisher || '';
-            document.getElementById('textbookReference').value = referenceBook || '';
+            
+            // Set the correct radio button
+            if (isReference) {
+                document.querySelector('input[name="bookType"][value="reference"]').checked = true;
+                document.getElementById('bookTypeDescription').textContent = 'Reference Book is an additional resource book that complements the main textbook.';
+                document.getElementById('textbookLabel').classList.remove('active-textbook');
+                document.getElementById('referenceLabel').classList.add('active-reference');
+                document.getElementById('textbookModalTitle').textContent = 'Edit Reference Book';
+            } else {
+                document.querySelector('input[name="bookType"][value="textbook"]').checked = true;
+                document.getElementById('bookTypeDescription').textContent = 'Textbook is the main curriculum book for the subject.';
+                document.getElementById('textbookLabel').classList.add('active-textbook');
+                document.getElementById('referenceLabel').classList.remove('active-reference');
+                document.getElementById('textbookModalTitle').textContent = 'Edit Textbook';
+            }
+            
             document.getElementById('textbookModal').classList.add('active');
         }
 
         async function saveTextbook() {
-            if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can save textbooks', 'error');
+            if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can save books', 'error');
+            
             const id = document.getElementById('textbookId').value;
             const subjectId = document.getElementById('textbookSubjectId').value;
             const gradeId = document.getElementById('textbookGradeId').value;
             const name = document.getElementById('textbookName').value.trim();
             const publisher = document.getElementById('textbookPublisher').value.trim();
-            const referenceBook = document.getElementById('textbookReference').value.trim();
+            const bookType = document.querySelector('input[name="bookType"]:checked').value;
+            const isReference = bookType === 'reference' ? 1 : 0;
             
-            if(!name) return Swal.fire('Error', 'Textbook name is required', 'error');
+            if(!name) return Swal.fire('Error', 'Book name is required', 'error');
             
             try {
                 const url = id ? `/api/textbooks/${id}` : '/api/textbooks';
@@ -1273,28 +1379,28 @@
                         subject_id: subjectId, 
                         grade_id: gradeId, 
                         publisher: publisher,
-                        reference_book: referenceBook 
+                        is_reference: isReference
                     }) 
                 });
                 const result = await response.json();
                 if(result.success) {
-                    Swal.fire('Success', 'Textbook saved successfully', 'success');
+                    Swal.fire('Success', 'Book saved successfully', 'success');
                     closeModal('textbookModal');
                     loadTextbooks(currentSelections.subject.id);
                     loadStats();
-                } else Swal.fire('Error', result.error || 'Failed to save textbook', 'error');
-            } catch(e) { console.error('Error:', e); Swal.fire('Error', 'Failed to save textbook', 'error'); }
+                } else Swal.fire('Error', result.error || 'Failed to save book', 'error');
+            } catch(e) { console.error('Error:', e); Swal.fire('Error', 'Failed to save book', 'error'); }
         }
 
         async function deleteTextbook(id) {
-            if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can delete textbooks', 'error');
-            const result = await Swal.fire({ title: 'Delete Textbook?', text: 'This cannot be undone.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#e74c3c', confirmButtonText: 'Delete' });
+            if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can delete books', 'error');
+            const result = await Swal.fire({ title: 'Delete Book?', text: 'This cannot be undone.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#e74c3c', confirmButtonText: 'Delete' });
             if(result.isConfirmed) {
                 try {
                     const response = await fetch(`/api/textbooks/${id}`, { method: 'DELETE' });
                     const data = await response.json();
                     if(data.success) {
-                        Swal.fire('Deleted', 'Textbook deleted successfully', 'success');
+                        Swal.fire('Deleted', 'Book deleted successfully', 'success');
                         loadTextbooks(currentSelections.subject.id);
                         loadStats();
                         if(currentSelections.textbook?.id === id) {
@@ -1369,10 +1475,7 @@
                     <div class="card" onclick="selectChapter(${ch.id}, '${ch.chapter_name.replace(/'/g, "\\'")}')">
                         <div class="card-icon"><i class="fas fa-book"></i></div>
                         <h3>${ch.chapter_name}</h3>
-                        <div class="badge-container">
-                            <span class="count-badge"><i class="fas fa-hashtag"></i> Chapter ${ch.chapter_number || 'N/A'}</span>
-                            <span class="count-badge"><i class="fas fa-book"></i> ${ch.textbook_name || 'N/A'}</span>
-                        </div>
+                        
                         <div class="metadata-actions">
                             ${isAdmin ? `
                                 <button class="action-btn action-edit" onclick="event.stopPropagation(); editChapter(${ch.id}, '${ch.chapter_name.replace(/'/g, "\\'")}', ${ch.chapter_number||0}, ${ch.textbook_id||'null'})"><i class="fas fa-edit"></i></button>
@@ -1462,7 +1565,9 @@
                     data.textbooks.forEach(t => {
                         const opt = document.createElement('option');
                         opt.value = t.id;
-                        opt.textContent = t.textbook_name + (t.publisher ? ` (${t.publisher})` : '');
+                        const label = t.textbook_name + (t.publisher ? ` (${t.publisher})` : '');
+                        // Mark reference books with a tag
+                        opt.textContent = t.is_reference ? `${label} 📖` : label;
                         if(selected && selected == t.id) opt.selected = true;
                         select.appendChild(opt);
                     });
@@ -1577,10 +1682,7 @@
                             <div class="card-icon"><i class="fas fa-bullseye"></i></div>
                             <h3>${code}</h3>
                             <p class="cg-description">${description}</p>
-                            <div class="badge-container">
-                                <span class="count-badge"><i class="fas fa-tasks"></i> ${compCount} sub-competencies</span>
-                                <span class="count-badge"><i class="fas fa-book"></i> ${subjectName}</span>
-                            </div>
+                            
                             <div class="metadata-actions">
                                 ${isAdmin ? `
                                     <button class="action-btn action-edit" onclick="event.stopPropagation(); openEditModal('cg', ${id}, '${code.replace(/'/g, "\\'")}', '${description.replace(/'/g, "\\'")}', ${c.subject_id||0})"><i class="fas fa-edit"></i></button>
@@ -1652,7 +1754,7 @@
             container.innerHTML = `
                 <div class="loading" style="grid-column: span 3;">
                     <i class="fas fa-spinner fa-pulse"></i><br>
-                    Loading sub-competencies...<br>
+                    Loading Competencies...<br>
                     <small style="color: rgba(255,255,255,0.3);">CG ID: ${cgId}</small>
                 </div>
             `;
@@ -1668,9 +1770,9 @@
                     container.innerHTML = `
                         <div class="no-data" style="grid-column: span 3; padding: 40px;">
                             <i class="fas fa-tasks" style="font-size: 40px; display: block; margin-bottom: 10px; opacity: 0.3;"></i>
-                            <h3 style="color: white; margin-bottom: 10px;">No Sub-Competencies Found</h3>
-                            <p style="color: rgba(255,255,255,0.5);">No sub-competencies found for this Curricular Goal.</p>
-                            ${isAdmin ? `<br><button class="btn btn-success" onclick="openAddModal('competency')"><i class="fas fa-plus"></i> Add New Sub-Competency</button>` : ''}
+                            <h3 style="color: white; margin-bottom: 10px;">No Competencies Found</h3>
+                            <p style="color: rgba(255,255,255,0.5);">No Competencies found for this Curricular Goal.</p>
+                            ${isAdmin ? `<br><button class="btn btn-success" onclick="openAddModal('competency')"><i class="fas fa-plus"></i> Add New Competency</button>` : ''}
                         </div>
                     `;
                     return;
@@ -1705,7 +1807,7 @@
                 });
                 container.innerHTML = html;
             } catch (error) {
-                console.error('Error loading sub-competencies:', error);
+                console.error('Error loading Competencies:', error);
                 container.innerHTML = `
                     <div class="error-message" style="grid-column: span 3;">
                         <i class="fas fa-exclamation-circle"></i>
@@ -1723,7 +1825,7 @@
             updateSelectionSummary();
             Swal.fire({
                 icon: 'success',
-                title: 'Sub-Competency Selected!',
+                title: 'Competency Selected!',
                 text: `Selected: ${code}`,
                 timer: 2000,
                 showConfirmButton: false
@@ -1733,21 +1835,21 @@
         function refreshCompetencies() {
             if(currentSelections.cg) {
                 loadCompetencies(currentSelections.cg.id);
-                Swal.fire({ icon: 'info', title: 'Refreshing...', text: 'Loading Sub-Competencies', timer: 1000, showConfirmButton: false });
+                Swal.fire({ icon: 'info', title: 'Refreshing...', text: 'Loading Competencies', timer: 1000, showConfirmButton: false });
             } else {
                 Swal.fire('Info', 'Please select a Curricular Goal first', 'info');
             }
         }
 
         async function deleteCompetency(id) {
-            if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can delete sub-competencies', 'error');
-            const result = await Swal.fire({ title: 'Delete Sub-Competency?', text: 'This cannot be undone.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#e74c3c', confirmButtonText: 'Delete' });
+            if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can delete Competencies', 'error');
+            const result = await Swal.fire({ title: 'Delete Competency?', text: 'This cannot be undone.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#e74c3c', confirmButtonText: 'Delete' });
             if(result.isConfirmed) {
                 try {
                     const response = await fetch(`/api/competencies/${id}`, { method: 'DELETE' });
                     const data = await response.json();
                     if(data.success) {
-                        Swal.fire('Deleted', 'Sub-Competency deleted successfully', 'success');
+                        Swal.fire('Deleted', 'Competency deleted successfully', 'success');
                         if (currentSelections.cg) {
                             loadCompetencies(currentSelections.cg.id);
                         }
@@ -1792,21 +1894,21 @@
                     break;
                 case 'subject':
                     fields = `
-                        <div class="form-group"><label>Subject Name *</label><input type="text" id="editName" class="form-control" placeholder="e.g., Physics, Mathematics" required></div>
+                        <div class="form-group"><label>Subject Name *</label><input type="text" id="editName" class="form-control" placeholder="" required></div>
                         <div class="form-group"><label>Grade *</label><select id="editGradeId" class="form-control" required>${grades.map(g => `<option value="${g.id}">${g.grade_name}</option>`).join('')}</select></div>
                     `;
                     break;
                 case 'cg':
                     fields = `
-                        <div class="form-group"><label>Curricular Goal Code *</label><input type="text" id="editCode" class="form-control" placeholder="e.g., PHY-11-01" required></div>
+                        <div class="form-group"><label>Curricular Goal Code *</label><input type="text" id="editCode" class="form-control" placeholder="" required></div>
                         <div class="form-group"><label>Description</label><textarea id="editDescription" class="form-control" rows="3" placeholder="Describe the curricular goal..."></textarea></div>
                         <div class="form-group"><label>Subject *</label><select id="editSubjectId" class="form-control" required>${subjects.map(s => `<option value="${s.id}">${s.subject_name}</option>`).join('')}</select></div>
                     `;
                     break;
                 case 'competency':
                     fields = `
-                        <div class="form-group"><label>Sub-Competency Code *</label><input type="text" id="editCode" class="form-control" placeholder="e.g., PHY-11-01-A" required></div>
-                        <div class="form-group"><label>Description</label><textarea id="editDescription" class="form-control" rows="3" placeholder="Describe the sub-competency..."></textarea></div>
+                        <div class="form-group"><label>Competency Code *</label><input type="text" id="editCode" class="form-control" placeholder="" required></div>
+                        <div class="form-group"><label>Description</label><textarea id="editDescription" class="form-control" rows="3" placeholder="Describe the Competency..."></textarea></div>
                         <div class="form-group"><label>Curricular Goal *</label><select id="editCGId" class="form-control" required>${cgs.map(c => `<option value="${c.id}">${c.cg_code || 'CG ' + c.id}</option>`).join('')}</select></div>
                         <div class="form-group"><label>Status</label><select id="editStatus" class="form-control"><option value="1">Active</option><option value="0">Inactive</option></select></div>
                     `;
@@ -1841,7 +1943,7 @@
                     break;
                 case 'competency':
                     fields = `
-                        <div class="form-group"><label>Sub-Competency Code *</label><input type="text" id="editCode" class="form-control" value="${args[0]}" required></div>
+                        <div class="form-group"><label>Competency Code *</label><input type="text" id="editCode" class="form-control" value="${args[0]}" required></div>
                         <div class="form-group"><label>Description</label><textarea id="editDescription" class="form-control" rows="3">${args[1]}</textarea></div>
                         <div class="form-group"><label>Curricular Goal *</label><select id="editCGId" class="form-control" required>${cgs.map(c => `<option value="${c.id}" ${c.id == args[2] ? 'selected' : ''}>${c.cg_code || 'CG ' + c.id}</option>`).join('')}</select></div>
                         <div class="form-group"><label>Status</label><select id="editStatus" class="form-control"><option value="1" ${args[3] == 1 ? 'selected' : ''}>Active</option><option value="0" ${args[3] == 0 ? 'selected' : ''}>Inactive</option></select></div>
@@ -1859,7 +1961,7 @@
         }
 
         function getTypeName(type) {
-            const names = { 'grade': 'Grade', 'subject': 'Subject', 'textbook': 'Textbook', 'chapter': 'Chapter', 'cg': 'Curricular Goal', 'competency': 'Sub-Competency', 'group': 'Subject Group', 'user': 'User', 'password': 'Password' };
+            const names = { 'grade': 'Grade', 'subject': 'Subject', 'textbook': 'Textbook', 'chapter': 'Chapter', 'cg': 'Curricular Goal', 'competency': 'Competency', 'group': 'Subject Group', 'user': 'User', 'password': 'Password' };
             return names[type] || 'Item';
         }
 

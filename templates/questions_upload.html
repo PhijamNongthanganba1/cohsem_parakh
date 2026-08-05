@@ -274,6 +274,8 @@
             justify-content: space-between;
             align-items: center;
             color: white;
+            flex-wrap: wrap;
+            gap: 6px;
         }
         .item-desc {
             font-size: 14px;
@@ -285,6 +287,45 @@
             padding: 2px 8px;
             border-radius: 12px;
             font-size: 10px;
+        }
+        /* CHAPTER TAG - shows inside cards */
+        .chapter-tag {
+            background: rgba(46,204,113,0.2);
+            color: #2ecc71;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 12px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border: 1px solid rgba(46,204,113,0.25);
+            margin-top: 8px;
+        }
+        .chapter-tag i {
+            font-size: 10px;
+        }
+        .chapter-tag-blue {
+            background: rgba(52,152,219,0.15);
+            color: #5dade2;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 12px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border: 1px solid rgba(52,152,219,0.2);
+            margin-top: 8px;
+        }
+        .chapter-tag-blue i {
+            font-size: 10px;
+        }
+        .cg-chapter-info, .comp-chapter-info {
+            margin-top: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
         }
         .action-buttons {
             display: flex;
@@ -381,6 +422,14 @@
         .domain-specific-hint strong {
             color: #f39c12;
         }
+        .status-badge {
+            background: rgba(255,255,255,0.08);
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 9px;
+            color: rgba(255,255,255,0.4);
+            font-weight: 500;
+        }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -395,7 +444,7 @@
     <div class="container">
         <div class="sidebar">
             <div class="competency-info">
-                <div class="comp-code" id="sidebarCompCode">No Curricular selected</div>
+                <div class="comp-code" id="sidebarCompCode">No Competency selected</div>
                 <div class="comp-desc" id="sidebarCompDesc"></div>
             </div>
             <div class="selection-tracker">
@@ -414,50 +463,43 @@
                             <div class="tracker-value" id="trackerSubjectValue">Not selected</div>
                         </div>
                     </div>
-                    <div class="tracker-item" id="trackerChapter" onclick="jumpToStage(3)">
+                    <div class="tracker-item" id="trackerCG" onclick="jumpToStage(3)">
                         <div class="tracker-step">3</div>
-                        <div>
-                            <div class="tracker-label">Chapter</div>
-                            <div class="tracker-value" id="trackerChapterValue">Not selected</div>
-                        </div>
-                    </div>
-                    <div class="tracker-item" id="trackerCG" onclick="jumpToStage(4)">
-                        <div class="tracker-step">4</div>
                         <div>
                             <div class="tracker-label">Curricular Goal</div>
                             <div class="tracker-value" id="trackerCGValue">Not selected</div>
                         </div>
                     </div>
-                    <div class="tracker-item" id="trackerCompetency" onclick="jumpToStage(5)">
-                        <div class="tracker-step">5</div>
+                    <div class="tracker-item" id="trackerCompetency" onclick="jumpToStage(4)">
+                        <div class="tracker-step">4</div>
                         <div>
-                            <div class="tracker-label">Sub-Competency</div>
+                            <div class="tracker-label">Competency</div>
                             <div class="tracker-value" id="trackerCompValue">Not selected</div>
                         </div>
                     </div>
-                    <div class="tracker-item" id="trackerDomain" onclick="jumpToStage(6)">
-                        <div class="tracker-step">6</div>
+                    <div class="tracker-item" id="trackerDomain" onclick="jumpToStage(5)">
+                        <div class="tracker-step">5</div>
                         <div>
                             <div class="tracker-label">Cognitive Domain</div>
                             <div class="tracker-value" id="trackerDomainValue">Not selected</div>
                         </div>
                     </div>
-                    <div class="tracker-item" id="trackerKnowledge" onclick="jumpToStage(7)">
-                        <div class="tracker-step">7</div>
+                    <div class="tracker-item" id="trackerKnowledge" onclick="jumpToStage(6)">
+                        <div class="tracker-step">6</div>
                         <div>
                             <div class="tracker-label">Sub-Domain</div>
                             <div class="tracker-value" id="trackerKnowledgeValue">Not selected</div>
                         </div>
                     </div>
-                    <div class="tracker-item" id="trackerType" onclick="jumpToStage(8)">
-                        <div class="tracker-step">8</div>
+                    <div class="tracker-item" id="trackerType" onclick="jumpToStage(7)">
+                        <div class="tracker-step">7</div>
                         <div>
                             <div class="tracker-label">Question Type</div>
                             <div class="tracker-value" id="trackerTypeValue">Not selected</div>
                         </div>
                     </div>
-                    <div class="tracker-item" id="trackerDifficulty" onclick="jumpToStage(9)">
-                        <div class="tracker-step">9</div>
+                    <div class="tracker-item" id="trackerDifficulty" onclick="jumpToStage(8)">
+                        <div class="tracker-step">8</div>
                         <div>
                             <div class="tracker-label">Difficulty Level</div>
                             <div class="tracker-value" id="trackerDifficultyValue">Not selected</div>
@@ -471,7 +513,7 @@
                 <div class="progress-bar">
                     <div class="progress-fill" id="progressFill"></div>
                 </div>
-                <div class="progress-text" id="progressText">Step 1 of 9</div>
+                <div class="progress-text" id="progressText">Step 1 of 8</div>
                 <div class="auto-redirect-notice" id="autoRedirectNotice">
                     <i class="fas fa-spinner fa-spin"></i> 
                     All selections complete! Redirecting to question creation page...
@@ -502,23 +544,6 @@
                                 <i class="fas fa-arrow-left"></i> Back to Grades
                             </button>
                             <button class="btn btn-next" id="subjectNextBtn" disabled onclick="goToNextStage('subject')">
-                                Next: Select Chapter <i class="fas fa-arrow-right"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="stage" id="chapterStage" style="display: none;">
-                    <div class="stage-header">
-                        <h2>Select Chapter</h2>
-                        <p>Choose a chapter for <span id="currentChapterSubjectName"></span></p>
-                    </div>
-                    <div class="stage-content">
-                        <div class="item-grid" id="chapterList"></div>
-                        <div class="action-buttons">
-                            <button class="btn btn-back" onclick="goBack('subject')">
-                                <i class="fas fa-arrow-left"></i> Back to Subjects
-                            </button>
-                            <button class="btn btn-next" id="chapterNextBtn" disabled onclick="goToNextStage('chapter')">
                                 Next: Curricular Goals <i class="fas fa-arrow-right"></i>
                             </button>
                         </div>
@@ -532,19 +557,19 @@
                     <div class="stage-content">
                         <div class="item-grid" id="cgList"></div>
                         <div class="action-buttons">
-                            <button class="btn btn-back" onclick="goBack('chapter')">
-                                <i class="fas fa-arrow-left"></i> Back to Chapters
+                            <button class="btn btn-back" onclick="goBack('subject')">
+                                <i class="fas fa-arrow-left"></i> Back to Subjects
                             </button>
                             <button class="btn btn-next" id="cgNextBtn" disabled onclick="goToNextStage('cg')">
-                                Next: Sub-Competencies <i class="fas fa-arrow-right"></i>
+                                Next: Competencies <i class="fas fa-arrow-right"></i>
                             </button>
                         </div>
                     </div>
                 </div>
                 <div class="stage" id="compStage" style="display: none;">
                     <div class="stage-header">
-                        <h2>Select Sub-Competencies</h2>
-                        <p>Choose a sub-competency for <span id="currentCGName"></span></p>
+                        <h2>Select Competency</h2>
+                        <p>Choose a Competency for <span id="currentCGName"></span></p>
                     </div>
                     <div class="stage-content">
                         <div class="item-grid" id="compList"></div>
@@ -567,7 +592,7 @@
                         <div class="item-grid" id="domainList"></div>
                         <div class="action-buttons">
                             <button class="btn btn-back" onclick="goBack('comp')">
-                                <i class="fas fa-arrow-left"></i> Back to Sub-Competencies
+                                <i class="fas fa-arrow-left"></i> Back to Competencies
                             </button>
                             <button class="btn btn-next" id="domainNextBtn" disabled onclick="goToNextStage('domain')">
                                 Next: Sub-Domains <i class="fas fa-arrow-right"></i>
@@ -638,10 +663,10 @@
         let page2NavigationData = {};
         let knowledgeLevelsData = [];
         let chaptersData = [];
+        let chapterMapping = {};
         let currentSelection = {
             grade: null,
             subject: null,
-            chapter: null,
             cg: null,
             comp: null,
             domain: null,
@@ -662,10 +687,12 @@
                 localStorage.removeItem('restoreSelections');
                 await restorePreviousSelections();
             }
-            updateTracker();
-            updateProgress();
-            document.getElementById('globalBackButton').style.display = 'none';
-            populateGrades();
+            setTimeout(() => {
+                updateTracker();
+                updateProgress();
+                document.getElementById('globalBackButton').style.display = 'none';
+                populateGrades();
+            }, 50);
         });
         async function loadInitialData() {
             try {
@@ -707,7 +734,6 @@
             const stageId = activeStage.id;
             if (stageId === 'gradeStage') populateGrades();
             else if (stageId === 'subjectStage' && currentSelection.grade) populateSubjects(currentSelection.grade.id);
-            else if (stageId === 'chapterStage' && currentSelection.subject) populateChapters(currentSelection.subject.id);
             else if (stageId === 'cgStage' && currentSelection.subject) populateCGs(currentSelection.subject.id);
             else if (stageId === 'compStage' && currentSelection.cg) populateCompetencies(currentSelection.cg.id);
             else if (stageId === 'domainStage' && currentSelection.comp) {
@@ -742,55 +768,66 @@
         }
         async function loadChapters(subjectId) {
             try {
-                const response = await fetch(`/api/subjects/${subjectId}/chapters`);
+                const response = await fetch(`/api/subjects/${subjectId}/chapters?_=${Date.now()}`);
                 const data = await response.json();
                 chaptersData = data.chapters || [];
+                chapterMapping = {};
+                chaptersData.forEach(chapter => {
+                    if (chapter.competency_id) {
+                        chapterMapping[chapter.competency_id] = chapter.chapter_name;
+                    }
+                    if (chapter.competencies && Array.isArray(chapter.competencies)) {
+                        chapter.competencies.forEach(compId => {
+                            chapterMapping[compId] = chapter.chapter_name;
+                        });
+                    }
+                    if (chapter.cg_id) {
+                        if (!chapterMapping['cg_' + chapter.cg_id]) {
+                            chapterMapping['cg_' + chapter.cg_id] = [];
+                        }
+                        if (!chapterMapping['cg_' + chapter.cg_id].includes(chapter.chapter_name)) {
+                            chapterMapping['cg_' + chapter.cg_id].push(chapter.chapter_name);
+                        }
+                    }
+                });
+                console.log('Chapter mapping built:', chapterMapping);
                 return chaptersData;
             } catch (error) {
                 console.error('Error loading chapters:', error);
                 return [];
             }
         }
-        async function populateChapters(subjectId) {
-            const container = document.getElementById('chapterList');
-            const chapters = await loadChapters(subjectId);
-            if (chapters.length === 0) {
-                container.innerHTML = `<div class="empty-state"><i class="fas fa-book"></i><h3>No Chapters Available</h3><p>No chapters found for this subject. Please add chapters in the Configuration Dashboard.</p><button class="btn btn-primary" onclick="window.location.href='/configure'" style="margin-top: 15px;"><i class="fas fa-cog"></i> Go to Configure</button></div>`;
-                document.getElementById('chapterNextBtn').disabled = true;
-                return;
+        function getChapterForComp(compId) {
+            if (chapterMapping && chapterMapping[compId]) {
+                return chapterMapping[compId];
             }
-            container.innerHTML = chapters.map(chapter => `
-                <div class="item-card" data-chapter-id="${chapter.id}" data-chapter-name="${chapter.chapter_name}" data-chapter-code="${chapter.chapter_code || ''}" onclick="selectChapter(${chapter.id}, '${chapter.chapter_name}', '${chapter.chapter_code || ''}', this)">
-                    <div class="item-title">
-                        ${chapter.chapter_number ? `${chapter.chapter_number}. ` : ''}${chapter.chapter_name}
-                        ${chapter.chapter_code ? `<span class="badge">${chapter.chapter_code}</span>` : ''}
-                    </div>
-                    ${chapter.description ? `<div class="item-desc">${chapter.description.substring(0, 80)}${chapter.description.length > 80 ? '...' : ''}</div>` : ''}
-                </div>
-            `).join('');
-            if (currentSelection.chapter) {
-                const selectedCard = document.querySelector(`.item-card[data-chapter-id="${currentSelection.chapter.id}"]`);
-                if (selectedCard) {
-                    selectedCard.classList.add('selected');
-                    document.getElementById('chapterNextBtn').disabled = false;
+            if (page1NavigationData.competencies) {
+                const comp = page1NavigationData.competencies.find(c => c.id == compId);
+                if (comp && comp.chapter_name) {
+                    return comp.chapter_name;
                 }
-            } else {
-                document.getElementById('chapterNextBtn').disabled = true;
             }
+            return null;
         }
-        function selectChapter(id, name, code, element) {
-            document.querySelectorAll('#chapterList .item-card').forEach(item => {
-                item.classList.remove('selected');
+        function getChaptersForCG(cgId) {
+            let chapters = [];
+            if (chapterMapping && chapterMapping['cg_' + cgId]) {
+                chapters = chapterMapping['cg_' + cgId];
+            }
+            let comps = [];
+            const cgKeyStr = cgId.toString();
+            if (page1NavigationData.comps_by_cg && page1NavigationData.comps_by_cg[cgKeyStr]) {
+                comps = page1NavigationData.comps_by_cg[cgKeyStr];
+            } else if (page1NavigationData.competencies) {
+                comps = page1NavigationData.competencies.filter(comp => comp.cg_id == cgId);
+            }
+            comps.forEach(comp => {
+                let ch = getChapterForComp(comp.id);
+                if (ch && !chapters.includes(ch)) {
+                    chapters.push(ch);
+                }
             });
-            element.classList.add('selected');
-            currentSelection.chapter = { id, name, code };
-            document.getElementById('trackerChapterValue').textContent = name;
-            document.getElementById('chapterNextBtn').disabled = false;
-            updateTracker();
-            updateProgress();
-            setTimeout(() => {
-                goToNextStage('chapter');
-            }, 500);
+            return chapters;
         }
         function selectGrade(gradeId, displayName) {
             let grade = page1NavigationData.grades?.find(g => g.id == gradeId);
@@ -798,7 +835,6 @@
             grade.display_name = displayName;
             currentSelection.grade = grade;
             currentSelection.subject = null;
-            currentSelection.chapter = null;
             currentSelection.cg = null;
             currentSelection.comp = null;
             currentSelection.domain = null;
@@ -815,19 +851,19 @@
         }
         function selectSubject(subject) {
             currentSelection.subject = subject;
-            currentSelection.chapter = null;
             currentSelection.cg = null;
             currentSelection.comp = null;
             currentSelection.domain = null;
             currentSelection.knowledge = null;
             currentSelection.type = null;
             currentSelection.difficulty = null;
+            loadChapters(subject.id);
             updateTracker();
             updateProgress();
-            document.getElementById('currentChapterSubjectName').textContent = subject.subject_name;
+            document.getElementById('currentSubjectName').textContent = subject.subject_name;
             document.getElementById('subjectStage').style.display = 'none';
-            document.getElementById('chapterStage').style.display = 'block';
-            populateChapters(subject.id);
+            document.getElementById('cgStage').style.display = 'block';
+            populateCGs(subject.id);
         }
         function selectCG(cg) {
             currentSelection.cg = cg;
@@ -854,21 +890,23 @@
             document.getElementById('sidebarCompCode').textContent = comp.comp_code || 'Competency';
             document.getElementById('sidebarCompDesc').textContent = comp.comp_description || '';
             document.getElementById('compNextBtn').disabled = false;
-            loadPage2Data(comp.id).then(() => {
-                updateTracker();
-                updateProgress();
-                setTimeout(() => {
-                    document.getElementById('compStage').style.display = 'none';
-                    document.getElementById('domainStage').style.display = 'block';
+            updateTracker();
+            updateProgress();
+            setTimeout(() => {
+                document.getElementById('compStage').style.display = 'none';
+                document.getElementById('domainStage').style.display = 'block';
+                if (!page2NavigationData.domains || page2NavigationData.domains.length === 0) {
+                    loadPage2Data(comp.id).then(() => populateDomains());
+                } else {
                     populateDomains();
-                }, 300);
-            });
+                }
+            }, 300);
         }
         function selectDomain(domain, element) {
             document.querySelectorAll('#domainList .item-card').forEach(item => item.classList.remove('selected'));
             if (element) element.classList.add('selected');
             currentSelection.domain = domain;
-            currentSelection.knowledge = null; // Reset knowledge when domain changes
+            currentSelection.knowledge = null;
             currentSelection.type = null;
             currentSelection.difficulty = null;
             document.getElementById('trackerKnowledgeValue').textContent = 'Not selected';
@@ -880,7 +918,6 @@
                 document.getElementById('knowledgeStage').style.display = 'block';
                 document.getElementById('currentDomainName').textContent = domain.domain_name;
                 document.getElementById('domainHintName').textContent = domain.domain_name;
-                // Load knowledge levels specific to this domain
                 fetchKnowledgeLevelsByDomain(domain.id);
             }, 300);
         }
@@ -966,7 +1003,16 @@
                 const div = document.createElement('div');
                 div.className = 'item-card';
                 if (currentSelection.cg && currentSelection.cg.id === cg.id) div.classList.add('selected');
-                div.innerHTML = `<div class="item-title">${cg.cg_code || 'CG ' + cg.id}</div>${cg.cg_description ? `<div class="item-desc">${cg.cg_description}</div>` : ''}`;
+                let chapters = getChaptersForCG(cg.id);
+                let chapterHtml = '';
+                if (chapters && chapters.length > 0) {
+                    chapterHtml = `<div class="cg-chapter-info"><span class="chapter-tag-blue"><i class="fas fa-book"></i> ${chapters.join(', ')}</span></div>`;
+                }
+                div.innerHTML = `
+                    <div class="item-title">${cg.cg_code || 'CG ' + cg.id}</div>
+                    ${cg.cg_description ? `<div class="item-desc">${cg.cg_description}</div>` : ''}
+                    ${chapterHtml}
+                `;
                 div.onclick = () => { selectCG(cg); document.getElementById('cgNextBtn').disabled = false; };
                 container.appendChild(div);
             });
@@ -982,7 +1028,7 @@
                 comps = page1NavigationData.competencies.filter(comp => comp.cg_id == cgId);
             }
             if (comps.length === 0) {
-                container.innerHTML = `<div class="empty-state"><i class="fas fa-tasks"></i><h3>No Curricular</h3><p>No Curricular available for this Curricular goal.</p><button class="btn btn-primary" onclick="refreshData()" style="margin-top: 15px;"><i class="fas fa-sync-alt"></i> Refresh</button></div>`;
+                container.innerHTML = `<div class="empty-state"><i class="fas fa-tasks"></i><h3>No Competencies</h3><p>No Competencies available for this Curricular goal.</p><button class="btn btn-primary" onclick="refreshData()" style="margin-top: 15px;"><i class="fas fa-sync-alt"></i> Refresh</button></div>`;
                 document.getElementById('compNextBtn').disabled = true;
                 return;
             }
@@ -993,7 +1039,19 @@
                 div.className = `item-card ${isActive ? '' : 'disabled'}`;
                 if (!isActive) div.style.opacity = '0.6';
                 if (currentSelection.comp && currentSelection.comp.id === comp.id) div.classList.add('selected');
-                div.innerHTML = `<div class="item-title">${comp.comp_code || 'Comp ' + comp.id}<span class="status" style="background: ${isActive ? '#27ae60' : '#95a5a6'}; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin-left: 8px;">${isActive ? 'Active' : 'Inactive'}</span></div>${comp.comp_description ? `<div class="item-desc">${comp.comp_description}</div>` : ''}`;
+                let chapterName = getChapterForComp(comp.id);
+                let chapterHtml = '';
+                if (chapterName) {
+                    chapterHtml = `<div class="comp-chapter-info"><span class="chapter-tag"><i class="fas fa-book"></i> ${chapterName}</span></div>`;
+                }
+                div.innerHTML = `
+                    <div class="item-title">
+                        ${comp.comp_code || 'Comp ' + comp.id}
+                        <span class="status-badge">${isActive ? 'Active' : 'Inactive'}</span>
+                    </div>
+                    ${comp.comp_description ? `<div class="item-desc">${comp.comp_description}</div>` : ''}
+                    ${chapterHtml}
+                `;
                 if (isActive) div.onclick = () => selectCompetency(comp, div);
                 container.appendChild(div);
             });
@@ -1021,23 +1079,6 @@
                 container.appendChild(div);
             });
             document.getElementById('domainNextBtn').disabled = !currentSelection.domain;
-        }
-
-        // ===== UPDATED: Knowledge Level functions with domain filtering =====
-        
-        function populateKnowledgeLevels() {
-            const container = document.getElementById('knowledgeList');
-            const domainId = currentSelection.domain?.id;
-            
-            // If domain is selected, fetch knowledge levels for that domain
-            if (domainId) {
-                fetchKnowledgeLevelsByDomain(domainId);
-            } else {
-                // Fallback: load all knowledge levels
-                loadKnowledgeLevels().then(() => {
-                    renderKnowledgeLevels(container);
-                });
-            }
         }
 
         function fetchKnowledgeLevelsByDomain(domainId) {
@@ -1093,8 +1134,6 @@
             document.getElementById('knowledgeNextBtn').disabled = !currentSelection.knowledge;
         }
 
-        // ===== End of updated Knowledge Level functions =====
-
         function populateQuestionTypes() {
             const container = document.getElementById('typeList');
             const domainId = currentSelection.domain?.id;
@@ -1139,14 +1178,6 @@
                 case 'subject':
                     if (currentSelection.subject) {
                         document.getElementById('subjectStage').style.display = 'none';
-                        document.getElementById('chapterStage').style.display = 'block';
-                        document.getElementById('currentChapterSubjectName').textContent = currentSelection.subject.subject_name;
-                        populateChapters(currentSelection.subject.id);
-                    }
-                    break;
-                case 'chapter':
-                    if (currentSelection.chapter) {
-                        document.getElementById('chapterStage').style.display = 'none';
                         document.getElementById('cgStage').style.display = 'block';
                         document.getElementById('currentSubjectName').textContent = currentSelection.subject.subject_name;
                         populateCGs(currentSelection.subject.id);
@@ -1154,8 +1185,6 @@
                     break;
                 case 'cg':
                     if (currentSelection.cg) {
-                        updateTracker();
-                        updateProgress();
                         document.getElementById('cgStage').style.display = 'none';
                         document.getElementById('compStage').style.display = 'block';
                         document.getElementById('currentCGName').textContent = currentSelection.cg.cg_code || 'Selected CG';
@@ -1168,15 +1197,11 @@
                         updateProgress();
                         document.getElementById('sidebarCompCode').textContent = currentSelection.comp.comp_code || 'Competency';
                         document.getElementById('sidebarCompDesc').textContent = currentSelection.comp.comp_description || '';
+                        document.getElementById('compStage').style.display = 'none';
+                        document.getElementById('domainStage').style.display = 'block';
                         if (!page2NavigationData.domains || page2NavigationData.domains.length === 0) {
-                            loadPage2Data(currentSelection.comp.id).then(() => {
-                                document.getElementById('compStage').style.display = 'none';
-                                document.getElementById('domainStage').style.display = 'block';
-                                populateDomains();
-                            });
+                            loadPage2Data(currentSelection.comp.id).then(() => populateDomains());
                         } else {
-                            document.getElementById('compStage').style.display = 'none';
-                            document.getElementById('domainStage').style.display = 'block';
                             populateDomains();
                         }
                     }
@@ -1189,7 +1214,6 @@
                         document.getElementById('knowledgeStage').style.display = 'block';
                         document.getElementById('currentDomainName').textContent = currentSelection.domain.domain_name;
                         document.getElementById('domainHintName').textContent = currentSelection.domain.domain_name;
-                        // Load knowledge levels specific to this domain
                         fetchKnowledgeLevelsByDomain(currentSelection.domain.id);
                     }
                     break;
@@ -1224,13 +1248,6 @@
                 case 'subject':
                     document.getElementById('subjectStage').style.display = 'block';
                     if (currentSelection.grade) populateSubjects(currentSelection.grade.id);
-                    break;
-                case 'chapter':
-                    document.getElementById('chapterStage').style.display = 'block';
-                    if (currentSelection.subject) {
-                        document.getElementById('currentChapterSubjectName').textContent = currentSelection.subject.subject_name;
-                        populateChapters(currentSelection.subject.id);
-                    }
                     break;
                 case 'cg':
                     document.getElementById('cgStage').style.display = 'block';
@@ -1274,24 +1291,22 @@
                 case 1: canJump = true; break;
                 case 2: canJump = currentSelection.grade !== null; break;
                 case 3: canJump = currentSelection.subject !== null; break;
-                case 4: canJump = currentSelection.chapter !== null; break;
-                case 5: canJump = currentSelection.cg !== null; break;
-                case 6: canJump = currentSelection.comp !== null; break;
-                case 7: canJump = currentSelection.domain !== null; break;
-                case 8: canJump = currentSelection.knowledge !== null; break;
-                case 9: canJump = currentSelection.type !== null; break;
+                case 4: canJump = currentSelection.cg !== null; break;
+                case 5: canJump = currentSelection.comp !== null; break;
+                case 6: canJump = currentSelection.domain !== null; break;
+                case 7: canJump = currentSelection.knowledge !== null; break;
+                case 8: canJump = currentSelection.type !== null; break;
             }
             if (canJump) {
                 document.querySelectorAll('.stage').forEach(stageEl => stageEl.style.display = 'none');
                 if (stage === 1) document.getElementById('gradeStage').style.display = 'block';
                 else if (stage === 2) { document.getElementById('subjectStage').style.display = 'block'; if (currentSelection.grade) populateSubjects(currentSelection.grade.id); }
-                else if (stage === 3) { document.getElementById('chapterStage').style.display = 'block'; if (currentSelection.subject) { document.getElementById('currentChapterSubjectName').textContent = currentSelection.subject.subject_name; populateChapters(currentSelection.subject.id); } }
-                else if (stage === 4) { document.getElementById('cgStage').style.display = 'block'; if (currentSelection.subject) populateCGs(currentSelection.subject.id); }
-                else if (stage === 5) { document.getElementById('compStage').style.display = 'block'; if (currentSelection.cg) populateCompetencies(currentSelection.cg.id); }
-                else if (stage === 6) { document.getElementById('domainStage').style.display = 'block'; populateDomains(); }
-                else if (stage === 7) { document.getElementById('knowledgeStage').style.display = 'block'; if (currentSelection.domain) { document.getElementById('currentDomainName').textContent = currentSelection.domain.domain_name; document.getElementById('domainHintName').textContent = currentSelection.domain.domain_name; fetchKnowledgeLevelsByDomain(currentSelection.domain.id); } }
-                else if (stage === 8) { document.getElementById('typeStage').style.display = 'block'; populateQuestionTypes(); }
-                else if (stage === 9) { document.getElementById('difficultyStage').style.display = 'block'; populateDifficultyLevels(); }
+                else if (stage === 3) { document.getElementById('cgStage').style.display = 'block'; if (currentSelection.subject) populateCGs(currentSelection.subject.id); }
+                else if (stage === 4) { document.getElementById('compStage').style.display = 'block'; if (currentSelection.cg) populateCompetencies(currentSelection.cg.id); }
+                else if (stage === 5) { document.getElementById('domainStage').style.display = 'block'; populateDomains(); }
+                else if (stage === 6) { document.getElementById('knowledgeStage').style.display = 'block'; if (currentSelection.domain) { document.getElementById('currentDomainName').textContent = currentSelection.domain.domain_name; document.getElementById('domainHintName').textContent = currentSelection.domain.domain_name; fetchKnowledgeLevelsByDomain(currentSelection.domain.id); } }
+                else if (stage === 7) { document.getElementById('typeStage').style.display = 'block'; populateQuestionTypes(); }
+                else if (stage === 8) { document.getElementById('difficultyStage').style.display = 'block'; populateDifficultyLevels(); }
                 updateTracker();
                 updateProgress();
             } else {
@@ -1301,48 +1316,57 @@
         function updateTracker() {
             document.getElementById('trackerGradeValue').textContent = currentSelection.grade ? (currentSelection.grade.display_name || currentSelection.grade.grade_name) : 'Not selected';
             document.getElementById('trackerSubjectValue').textContent = currentSelection.subject ? currentSelection.subject.subject_name : 'Not selected';
-            document.getElementById('trackerChapterValue').textContent = currentSelection.chapter ? currentSelection.chapter.name : 'Not selected';
             document.getElementById('trackerCGValue').textContent = currentSelection.cg ? (currentSelection.cg.cg_code || 'Selected') : 'Not selected';
             document.getElementById('trackerCompValue').textContent = currentSelection.comp ? currentSelection.comp.comp_code : 'Not selected';
             document.getElementById('trackerDomainValue').textContent = currentSelection.domain ? currentSelection.domain.domain_name : 'Not selected';
             document.getElementById('trackerKnowledgeValue').textContent = currentSelection.knowledge ? currentSelection.knowledge.level_name : 'Not selected';
             document.getElementById('trackerTypeValue').textContent = currentSelection.type ? currentSelection.type.type_name : 'Not selected';
             document.getElementById('trackerDifficultyValue').textContent = currentSelection.difficulty ? currentSelection.difficulty.level_name : 'Not selected';
-            const trackerItems = ['trackerGrade', 'trackerSubject', 'trackerChapter', 'trackerCG', 'trackerCompetency', 'trackerDomain', 'trackerKnowledge', 'trackerType', 'trackerDifficulty'];
+            
+            const trackerItems = ['trackerGrade', 'trackerSubject', 'trackerCG', 'trackerCompetency', 'trackerDomain', 'trackerKnowledge', 'trackerType', 'trackerDifficulty'];
             trackerItems.forEach(item => document.getElementById(item).classList.remove('active', 'completed'));
+            
             if (currentSelection.grade) document.getElementById('trackerGrade').classList.add('completed');
             if (currentSelection.subject) document.getElementById('trackerSubject').classList.add('completed');
-            if (currentSelection.chapter) document.getElementById('trackerChapter').classList.add('completed');
             if (currentSelection.cg) document.getElementById('trackerCG').classList.add('completed');
             if (currentSelection.comp) document.getElementById('trackerCompetency').classList.add('completed');
             if (currentSelection.domain) document.getElementById('trackerDomain').classList.add('completed');
             if (currentSelection.knowledge) document.getElementById('trackerKnowledge').classList.add('completed');
             if (currentSelection.type) document.getElementById('trackerType').classList.add('completed');
-            if (!currentSelection.grade) document.getElementById('trackerGrade').classList.add('active');
-            else if (!currentSelection.subject) document.getElementById('trackerSubject').classList.add('active');
-            else if (!currentSelection.chapter) document.getElementById('trackerChapter').classList.add('active');
-            else if (!currentSelection.cg) document.getElementById('trackerCG').classList.add('active');
-            else if (!currentSelection.comp) document.getElementById('trackerCompetency').classList.add('active');
-            else if (!currentSelection.domain) document.getElementById('trackerDomain').classList.add('active');
-            else if (!currentSelection.knowledge) document.getElementById('trackerKnowledge').classList.add('active');
-            else if (!currentSelection.type) document.getElementById('trackerType').classList.add('active');
-            else if (!currentSelection.difficulty) document.getElementById('trackerDifficulty').classList.add('active');
-            else document.getElementById('trackerDifficulty').classList.add('completed');
+            
+            if (!currentSelection.grade) {
+                document.getElementById('trackerGrade').classList.add('active');
+            } else if (!currentSelection.subject) {
+                document.getElementById('trackerSubject').classList.add('active');
+            } else if (!currentSelection.cg) {
+                document.getElementById('trackerCG').classList.add('active');
+            } else if (!currentSelection.comp) {
+                document.getElementById('trackerCompetency').classList.add('active');
+            } else if (!currentSelection.domain) {
+                document.getElementById('trackerDomain').classList.add('active');
+            } else if (!currentSelection.knowledge) {
+                document.getElementById('trackerKnowledge').classList.add('active');
+            } else if (!currentSelection.type) {
+                document.getElementById('trackerType').classList.add('active');
+            } else if (!currentSelection.difficulty) {
+                document.getElementById('trackerDifficulty').classList.add('active');
+            } else {
+                document.getElementById('trackerDifficulty').classList.add('completed');
+            }
         }
         function updateProgress() {
             let step = 1;
             if (currentSelection.grade) step = 2;
             if (currentSelection.subject) step = 3;
-            if (currentSelection.chapter) step = 4;
-            if (currentSelection.cg) step = 5;
-            if (currentSelection.comp) step = 6;
-            if (currentSelection.domain) step = 7;
-            if (currentSelection.knowledge) step = 8;
-            if (currentSelection.type) step = 9;
-            if (currentSelection.difficulty) step = 9;
-            const percent = ((step - 1) / 8) * 100;
+            if (currentSelection.cg) step = 4;
+            if (currentSelection.comp) step = 5;
+            if (currentSelection.domain) step = 6;
+            if (currentSelection.knowledge) step = 7;
+            if (currentSelection.type) step = 8;
+            if (currentSelection.difficulty) step = 8;
+            const percent = ((step - 1) / 7) * 100;
             document.getElementById('progressFill').style.width = percent + '%';
-            document.getElementById('progressText').textContent = `Step ${step} of 9`;
+            document.getElementById('progressText').textContent = `Step ${step} of 8`;
         }
         async function loadPage2Data(compId) {
             try {
@@ -1386,9 +1410,6 @@
             localStorage.setItem('selectedGradeName', currentSelection.grade?.display_name || currentSelection.grade?.grade_name);
             localStorage.setItem('selectedSubjectId', currentSelection.subject?.id);
             localStorage.setItem('selectedSubjectName', currentSelection.subject?.subject_name);
-            localStorage.setItem('selectedChapterId', currentSelection.chapter?.id);
-            localStorage.setItem('selectedChapterName', currentSelection.chapter?.name);
-            localStorage.setItem('selectedChapterCode', currentSelection.chapter?.code || '');
             localStorage.setItem('selectedCGId', currentSelection.cg?.id);
             localStorage.setItem('selectedCGCode', currentSelection.cg?.cg_code);
             localStorage.setItem('selectedDomainId', currentSelection.domain?.id);
@@ -1407,7 +1428,6 @@
             const storedSelections = {
                 grade: { id: localStorage.getItem('selectedGradeId'), grade_name: localStorage.getItem('selectedGradeName') },
                 subject: { id: localStorage.getItem('selectedSubjectId'), subject_name: localStorage.getItem('selectedSubjectName') },
-                chapter: { id: localStorage.getItem('selectedChapterId'), name: localStorage.getItem('selectedChapterName'), code: localStorage.getItem('selectedChapterCode') },
                 cg: { id: localStorage.getItem('selectedCGId'), cg_code: localStorage.getItem('selectedCGCode') },
                 comp: { id: localStorage.getItem('selectedCompId'), comp_code: localStorage.getItem('selectedCompCode'), comp_description: localStorage.getItem('selectedCompDesc') },
                 domain: { id: localStorage.getItem('selectedDomainId'), domain_name: localStorage.getItem('selectedDomainName') },
@@ -1415,7 +1435,7 @@
                 type: { id: localStorage.getItem('selectedQuestionTypeId'), type_name: localStorage.getItem('selectedQuestionTypeName') },
                 difficulty: { id: localStorage.getItem('selectedDifficultyId'), level_name: localStorage.getItem('selectedDifficultyName') }
             };
-            currentSelection = { grade: null, subject: null, chapter: null, cg: null, comp: null, domain: null, knowledge: null, type: null, difficulty: null };
+            currentSelection = { grade: null, subject: null, cg: null, comp: null, domain: null, knowledge: null, type: null, difficulty: null };
             if (storedSelections.grade.id) {
                 currentSelection.grade = storedSelections.grade;
                 document.getElementById('gradeStage').style.display = 'none';
@@ -1425,56 +1445,49 @@
                 if (storedSelections.subject.id) {
                     currentSelection.subject = storedSelections.subject;
                     document.getElementById('subjectStage').style.display = 'none';
-                    document.getElementById('chapterStage').style.display = 'block';
-                    document.getElementById('currentChapterSubjectName').textContent = storedSelections.subject.subject_name;
-                    populateChapters(storedSelections.subject.id);
-                    if (storedSelections.chapter.id) {
-                        currentSelection.chapter = storedSelections.chapter;
-                        document.getElementById('chapterStage').style.display = 'none';
-                        document.getElementById('cgStage').style.display = 'block';
-                        document.getElementById('currentSubjectName').textContent = storedSelections.subject.subject_name;
-                        populateCGs(storedSelections.subject.id);
-                        if (storedSelections.cg.id) {
-                            currentSelection.cg = storedSelections.cg;
-                            document.getElementById('cgStage').style.display = 'none';
-                            document.getElementById('compStage').style.display = 'block';
-                            document.getElementById('currentCGName').textContent = storedSelections.cg.cg_code;
-                            populateCompetencies(storedSelections.cg.id);
-                            if (storedSelections.comp.id) {
-                                currentSelection.comp = storedSelections.comp;
-                                document.getElementById('sidebarCompCode').textContent = storedSelections.comp.comp_code;
-                                document.getElementById('sidebarCompDesc').textContent = storedSelections.comp.comp_description || '';
-                                await loadPage2Data(storedSelections.comp.id);
-                                document.getElementById('compStage').style.display = 'none';
-                                document.getElementById('domainStage').style.display = 'block';
-                                populateDomains();
-                                if (storedSelections.domain.id) {
-                                    currentSelection.domain = storedSelections.domain;
-                                    document.getElementById('domainStage').style.display = 'none';
-                                    document.getElementById('knowledgeStage').style.display = 'block';
-                                    document.getElementById('currentDomainName').textContent = storedSelections.domain.domain_name;
-                                    document.getElementById('domainHintName').textContent = storedSelections.domain.domain_name;
-                                    await loadKnowledgeLevels();
-                                    fetchKnowledgeLevelsByDomain(storedSelections.domain.id);
-                                    if (storedSelections.knowledge.id) {
-                                        currentSelection.knowledge = storedSelections.knowledge;
-                                        document.getElementById('knowledgeStage').style.display = 'none';
-                                        document.getElementById('typeStage').style.display = 'block';
-                                        populateQuestionTypes();
-                                        if (storedSelections.type.id) {
-                                            currentSelection.type = storedSelections.type;
-                                            document.getElementById('typeStage').style.display = 'none';
-                                            document.getElementById('difficultyStage').style.display = 'block';
-                                            populateDifficultyLevels();
-                                            if (storedSelections.difficulty.id) {
-                                                currentSelection.difficulty = storedSelections.difficulty;
-                                                setTimeout(() => {
-                                                    const difficultyItems = document.querySelectorAll('#difficultyList .item-card');
-                                                    difficultyItems.forEach(item => {
-                                                        if (item.querySelector('.item-title')?.textContent.trim() === storedSelections.difficulty.level_name) item.classList.add('selected');
-                                                    });
-                                                }, 100);
-                                            }
+                    document.getElementById('cgStage').style.display = 'block';
+                    document.getElementById('currentSubjectName').textContent = storedSelections.subject.subject_name;
+                    populateCGs(storedSelections.subject.id);
+                    if (storedSelections.cg.id) {
+                        currentSelection.cg = storedSelections.cg;
+                        document.getElementById('cgStage').style.display = 'none';
+                        document.getElementById('compStage').style.display = 'block';
+                        document.getElementById('currentCGName').textContent = storedSelections.cg.cg_code;
+                        populateCompetencies(storedSelections.cg.id);
+                        if (storedSelections.comp.id) {
+                            currentSelection.comp = storedSelections.comp;
+                            document.getElementById('sidebarCompCode').textContent = storedSelections.comp.comp_code;
+                            document.getElementById('sidebarCompDesc').textContent = storedSelections.comp.comp_description || '';
+                            document.getElementById('compStage').style.display = 'none';
+                            document.getElementById('domainStage').style.display = 'block';
+                            await loadPage2Data(storedSelections.comp.id);
+                            populateDomains();
+                            if (storedSelections.domain.id) {
+                                currentSelection.domain = storedSelections.domain;
+                                document.getElementById('domainStage').style.display = 'none';
+                                document.getElementById('knowledgeStage').style.display = 'block';
+                                document.getElementById('currentDomainName').textContent = storedSelections.domain.domain_name;
+                                document.getElementById('domainHintName').textContent = storedSelections.domain.domain_name;
+                                await loadKnowledgeLevels();
+                                fetchKnowledgeLevelsByDomain(storedSelections.domain.id);
+                                if (storedSelections.knowledge.id) {
+                                    currentSelection.knowledge = storedSelections.knowledge;
+                                    document.getElementById('knowledgeStage').style.display = 'none';
+                                    document.getElementById('typeStage').style.display = 'block';
+                                    populateQuestionTypes();
+                                    if (storedSelections.type.id) {
+                                        currentSelection.type = storedSelections.type;
+                                        document.getElementById('typeStage').style.display = 'none';
+                                        document.getElementById('difficultyStage').style.display = 'block';
+                                        populateDifficultyLevels();
+                                        if (storedSelections.difficulty.id) {
+                                            currentSelection.difficulty = storedSelections.difficulty;
+                                            setTimeout(() => {
+                                                const difficultyItems = document.querySelectorAll('#difficultyList .item-card');
+                                                difficultyItems.forEach(item => {
+                                                    if (item.querySelector('.item-title')?.textContent.trim() === storedSelections.difficulty.level_name) item.classList.add('selected');
+                                                });
+                                            }, 100);
                                         }
                                     }
                                 }

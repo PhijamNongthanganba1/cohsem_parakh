@@ -1,16 +1,11 @@
-<!-- question_paper_builder.html - Complete Full Working Version with Sub-Domains -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>COHSEM | PARAKH - Paper Builder</title>
+    <title>COHSEM · Paper Builder (CG as List)</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
             background: linear-gradient(135deg, #0a1a3a, #1a3a6d, #0c2461, #1e3a5f, #0a1a3a);
@@ -37,25 +32,10 @@
             align-items: center;
             flex-shrink: 0;
         }
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        .header-left h1 {
-            color: white;
-            font-size: 24px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .header-left h1 i {
-            color: #e67e22;
-        }
-        .header-right {
-            display: flex;
-            gap: 15px;
-        }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .header-left h1 { color: white; font-size: 24px; display: flex; align-items: center; gap: 10px; }
+        .header-left h1 i { color: #e67e22; }
+        .header-right { display: flex; gap: 15px; }
         .btn {
             padding: 10px 20px;
             border-radius: 30px;
@@ -69,50 +49,20 @@
             cursor: pointer;
             font-size: 14px;
         }
-        .btn-primary {
-            background: #3498db;
-            color: white;
-        }
-        .btn-primary:hover {
-            background: #2980b9;
-        }
-        .btn-success {
-            background: #27ae60;
-            color: white;
-        }
-        .btn-success:hover {
-            background: #229954;
-        }
-        .btn-danger {
-            background: #e74c3c;
-            color: white;
-        }
-        .btn-danger:hover {
-            background: #c0392b;
-        }
-        .btn-warning {
-            background: #f39c12;
-            color: white;
-        }
-        .btn-warning:hover {
-            background: #e67e22;
-        }
-        .btn-sm {
-            padding: 6px 15px;
-            font-size: 12px;
-        }
-        .btn-lg {
-            padding: 12px 35px;
-            font-size: 16px;
-            border-radius: 35px;
-        }
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+        .btn-primary { background: #3498db; color: white; }
+        .btn-primary:hover { background: #2980b9; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-success:hover { background: #229954; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-warning { background: #f39c12; color: white; }
+        .btn-warning:hover { background: #e67e22; }
+        .btn-sm { padding: 6px 15px; font-size: 12px; }
+        .btn-lg { padding: 12px 35px; font-size: 16px; border-radius: 35px; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .main-container {
             display: grid;
-            grid-template-columns: 280px 1fr;
+            grid-template-columns: 240px 1fr;
             gap: 20px;
             flex: 1;
             min-height: 0;
@@ -137,14 +87,8 @@
             align-items: center;
             gap: 10px;
         }
-        .tracker-title i {
-            color: #e67e22;
-        }
-        .tracker-steps {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
+        .tracker-title i { color: #e67e22; }
+        .tracker-steps { display: flex; flex-direction: column; gap: 6px; }
         .tracker-step {
             display: flex;
             align-items: center;
@@ -156,21 +100,11 @@
             transition: all 0.3s ease;
             cursor: pointer;
         }
-        .tracker-step:hover {
-            background: rgba(230,126,34,0.1);
-            transform: translateX(5px);
-        }
-        .tracker-step.active {
-            background: rgba(230,126,34,0.2);
-            border-left-color: #e67e22;
-        }
-        .tracker-step.completed {
-            background: rgba(39,174,96,0.1);
-            border-left-color: #27ae60;
-        }
+        .tracker-step:hover { background: rgba(230,126,34,0.1); transform: translateX(5px); }
+        .tracker-step.active { background: rgba(230,126,34,0.2); border-left-color: #e67e22; }
+        .tracker-step.completed { background: rgba(39,174,96,0.1); border-left-color: #27ae60; }
         .step-number {
-            width: 26px;
-            height: 26px;
+            width: 26px; height: 26px;
             background: rgba(255,255,255,0.1);
             border-radius: 50%;
             display: flex;
@@ -181,30 +115,12 @@
             font-size: 12px;
             flex-shrink: 0;
         }
-        .tracker-step.active .step-number {
-            background: #e67e22;
-        }
-        .tracker-step.completed .step-number {
-            background: #27ae60;
-        }
-        .step-info {
-            flex: 1;
-            min-width: 0;
-        }
-        .step-label {
-            color: rgba(255,255,255,0.6);
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .step-value {
-            color: white;
-            font-size: 13px;
-            font-weight: 600;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+        .tracker-step.active .step-number { background: #e67e22; }
+        .tracker-step.completed .step-number { background: #27ae60; }
+        .step-info { flex: 1; min-width: 0; }
+        .step-label { color: rgba(255,255,255,0.6); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .step-value { color: white; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
         .content-area {
             background: rgba(255,255,255,0.1);
             backdrop-filter: blur(10px);
@@ -216,88 +132,31 @@
             display: flex;
             flex-direction: column;
         }
-        .content-area::-webkit-scrollbar {
-            width: 6px;
-        }
-        .content-area::-webkit-scrollbar-track {
-            background: rgba(255,255,255,0.05);
-            border-radius: 10px;
-        }
-        .content-area::-webkit-scrollbar-thumb {
-            background: rgba(230,126,34,0.5);
-            border-radius: 10px;
-        }
-        .progress-container {
-            margin-bottom: 18px;
-            flex-shrink: 0;
-        }
-        .progress-bar {
-            height: 6px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #e67e22, #f39c12);
-            width: 0%;
-            transition: width 0.5s ease;
-        }
-        .progress-text {
-            text-align: center;
-            color: rgba(255,255,255,0.6);
-            font-size: 12px;
-            margin-top: 5px;
-        }
-        .stage-container {
-            animation: fadeIn 0.4s ease;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .stage-content {
-            flex: 1;
-            overflow-y: auto;
-            padding-right: 5px;
-        }
-        .stage-content::-webkit-scrollbar {
-            width: 4px;
-        }
-        .stage-content::-webkit-scrollbar-track {
-            background: rgba(255,255,255,0.05);
-            border-radius: 10px;
-        }
-        .stage-content::-webkit-scrollbar-thumb {
-            background: rgba(230,126,34,0.4);
-            border-radius: 10px;
-        }
-        .stage-header {
-            margin-bottom: 18px;
-            flex-shrink: 0;
-        }
-        .stage-header h2 {
-            color: white;
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-        .stage-header p {
-            color: rgba(255,255,255,0.6);
-            font-size: 14px;
-        }
-        .grid-2, .grid-3, .grid-4 {
-            display: grid;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
+        .content-area::-webkit-scrollbar { width: 6px; }
+        .content-area::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
+        .content-area::-webkit-scrollbar-thumb { background: rgba(230,126,34,0.5); border-radius: 10px; }
+
+        .progress-container { margin-bottom: 18px; flex-shrink: 0; }
+        .progress-bar { height: 6px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #e67e22, #f39c12); width: 0%; transition: width 0.5s ease; }
+        .progress-text { text-align: center; color: rgba(255,255,255,0.6); font-size: 12px; margin-top: 5px; }
+
+        .stage-container { animation: fadeIn 0.4s ease; flex: 1; display: flex; flex-direction: column; min-height: 0; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .stage-content { flex: 1; overflow-y: auto; padding-right: 5px; }
+        .stage-content::-webkit-scrollbar { width: 4px; }
+        .stage-content::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
+        .stage-content::-webkit-scrollbar-thumb { background: rgba(230,126,34,0.4); border-radius: 10px; }
+
+        .stage-header { margin-bottom: 18px; flex-shrink: 0; }
+        .stage-header h2 { color: white; font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+        .stage-header p { color: rgba(255,255,255,0.6); font-size: 14px; }
+
+        .grid-2, .grid-3, .grid-4 { display: grid; gap: 15px; margin-bottom: 20px; }
         .grid-2 { grid-template-columns: repeat(2, 1fr); }
         .grid-3 { grid-template-columns: repeat(3, 1fr); }
         .grid-4 { grid-template-columns: repeat(4, 1fr); }
+
         .card {
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
@@ -308,22 +167,13 @@
             position: relative;
             overflow: hidden;
         }
-        .card:hover {
-            background: rgba(255,255,255,0.08);
-            border-color: #e67e22;
-            transform: translateY(-2px);
-        }
-        .card.selected {
-            background: rgba(230,126,34,0.2);
-            border-color: #e67e22;
-        }
+        .card:hover { background: rgba(255,255,255,0.08); border-color: #e67e22; transform: translateY(-2px); }
+        .card.selected { background: rgba(230,126,34,0.2); border-color: #e67e22; }
         .card.selected::before {
             content: '✓';
             position: absolute;
-            top: 8px;
-            right: 8px;
-            width: 22px;
-            height: 22px;
+            top: 8px; right: 8px;
+            width: 22px; height: 22px;
             background: #e67e22;
             border-radius: 50%;
             display: flex;
@@ -334,8 +184,7 @@
             font-weight: bold;
         }
         .card-icon {
-            width: 44px;
-            height: 44px;
+            width: 44px; height: 44px;
             background: linear-gradient(45deg, #e67e22, #f39c12);
             border-radius: 10px;
             display: flex;
@@ -345,17 +194,8 @@
             font-size: 20px;
             color: white;
         }
-        .card h3 {
-            color: white;
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-        .card p {
-            color: rgba(255,255,255,0.6);
-            font-size: 12px;
-            line-height: 1.4;
-        }
+        .card h3 { color: white; font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+        .card p { color: rgba(255,255,255,0.6); font-size: 12px; line-height: 1.4; }
         .card .badge {
             display: inline-block;
             background: rgba(255,255,255,0.1);
@@ -366,6 +206,7 @@
             font-weight: 600;
             margin-top: 8px;
         }
+
         .subject-info {
             background: rgba(230,126,34,0.12);
             border: 1px solid rgba(230,126,34,0.3);
@@ -379,165 +220,155 @@
             gap: 10px;
             flex-shrink: 0;
         }
-        .subject-info h3 {
-            color: white;
-            font-size: 18px;
+        .subject-info h3 { color: white; font-size: 18px; }
+        .subject-info span { color: #e67e22; font-weight: 600; font-size: 14px; }
+
+        /* CG LIST STYLE */
+        .cg-list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 6px;
         }
-        .subject-info span {
-            color: #e67e22;
-            font-weight: 600;
-            font-size: 14px;
-        }
-        .table-container {
-            overflow-x: auto;
-            background: rgba(255,255,255,0.05);
-            border-radius: 10px;
-            margin-top: 8px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th {
-            text-align: left;
-            padding: 10px 12px;
-            color: rgba(255,255,255,0.6);
-            font-weight: 600;
-            font-size: 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            background: rgba(0,0,0,0.2);
-        }
-        td {
-            padding: 10px 12px;
-            color: white;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            vertical-align: top;
-            font-size: 13px;
-        }
-        tr:hover {
-            background: rgba(255,255,255,0.05);
+        .cg-list-item {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            transition: all 0.2s ease;
             cursor: pointer;
         }
-        tr.selected-chapter {
-            background: rgba(230,126,34,0.2);
+        .cg-list-item:hover {
+            background: rgba(230,126,34,0.06);
+            border-color: rgba(230,126,34,0.3);
         }
-        .cg-info-card {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 18px;
+        .cg-list-item.selected {
+            background: rgba(230,126,34,0.15);
+            border-color: #e67e22;
+            border-left: 5px solid #e67e22;
         }
-        .cg-code {
+        .cg-list-item .cg-check {
+            width: 18px; height: 18px;
+            accent-color: #e67e22;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .cg-list-item .cg-code {
             color: #e67e22;
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 6px;
+            font-weight: 700;
+            font-size: 15px;
+            min-width: 90px;
         }
-        .cg-description {
-            color: rgba(255,255,255,0.6);
-            font-size: 13px;
-            line-height: 1.5;
+        .cg-list-item .cg-desc {
+            color: white;
+            font-size: 14px;
+            flex: 1;
         }
-        .comp-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        .cg-list-item .cg-chapter {
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
+            background: rgba(255,255,255,0.06);
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+        .cg-list-item .cg-comp-count {
+            color: #2ecc71;
+            font-size: 12px;
+            background: rgba(46,204,113,0.12);
+            padding: 3px 12px;
+            border-radius: 30px;
+        }
+
+        .choose-all-container {
+            display: flex;
+            align-items: center;
             gap: 12px;
-            margin: 15px 0;
+            margin-bottom: 12px;
+            padding: 10px 16px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.08);
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+        .choose-all-container label {
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+        .choose-all-container input[type="checkbox"] {
+            width: 16px; height: 16px;
+            cursor: pointer;
+            accent-color: #e67e22;
+        }
+        .choose-all-container .selected-count {
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
+        }
+        .choose-all-container .selected-count strong { color: #e67e22; }
+
+        /* Comp list inside CG */
+        .comp-list-container {
+            margin-top: 10px;
+            padding-left: 40px;
+            display: none;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            padding-top: 10px;
+        }
+        .comp-list-container.open {
+            display: block;
         }
         .comp-item {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 10px;
-            padding: 16px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
         .comp-item:hover {
-            background: rgba(230,126,34,0.1);
+            background: rgba(230,126,34,0.08);
             border-color: #e67e22;
-            transform: translateY(-2px);
         }
-        .comp-item.selected {
-            background: rgba(230,126,34,0.2);
+        .comp-item.selected-comp {
+            background: rgba(230,126,34,0.15);
             border-color: #e67e22;
-            border-left: 4px solid #e67e22;
+            border-left: 3px solid #e67e22;
         }
-        .comp-code {
-            color: #e67e22;
-            font-weight: 600;
-            font-size: 14px;
-            margin-bottom: 6px;
-        }
-        .comp-desc {
-            color: rgba(255,255,255,0.6);
-            font-size: 12px;
-            line-height: 1.4;
-        }
-        .selected-badge {
-            display: inline-block;
-            background: #27ae60;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 10px;
-            margin-top: 8px;
-        }
-        .empty-cg-message {
-            background: rgba(255,255,255,0.03);
-            border: 1px dashed rgba(255,255,255,0.2);
-            border-radius: 12px;
-            padding: 30px;
-            text-align: center;
-            margin: 20px 0;
-        }
-        .empty-cg-message i {
-            font-size: 36px;
-            color: #e67e22;
-            opacity: 0.5;
-            margin-bottom: 10px;
-        }
-        .empty-cg-message h3 {
-            color: white;
-            margin-bottom: 8px;
-            font-size: 16px;
-        }
-        .empty-cg-message p {
-            color: rgba(255,255,255,0.6);
-            font-size: 13px;
-        }
-        .nav-buttons {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: auto;
-            padding-top: 15px;
-            border-top: 1px solid rgba(255,255,255,0.08);
-            gap: 12px;
+        .comp-item .comp-check {
+            width: 16px; height: 16px;
+            accent-color: #e67e22;
+            cursor: pointer;
             flex-shrink: 0;
-            background: rgba(10, 26, 58, 0.6);
-            border-radius: 12px;
-            padding: 12px 15px;
-            margin-top: 15px;
         }
-        .nav-buttons .btn-group {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
+        .comp-item .comp-code {
+            color: #2ecc71;
+            font-weight: 600;
+            font-size: 13px;
+            min-width: 90px;
         }
-        .nav-buttons .btn-group-left {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-wrap: wrap;
+        .comp-item .comp-desc {
+            color: rgba(255,255,255,0.75);
+            font-size: 13px;
+            flex: 1;
         }
-        .nav-buttons .btn-group-right {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-wrap: wrap;
+        .comp-item .comp-meta {
+            color: rgba(255,255,255,0.3);
+            font-size: 11px;
         }
+
+        /* remaining styles */
         .marks-card {
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
@@ -545,43 +376,12 @@
             padding: 16px;
             margin-bottom: 16px;
         }
-        .marks-title {
-            color: white;
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .marks-title i {
-            color: #e67e22;
-        }
-        .marks-input-group {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 10px;
-        }
-        .marks-label {
-            width: 120px;
-            color: white;
-            font-size: 13px;
-        }
-        .marks-input {
-            width: 80px;
-            padding: 8px;
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 6px;
-            color: white;
-            text-align: center;
-            font-size: 14px;
-        }
-        .marks-input:focus {
-            outline: none;
-            border-color: #e67e22;
-        }
+        .marks-title { color: white; font-size: 16px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .marks-title i { color: #e67e22; }
+        .marks-input-group { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        .marks-label { width: 120px; color: white; font-size: 13px; }
+        .marks-input { width: 80px; padding: 8px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: white; text-align: center; font-size: 14px; }
+        .marks-input:focus { outline: none; border-color: #e67e22; }
         .type-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -594,45 +394,12 @@
             border-radius: 10px;
             padding: 12px 14px;
         }
-        .type-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            color: white;
-            font-weight: 600;
-            font-size: 13px;
-        }
-        .type-inputs {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .type-input {
-            width: 50px;
-            padding: 6px;
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 4px;
-            color: white;
-            text-align: center;
-            font-size: 12px;
-        }
-        .type-multiply {
-            color: #e67e22;
-            font-size: 12px;
-        }
-        .type-equal {
-            color: #27ae60;
-            font-weight: 600;
-            font-size: 12px;
-        }
-        .type-total {
-            min-width: 40px;
-            text-align: right;
-            color: #27ae60;
-            font-weight: 600;
-            font-size: 13px;
-        }
+        .type-header { display: flex; justify-content: space-between; margin-bottom: 8px; color: white; font-weight: 600; font-size: 13px; }
+        .type-inputs { display: flex; align-items: center; gap: 6px; }
+        .type-input { width: 50px; padding: 6px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; color: white; text-align: center; font-size: 12px; }
+        .type-multiply { color: #e67e22; font-size: 12px; }
+        .type-equal { color: #27ae60; font-weight: 600; font-size: 12px; }
+        .type-total { min-width: 40px; text-align: right; color: #27ae60; font-weight: 600; font-size: 13px; }
         .questions-section {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -671,29 +438,27 @@
             overflow-y: auto;
             min-height: 0;
         }
-        .question-table-container::-webkit-scrollbar {
-            width: 4px;
+        .question-table-container::-webkit-scrollbar { width: 4px; }
+        .question-table-container::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
+        .question-table-container::-webkit-scrollbar-thumb { background: rgba(230,126,34,0.4); border-radius: 10px; }
+        table { width: 100%; border-collapse: collapse; }
+        th {
+            text-align: left;
+            padding: 10px 12px;
+            color: rgba(255,255,255,0.6);
+            font-weight: 600;
+            font-size: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.2);
         }
-        .question-table-container::-webkit-scrollbar-track {
-            background: rgba(255,255,255,0.05);
-            border-radius: 10px;
-        }
-        .question-table-container::-webkit-scrollbar-thumb {
-            background: rgba(230,126,34,0.4);
-            border-radius: 10px;
-        }
-        .checkbox {
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-            accent-color: #e67e22;
-        }
+        td { padding: 10px 12px; color: white; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: top; font-size: 13px; }
+        tr:hover { background: rgba(255,255,255,0.05); cursor: pointer; }
+        .checkbox { width: 16px; height: 16px; cursor: pointer; accent-color: #e67e22; }
         .remove-btn {
             background: #e74c3c;
             border: none;
             color: white;
-            width: 24px;
-            height: 24px;
+            width: 24px; height: 24px;
             border-radius: 6px;
             cursor: pointer;
             display: flex;
@@ -701,68 +466,45 @@
             justify-content: center;
             font-size: 11px;
         }
-        .remove-btn:hover {
-            background: #c0392b;
-        }
-        .question-image-thumb {
-            width: 35px;
-            height: 35px;
-            border-radius: 4px;
-            overflow: hidden;
-            cursor: pointer;
-            border: 1px solid rgba(255,255,255,0.2);
-            margin-top: 5px;
-        }
-        .question-image-thumb img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .question-images-preview {
+        .remove-btn:hover { background: #c0392b; }
+        .question-image-thumb { width: 35px; height: 35px; border-radius: 4px; overflow: hidden; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); margin-top: 5px; }
+        .question-image-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .question-images-preview { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+        .has-image-icon { color: #3498db; margin-left: 4px; font-size: 11px; }
+
+        .empty-state { text-align: center; padding: 30px; color: rgba(255,255,255,0.4); font-size: 14px; }
+        .empty-state i { font-size: 36px; margin-bottom: 10px; opacity: 0.3; }
+        .nav-buttons {
             display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-            margin-top: 4px;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            gap: 12px;
+            flex-shrink: 0;
+            background: rgba(10, 26, 58, 0.6);
+            border-radius: 12px;
+            padding: 12px 15px;
+            margin-top: 15px;
         }
-        .has-image-icon {
-            color: #3498db;
-            margin-left: 4px;
-            font-size: 11px;
-        }
-        .empty-state {
-            text-align: center;
-            padding: 30px;
-            color: rgba(255,255,255,0.4);
-            font-size: 14px;
-        }
-        .empty-state i {
-            font-size: 36px;
-            margin-bottom: 10px;
-            opacity: 0.3;
-        }
-        .filter-badge {
-            background: rgba(230,126,34,0.3);
-            color: #e67e22;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-        }
+        .nav-buttons .btn-group { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .nav-buttons .btn-group-left { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .nav-buttons .btn-group-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .generate-container { display: flex; justify-content: center; margin-top: 15px; flex-shrink: 0; padding: 10px 0; }
+
         .modal {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             background: rgba(0,0,0,0.8);
             backdrop-filter: blur(5px);
             justify-content: center;
             align-items: center;
             z-index: 1000;
         }
-        .modal.active {
-            display: flex;
-        }
+        .modal.active { display: flex; }
         .modal-content {
             background: white;
             border-radius: 15px;
@@ -772,10 +514,7 @@
             overflow-y: auto;
             animation: slideIn 0.3s ease;
         }
-        @keyframes slideIn {
-            from { transform: translateY(-30px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
+        @keyframes slideIn { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .modal-header {
             padding: 18px 25px;
             background: linear-gradient(135deg, #e67e22, #f39c12);
@@ -785,168 +524,40 @@
             justify-content: space-between;
             align-items: center;
         }
-        .modal-header h3 {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 18px;
-        }
-        .close-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-        }
-        .modal-body {
-            padding: 25px;
-        }
-        .modal-footer {
-            padding: 15px 25px;
-            border-top: 1px solid #eee;
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
-        .paper-preview {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 10px;
-            max-height: 55vh;
-            overflow-y: auto;
-        }
-        .paper-header {
-            text-align: center;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #e67e22;
-        }
-        .paper-header h2 {
-            color: #2c3e50;
-            margin-bottom: 4px;
-            font-size: 22px;
-        }
-        .paper-header h3 {
-            color: #e67e22;
-            margin-bottom: 10px;
-            font-size: 18px;
-        }
-        .paper-meta {
-            display: flex;
-            justify-content: center;
-            gap: 25px;
-            color: #666;
-            font-size: 13px;
-        }
-        .question-item {
-            margin-bottom: 20px;
-            padding: 12px 15px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-            page-break-inside: avoid;
-            break-inside: avoid;
-        }
-        .question-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 10px;
-            color: #2c3e50;
-            line-height: 1.5;
-            font-size: 14px;
-        }
-        .question-header span:first-child {
-            flex: 1;
-        }
-        .question-marks {
-            color: #27ae60;
-            font-weight: 600;
-            white-space: nowrap;
-            font-size: 13px;
-        }
-        .question-images-preview-modal {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 8px;
-            padding-top: 8px;
-            border-top: 1px solid #eee;
-        }
-        .preview-image {
-            max-width: 150px;
-            max-height: 120px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-        }
-        .summary-section {
-            background: rgba(39,174,96,0.1);
-            border: 1px solid #27ae60;
-            border-radius: 10px;
-            padding: 16px;
-            margin-top: 20px;
-            flex-shrink: 0;
-        }
-        .summary-title {
-            color: #27ae60;
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 8px;
-        }
-        .summary-item {
-            background: rgba(255,255,255,0.05);
-            padding: 10px;
-            border-radius: 6px;
-            color: white;
-            font-size: 13px;
-        }
-        .summary-item strong {
-            color: #e67e22;
-        }
-        .summary-item small {
-            color: #27ae60;
-            display: block;
-            margin-top: 4px;
-            font-size: 11px;
-        }
-        .skip-badge {
-            display: inline-block;
-            background: #95a5a6;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 10px;
-            margin-left: 8px;
-        }
+        .modal-header h3 { display: flex; align-items: center; gap: 10px; font-size: 18px; }
+        .close-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
+        .modal-body { padding: 25px; }
+        .modal-footer { padding: 15px 25px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 10px; }
+        .paper-preview { background: #f8f9fa; padding: 25px; border-radius: 10px; max-height: 55vh; overflow-y: auto; }
+        .paper-header { text-align: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #e67e22; }
+        .paper-header h2 { color: #2c3e50; margin-bottom: 4px; font-size: 22px; }
+        .paper-header h3 { color: #e67e22; margin-bottom: 10px; font-size: 18px; }
+        .paper-meta { display: flex; justify-content: center; gap: 25px; color: #666; font-size: 13px; }
+        .question-item { margin-bottom: 20px; padding: 12px 15px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); page-break-inside: avoid; break-inside: avoid; }
+        .question-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; color: #2c3e50; line-height: 1.5; font-size: 14px; }
+        .question-marks { color: #27ae60; font-weight: 600; white-space: nowrap; font-size: 13px; }
+        .question-images-preview-modal { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; }
+        .preview-image { max-width: 150px; max-height: 120px; border-radius: 5px; border: 1px solid #ddd; }
+
         .image-modal {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             background: rgba(0,0,0,0.95);
             z-index: 1100;
             cursor: pointer;
         }
         .image-modal img {
             position: absolute;
-            top: 50%;
-            left: 50%;
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            max-width: 90%;
-            max-height: 90%;
+            max-width: 90%; max-height: 90%;
             object-fit: contain;
         }
         .image-modal-close {
             position: absolute;
-            top: 20px;
-            right: 35px;
+            top: 20px; right: 35px;
             color: white;
             font-size: 40px;
             font-weight: bold;
@@ -965,76 +576,11 @@
             font-size: 13px;
             flex-shrink: 0;
         }
-        @keyframes pulse {
-            0% { opacity: 0.8; }
-            50% { opacity: 1; }
-            100% { opacity: 0.8; }
-        }
-        .choose-all-container {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 12px;
-            padding: 10px 16px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.08);
-            flex-wrap: wrap;
-            flex-shrink: 0;
-        }
-        .choose-all-container label {
-            color: white;
-            font-weight: 600;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-        }
-        .choose-all-container input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-            accent-color: #e67e22;
-        }
-        .choose-all-container .selected-count {
-            color: rgba(255,255,255,0.5);
-            font-size: 12px;
-        }
-        .choose-all-container .selected-count strong {
-            color: #e67e22;
-        }
-        .chapter-checkbox {
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-            accent-color: #e67e22;
-        }
-        .loading {
-            text-align: center;
-            color: rgba(255,255,255,0.4);
-            padding: 20px;
-            font-size: 14px;
-        }
-        .loading i {
-            font-size: 24px;
-            margin-bottom: 8px;
-            display: block;
-        }
-        .no-data {
-            text-align: center;
-            color: rgba(255,255,255,0.4);
-            padding: 20px;
-            font-style: italic;
-            font-size: 13px;
-        }
-        .generate-container {
-            display: flex;
-            justify-content: center;
-            margin-top: 15px;
-            flex-shrink: 0;
-            padding: 10px 0;
-        }
+        @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; } 100% { opacity: 0.8; } }
+        .loading { text-align: center; color: rgba(255,255,255,0.4); padding: 20px; font-size: 14px; }
+        .loading i { font-size: 24px; margin-bottom: 8px; display: block; }
+        .no-data { text-align: center; color: rgba(255,255,255,0.4); padding: 20px; font-style: italic; font-size: 13px; }
+
         .sub-domain-group {
             background: rgba(255,255,255,0.03);
             border: 1px solid rgba(255,255,255,0.06);
@@ -1042,99 +588,32 @@
             padding: 12px 14px;
             margin-bottom: 8px;
         }
-        .sub-domain-group .domain-label {
-            color: #e67e22;
-            font-weight: 600;
-            font-size: 13px;
-            margin-bottom: 6px;
-            display: block;
-        }
-        .sub-domain-group .sub-domain-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 4px 0;
-            padding-left: 12px;
-        }
-        .sub-domain-group .sub-domain-row .sub-label {
-            color: rgba(255,255,255,0.7);
-            font-size: 12px;
-            width: 140px;
-        }
-        .sub-domain-group .sub-domain-row .sub-input {
-            width: 60px;
-            padding: 5px 8px;
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 4px;
-            color: white;
-            text-align: center;
-            font-size: 12px;
-        }
-        .sub-domain-group .sub-domain-row .sub-input:focus {
-            outline: none;
-            border-color: #e67e22;
-        }
-        .sub-domain-group .sub-domain-row .sub-percent {
-            color: #27ae60;
-            font-size: 12px;
-            min-width: 40px;
-        }
-        .sub-domain-total {
-            color: #f39c12;
-            font-size: 12px;
-            text-align: right;
-            padding-top: 4px;
-            border-top: 1px solid rgba(255,255,255,0.05);
-            margin-top: 4px;
-        }
+        .sub-domain-group .domain-label { color: #e67e22; font-weight: 600; font-size: 13px; margin-bottom: 6px; display: block; }
+        .sub-domain-group .sub-domain-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; padding-left: 12px; }
+        .sub-domain-group .sub-domain-row .sub-label { color: rgba(255,255,255,0.7); font-size: 12px; width: 140px; }
+        .sub-domain-group .sub-domain-row .sub-input { width: 60px; padding: 5px 8px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; color: white; text-align: center; font-size: 12px; }
+        .sub-domain-group .sub-domain-row .sub-input:focus { outline: none; border-color: #e67e22; }
+        .sub-domain-group .sub-domain-row .sub-percent { color: #27ae60; font-size: 12px; min-width: 40px; }
+        .sub-domain-total { color: #f39c12; font-size: 12px; text-align: right; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 4px; }
+
         @media (max-width: 1024px) {
-            .main-container {
-                grid-template-columns: 240px 1fr;
-            }
-            .grid-3, .grid-4 {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            .questions-section {
-                grid-template-columns: 1fr;
-            }
+            .main-container { grid-template-columns: 200px 1fr; }
+            .grid-3, .grid-4 { grid-template-columns: repeat(2, 1fr); }
+            .questions-section { grid-template-columns: 1fr; }
+            .comp-list-container { padding-left: 20px; }
         }
         @media (max-width: 768px) {
-            .main-container {
-                grid-template-columns: 1fr;
-            }
-            .tracker-sidebar {
-                display: none;
-            }
-            .grid-2, .grid-3, .grid-4 {
-                grid-template-columns: 1fr;
-            }
-            .questions-section {
-                grid-template-columns: 1fr;
-            }
-            .nav-buttons {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 8px;
-            }
-            .nav-buttons .btn-group {
-                justify-content: center;
-            }
-            .nav-buttons .btn-group-left,
-            .nav-buttons .btn-group-right {
-                justify-content: center;
-                width: 100%;
-            }
-            .btn-lg {
-                padding: 10px 25px;
-                font-size: 14px;
-            }
-            .sub-domain-group .sub-domain-row {
-                flex-wrap: wrap;
-            }
-            .sub-domain-group .sub-domain-row .sub-label {
-                width: 100px;
-            }
+            .main-container { grid-template-columns: 1fr; }
+            .tracker-sidebar { display: none; }
+            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+            .questions-section { grid-template-columns: 1fr; }
+            .nav-buttons { flex-direction: column; align-items: stretch; gap: 8px; }
+            .nav-buttons .btn-group { justify-content: center; }
+            .nav-buttons .btn-group-left, .nav-buttons .btn-group-right { justify-content: center; width: 100%; }
+            .btn-lg { padding: 10px 25px; font-size: 14px; }
+            .cg-list-item { flex-wrap: wrap; }
+            .comp-list-container { padding-left: 10px; }
+            .comp-item { flex-wrap: wrap; }
         }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -1143,1671 +622,1117 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
-    <div class="dashboard">
-        <div class="header">
-            <div class="header-left">
-                <h1>
-                    <i class="fas fa-file-alt"></i>
-                    Question Paper Builder
-                </h1>
-            </div>
-            <div class="header-right">
-                <a href="/dashboard" class="btn btn-primary">
-                    <i class="fas fa-home"></i> Dashboard
-                </a>
-                <a href="/logout" class="btn btn-danger">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
+<div class="dashboard">
+    <div class="header">
+        <div class="header-left"><h1><i class="fas fa-list-ul"></i> Paper Builder · CG List</h1></div>
+        <div class="header-right">
+            <a href="/dashboard" class="btn btn-primary"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="/logout" class="btn btn-danger"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </div>
+    <div class="main-container">
+        <div class="tracker-sidebar">
+            <div class="tracker-title"><i class="fas fa-tasks"></i> Build Progress</div>
+            <div class="tracker-steps">
+                <div class="tracker-step" id="tracker-grade" onclick="navigateToStage(1)"><div class="step-number">1</div><div class="step-info"><div class="step-label">Step 1</div><div class="step-value" id="tracker-grade-value">Select Grade</div></div></div>
+                <div class="tracker-step" id="tracker-subject" onclick="navigateToStage(2)"><div class="step-number">2</div><div class="step-info"><div class="step-label">Step 2</div><div class="step-value" id="tracker-subject-value">Select Subject</div></div></div>
+                <div class="tracker-step" id="tracker-cg" onclick="navigateToStage(3)"><div class="step-number">3</div><div class="step-info"><div class="step-label">Step 3</div><div class="step-value" id="tracker-cg-value">Select CGs</div></div></div>
+                <div class="tracker-step" id="tracker-comp" onclick="navigateToStage(4)"><div class="step-number">4</div><div class="step-info"><div class="step-label">Step 4</div><div class="step-value" id="tracker-comp-value">Select Comps</div></div></div>
+                <div class="tracker-step" id="tracker-config" onclick="navigateToStage(5)"><div class="step-number">5</div><div class="step-info"><div class="step-label">Step 5</div><div class="step-value" id="tracker-config-value">Configure Paper</div></div></div>
+                <div class="tracker-step" id="tracker-questions" onclick="navigateToStage(6)"><div class="step-number">6</div><div class="step-info"><div class="step-label">Step 6</div><div class="step-value" id="tracker-questions-value">Select Questions</div></div></div>
             </div>
         </div>
-        <div class="main-container">
-            <div class="tracker-sidebar">
-                <div class="tracker-title">
-                    <i class="fas fa-tasks"></i> Build Progress
-                </div>
-                <div class="tracker-steps">
-                    <div class="tracker-step" id="tracker-grade" onclick="navigateToStage(1)">
-                        <div class="step-number">1</div>
-                        <div class="step-info">
-                            <div class="step-label">Step 1</div>
-                            <div class="step-value" id="tracker-grade-value">Select Grade</div>
-                        </div>
-                    </div>
-                    <div class="tracker-step" id="tracker-subject" onclick="navigateToStage(2)">
-                        <div class="step-number">2</div>
-                        <div class="step-info">
-                            <div class="step-label">Step 2</div>
-                            <div class="step-value" id="tracker-subject-value">Select Subject</div>
-                        </div>
-                    </div>
-                    <div class="tracker-step" id="tracker-chapter" onclick="navigateToStage(3)">
-                        <div class="step-number">3</div>
-                        <div class="step-info">
-                            <div class="step-label">Step 3</div>
-                            <div class="step-value" id="tracker-chapter-value">Select Chapters</div>
-                        </div>
-                    </div>
-                    <div class="tracker-step" id="tracker-cg" onclick="navigateToStage(4)">
-                        <div class="step-number">4</div>
-                        <div class="step-info">
-                            <div class="step-label">Step 4</div>
-                            <div class="step-value" id="tracker-cg-value">Select Curricular Goals</div>
-                        </div>
-                    </div>
-                    <div class="tracker-step" id="tracker-config" onclick="navigateToStage(5)">
-                        <div class="step-number">5</div>
-                        <div class="step-info">
-                            <div class="step-label">Step 5</div>
-                            <div class="step-value" id="tracker-config-value">Configure Paper</div>
-                        </div>
-                    </div>
-                    <div class="tracker-step" id="tracker-questions" onclick="navigateToStage(6)">
-                        <div class="step-number">6</div>
-                        <div class="step-info">
-                            <div class="step-label">Step 6</div>
-                            <div class="step-value" id="tracker-questions-value">Select Questions</div>
-                        </div>
-                    </div>
-                </div>
+        <div class="content-area">
+            <div class="progress-container">
+                <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+                <div class="progress-text" id="progressText">Step 1 of 6</div>
             </div>
-            <div class="content-area">
-                <div class="progress-container">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill"></div>
-                    </div>
-                    <div class="progress-text" id="progressText">Step 1 of 6</div>
-                </div>
-                <div class="auto-redirect-notice" id="autoRedirectNotice">
-                    <i class="fas fa-spinner fa-spin"></i> 
-                    Auto-advancing to next step...
-                </div>
-                
-                <!-- Step 1: Grade -->
-                <div class="stage-container" id="stage1">
-                    <div class="stage-header">
-                        <h2>Select Grade</h2>
-                        <p>Choose the grade level for your question paper</p>
-                    </div>
-                    <div class="stage-content">
-                        <div class="grid-2" id="gradeGrid">
-                            <div class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading grades...</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Step 2: Subject -->
-                <div class="stage-container" id="stage2" style="display: none;">
-                    <div class="stage-header">
-                        <h2>Select Subject</h2>
-                        <p>Choose a subject for <span id="selectedGradeNameDisplay"></span></p>
-                    </div>
-                    <div class="stage-content">
-                        <div class="grid-3" id="subjectGrid"></div>
-                    </div>
-                    <div class="nav-buttons">
-                        <div class="btn-group btn-group-left">
-                            <button class="btn btn-warning" onclick="goToStage(1)">
-                                <i class="fas fa-arrow-left"></i> Back to Grades
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Step 3: Chapter with Select All -->
-                <div class="stage-container" id="stage3" style="display: none;">
-                    <div class="stage-header">
-                        <h2>Select Chapters</h2>
-                        <p>Choose chapters for <span id="selectedChapterSubjectName"></span></p>
-                    </div>
-                    <div class="subject-info" id="chapterSubjectInfo">
-                        <h3 id="chapterSubjectHeading"></h3>
-                        <span id="chapterCount">Loading chapters...</span>
-                    </div>
-                    
-                    <!-- Select All Chapters -->
-                    <div class="choose-all-container">
-                        <label>
-                            <input type="checkbox" id="selectAllChapters" onchange="toggleAllChapters()">
-                            Select All Chapters
-                        </label>
-                        <span class="selected-count">
-                            Selected: <strong id="chapterSelectedCount">0</strong> / <span id="chapterTotalCount">0</span>
-                        </span>
-                    </div>
-                    
-                    <div class="stage-content">
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th style="width: 40px">Sel</th>
-                                        <th>#</th>
-                                        <th>Chapter Code</th>
-                                        <th>Chapter Name</th>
-                                        <th>Description</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="chaptersTableBody">
-                                    <tr><td colspan="5" class="loading">Select a subject to view chapters</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="nav-buttons">
-                        <div class="btn-group btn-group-left">
-                            <button class="btn btn-warning" onclick="goToStage(2)">
-                                <i class="fas fa-arrow-left"></i> Back to Subjects
-                            </button>
-                        </div>
-                        <div class="btn-group btn-group-right">
-                            <button class="btn btn-success btn-lg" onclick="confirmChapterSelection()" id="nextAfterChapterBtn" disabled>
-                                Next: Curricular Goals <i class="fas fa-arrow-right"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Step 4: Curricular Goal (CG) with Select All -->
-                <div class="stage-container" id="stage4" style="display: none;">
-                    <div class="stage-header">
-                        <h2>Select Curricular Goals</h2>
-                        <p>Choose Curricular Goals for <span id="currentSubjectForCG"></span></p>
-                    </div>
-                    
-                    <!-- Select All CGs -->
-                    <div class="choose-all-container">
-                        <label>
-                            <input type="checkbox" id="selectAllCGs" onchange="toggleAllCGs()">
-                            Select All Curricular Goals
-                        </label>
-                        <span class="selected-count">
-                            Selected: <strong id="cgSelectedCount">0</strong> / <span id="cgTotalCount">0</span>
-                        </span>
-                    </div>
-                    
-                    <div class="stage-content">
-                        <div class="grid-3" id="cgGrid">
-                            <div class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading curricular goals...</div>
-                        </div>
-                    </div>
-                    <div class="nav-buttons">
-                        <div class="btn-group btn-group-left">
-                            <button class="btn btn-warning" onclick="goToStage(3)">
-                                <i class="fas fa-arrow-left"></i> Back to Chapters
-                            </button>
-                        </div>
-                        <div class="btn-group btn-group-right">
-                            <button class="btn btn-success btn-lg" onclick="confirmCGSelection()" id="nextAfterCGBtn" disabled>
-                                Next: Configure Paper <i class="fas fa-arrow-right"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Step 5: Configure Paper with Sub-Domains -->
-                <div class="stage-container" id="stage5" style="display: none;">
-                    <div class="stage-header">
-                        <h2>Configure Questions Blueprint</h2>
-                        <p>Set marks distribution for the paper</p>
-                    </div>
-                    <div class="stage-content">
-                        <!-- Cognitive Domains with Sub-Domains -->
-                        <div class="marks-card">
-                            <div class="marks-title"><i class="fas fa-brain"></i> Cognitive Domain Distribution (%)</div>
-                            <div id="cognitiveDomainsContainer">
-                                <div class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading cognitive domains...</div>
-                            </div>
-                            <div style="display: flex; justify-content: flex-end; margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08);">
-                                <span style="color: white; margin-right: 20px;">Total:</span>
-                                <span style="color: #27ae60; font-weight: 600;" id="cognitiveTotal">0%</span>
-                            </div>
-                        </div>
+            <div class="auto-redirect-notice" id="autoRedirectNotice"><i class="fas fa-spinner fa-spin"></i> Auto-advancing...</div>
 
-                        <!-- Difficulty Level Distribution -->
-                        <div class="marks-card">
-                            <div class="marks-title"><i class="fas fa-chart-bar"></i> Difficulty Level Distribution (%)</div>
-                            <div class="marks-input-group">
-                                <span class="marks-label">Easy</span>
-                                <input type="number" class="marks-input" id="easyPercent" value="25" min="0" max="100" onchange="calculateTotals()">
-                                <span style="color: #e67e22;">%</span>
-                            </div>
-                            <div class="marks-input-group">
-                                <span class="marks-label">Medium</span>
-                                <input type="number" class="marks-input" id="mediumPercent" value="50" min="0" max="100" onchange="calculateTotals()">
-                                <span style="color: #e67e22;">%</span>
-                            </div>
-                            <div class="marks-input-group">
-                                <span class="marks-label">Hard</span>
-                                <input type="number" class="marks-input" id="hardPercent" value="25" min="0" max="100" onchange="calculateTotals()">
-                                <span style="color: #e67e22;">%</span>
-                            </div>
-                            <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
-                                <span style="color: white; margin-right: 20px;">Total:</span>
-                                <span style="color: #27ae60; font-weight: 600;" id="difficultyTotal">100%</span>
-                            </div>
-                        </div>
+            <!-- STAGE 1: GRADE -->
+            <div class="stage-container" id="stage1">
+                <div class="stage-header"><h2>Select Grade</h2><p>Choose the grade level for your question paper</p></div>
+                <div class="stage-content"><div class="grid-2" id="gradeGrid"><div class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading grades...</div></div></div>
+            </div>
 
-                        <!-- Question Types & Marks -->
-                        <div class="marks-card">
-                            <div class="marks-title"><i class="fas fa-list-ul"></i> Question Types & Marks</div>
-                            <div class="type-grid">
-                                <div class="type-item">
-                                    <div class="type-header"><span>Objective</span></div>
-                                    <div class="type-inputs">
-                                        <input type="number" class="type-input" id="objectiveCount" value="15" min="0" onchange="calculateQuestionMarks()">
-                                        <span class="type-multiply">×</span>
-                                        <input type="number" class="type-input" id="objectiveMarks" value="1" min="0" onchange="calculateQuestionMarks()">
-                                        <span class="type-equal">=</span>
-                                        <span class="type-total" id="objectiveTotal">15</span>
-                                    </div>
-                                </div>
-                                <div class="type-item">
-                                    <div class="type-header"><span>Very Short Answer</span></div>
-                                    <div class="type-inputs">
-                                        <input type="number" class="type-input" id="veryShortCount" value="5" min="0" onchange="calculateQuestionMarks()">
-                                        <span class="type-multiply">×</span>
-                                        <input type="number" class="type-input" id="veryShortMarks" value="3" min="0" onchange="calculateQuestionMarks()">
-                                        <span class="type-equal">=</span>
-                                        <span class="type-total" id="veryShortTotal">15</span>
-                                    </div>
-                                </div>
-                                <div class="type-item">
-                                    <div class="type-header"><span>Short Answer</span></div>
-                                    <div class="type-inputs">
-                                        <input type="number" class="type-input" id="shortCount" value="5" min="0" onchange="calculateQuestionMarks()">
-                                        <span class="type-multiply">×</span>
-                                        <input type="number" class="type-input" id="shortMarks" value="3" min="0" onchange="calculateQuestionMarks()">
-                                        <span class="type-equal">=</span>
-                                        <span class="type-total" id="shortTotal">15</span>
-                                    </div>
-                                </div>
-                                <div class="type-item">
-                                    <div class="type-header"><span>Long Answer</span></div>
-                                    <div class="type-inputs">
-                                        <input type="number" class="type-input" id="longCount" value="5" min="0" onchange="calculateQuestionMarks()">
-                                        <span class="type-multiply">×</span>
-                                        <input type="number" class="type-input" id="longMarks" value="7" min="0" onchange="calculateQuestionMarks()">
-                                        <span class="type-equal">=</span>
-                                        <span class="type-total" id="longTotal">35</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div style="display: flex; justify-content: flex-end; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
-                                <span style="color: white; font-size: 16px; margin-right: 20px;">Grand Total Marks</span>
-                                <span style="color: #27ae60; font-size: 22px; font-weight: 600;" id="grandTotal">80</span>
-                            </div>
+            <!-- STAGE 2: SUBJECT -->
+            <div class="stage-container" id="stage2" style="display:none;">
+                <div class="stage-header"><h2>Select Subject</h2><p>Choose a subject for <span id="selectedGradeNameDisplay"></span></p></div>
+                <div class="stage-content"><div class="grid-3" id="subjectGrid"></div></div>
+                <div class="nav-buttons"><div class="btn-group btn-group-left"><button class="btn btn-warning" onclick="goToStage(1)"><i class="fas fa-arrow-left"></i> Back to Grades</button></div></div>
+            </div>
+
+            <!-- STAGE 3: CURRICULAR GOALS (LIST) -->
+            <div class="stage-container" id="stage3" style="display:none;">
+                <div class="stage-header"><h2>Select Curricular Goals</h2><p>Choose CGs for <span id="selectedCGSubjectName"></span></p></div>
+                <div class="subject-info"><h3 id="cgSubjectHeading"></h3><span id="cgCount">Loading...</span></div>
+                <div class="choose-all-container">
+                    <label><input type="checkbox" id="selectAllCGs" onchange="toggleAllCGs()"> Select All CGs</label>
+                    <span class="selected-count">Selected: <strong id="cgSelectedCount">0</strong> / <span id="cgTotalCount">0</span></span>
+                </div>
+                <div class="stage-content">
+                    <div id="cgContainer" class="cg-list-container"></div>
+                </div>
+                <div class="nav-buttons">
+                    <div class="btn-group btn-group-left"><button class="btn btn-warning" onclick="goToStage(2)"><i class="fas fa-arrow-left"></i> Back to Subjects</button></div>
+                    <div class="btn-group btn-group-right"><button class="btn btn-success btn-lg" onclick="confirmCGSelection()" id="nextAfterCGBtn" disabled>Next: Select Competencies <i class="fas fa-arrow-right"></i></button></div>
+                </div>
+            </div>
+
+            <!-- STAGE 4: COMPETENCIES -->
+            <div class="stage-container" id="stage4" style="display:none;">
+                <div class="stage-header"><h2>Select Competencies</h2><p>Choose competencies for <span id="selectedCompSubjectName"></span></p></div>
+                <div class="subject-info"><h3 id="compSubjectHeading"></h3><span id="compCountDisplay">Loading...</span></div>
+                <div class="choose-all-container">
+                    <label><input type="checkbox" id="selectAllComps" onchange="toggleAllComps()"> Select All Competencies</label>
+                    <span class="selected-count">Selected: <strong id="compSelectedCount">0</strong> / <span id="compTotalCount">0</span></span>
+                </div>
+                <div class="stage-content">
+                    <div id="compContainer"></div>
+                </div>
+                <div class="nav-buttons">
+                    <div class="btn-group btn-group-left"><button class="btn btn-warning" onclick="goToStage(3)"><i class="fas fa-arrow-left"></i> Back to CGs</button></div>
+                    <div class="btn-group btn-group-right"><button class="btn btn-success btn-lg" onclick="confirmCompSelection()" id="nextAfterCompBtn" disabled>Next: Configure Paper <i class="fas fa-arrow-right"></i></button></div>
+                </div>
+            </div>
+
+            <!-- STAGE 5: CONFIGURE PAPER -->
+            <div class="stage-container" id="stage5" style="display:none;">
+                <div class="stage-header"><h2>Configure Questions Blueprint</h2><p>Set marks distribution for the paper</p></div>
+                <div class="stage-content">
+                    <div class="marks-card">
+                        <div class="marks-title"><i class="fas fa-brain"></i> Cognitive Domain Distribution (%)</div>
+                        <div id="cognitiveDomainsContainer"><div class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading...</div></div>
+                        <div style="display:flex; justify-content:flex-end; margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.08);">
+                            <span style="color:white; margin-right:20px;">Total:</span>
+                            <span style="color:#27ae60; font-weight:600;" id="cognitiveTotal">0%</span>
                         </div>
                     </div>
-                    <div class="nav-buttons">
-                        <div class="btn-group btn-group-left">
-                            <button class="btn btn-warning" onclick="goToStage(4)">
-                                <i class="fas fa-arrow-left"></i> Back to Curricular Goals
-                            </button>
+                    <div class="marks-card">
+                        <div class="marks-title"><i class="fas fa-chart-bar"></i> Difficulty Level Distribution (%)</div>
+                        <div class="marks-input-group"><span class="marks-label">Easy</span><input type="number" class="marks-input" id="easyPercent" value="25" min="0" max="100" onchange="calculateTotals()"><span style="color:#e67e22;">%</span></div>
+                        <div class="marks-input-group"><span class="marks-label">Medium</span><input type="number" class="marks-input" id="mediumPercent" value="50" min="0" max="100" onchange="calculateTotals()"><span style="color:#e67e22;">%</span></div>
+                        <div class="marks-input-group"><span class="marks-label">Hard</span><input type="number" class="marks-input" id="hardPercent" value="25" min="0" max="100" onchange="calculateTotals()"><span style="color:#e67e22;">%</span></div>
+                        <div style="display:flex; justify-content:flex-end; margin-top:8px;"><span style="color:white; margin-right:20px;">Total:</span><span style="color:#27ae60; font-weight:600;" id="difficultyTotal">100%</span></div>
+                    </div>
+                    <div class="marks-card">
+                        <div class="marks-title"><i class="fas fa-list-ul"></i> Question Types & Marks</div>
+                        <div class="type-grid">
+                            <div class="type-item"><div class="type-header"><span>Objective</span></div><div class="type-inputs"><input type="number" class="type-input" id="objectiveCount" value="15" min="0" onchange="calculateQuestionMarks()"><span class="type-multiply">×</span><input type="number" class="type-input" id="objectiveMarks" value="1" min="0" onchange="calculateQuestionMarks()"><span class="type-equal">=</span><span class="type-total" id="objectiveTotal">15</span></div></div>
+                            <div class="type-item"><div class="type-header"><span>Very Short Answer</span></div><div class="type-inputs"><input type="number" class="type-input" id="veryShortCount" value="5" min="0" onchange="calculateQuestionMarks()"><span class="type-multiply">×</span><input type="number" class="type-input" id="veryShortMarks" value="3" min="0" onchange="calculateQuestionMarks()"><span class="type-equal">=</span><span class="type-total" id="veryShortTotal">15</span></div></div>
+                            <div class="type-item"><div class="type-header"><span>Short Answer</span></div><div class="type-inputs"><input type="number" class="type-input" id="shortCount" value="5" min="0" onchange="calculateQuestionMarks()"><span class="type-multiply">×</span><input type="number" class="type-input" id="shortMarks" value="3" min="0" onchange="calculateQuestionMarks()"><span class="type-equal">=</span><span class="type-total" id="shortTotal">15</span></div></div>
+                            <div class="type-item"><div class="type-header"><span>Long Answer</span></div><div class="type-inputs"><input type="number" class="type-input" id="longCount" value="5" min="0" onchange="calculateQuestionMarks()"><span class="type-multiply">×</span><input type="number" class="type-input" id="longMarks" value="7" min="0" onchange="calculateQuestionMarks()"><span class="type-equal">=</span><span class="type-total" id="longTotal">35</span></div></div>
                         </div>
-                        <div class="btn-group btn-group-right">
-                            <button class="btn btn-success btn-lg" onclick="finishConfiguration()">
-                                Next: Select Questions <i class="fas fa-arrow-right"></i>
-                            </button>
+                        <div style="display:flex; justify-content:flex-end; margin-top:15px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.1);">
+                            <span style="color:white; font-size:16px; margin-right:20px;">Grand Total Marks</span>
+                            <span style="color:#27ae60; font-size:22px; font-weight:600;" id="grandTotal">80</span>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Step 6: Select Questions -->
-                <div class="stage-container" id="stage6" style="display: none;">
-                    <div class="stage-header">
-                        <h2>Select Questions</h2>
-                        <p>Choose questions from the available pool</p>
-                    </div>
-                    <div class="subject-info" id="questionsSubjectInfo">
-                        <h3 id="questionsSubjectName"></h3>
-                        <span id="chapterFilterInfo" class="filter-badge">All Chapters</span>
-                    </div>
-                    
-                    <!-- Select All Questions -->
-                    <div class="choose-all-container" style="margin-bottom: 10px;">
-                        <label>
-                            <input type="checkbox" id="selectAllQuestions" onchange="toggleAllQuestions()">
-                            Select All Questions
-                        </label>
-                        <span class="selected-count">
-                            Selected: <strong id="questionSelectedCount">0</strong> / <span id="questionTotalCount">0</span>
-                        </span>
-                    </div>
-                    
-                    <div class="stage-content">
-                        <div class="questions-section">
-                            <div class="questions-card">
-                                <div class="card-header">
-                                    Available Approved Questions
-                                    <span id="availableCount">0</span>
-                                </div>
-                                <div class="question-table-container">
-                                    <table>
-                                        <thead>
-                                            <tr>
-                                                <th style="width: 35px">Sel</th>
-                                                <th>Question</th>
-                                                <th style="width: 55px">Marks</th>
-                                                <th style="width: 75px">Type</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="availableQuestionsBody">
-                                            <tr>
-                                                <td colspan="4" style="text-align: center; padding: 25px;">
-                                                    Complete previous steps first
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
+                <div class="nav-buttons">
+                    <div class="btn-group btn-group-left"><button class="btn btn-warning" onclick="goToStage(4)"><i class="fas fa-arrow-left"></i> Back to Competencies</button></div>
+                    <div class="btn-group btn-group-right"><button class="btn btn-success btn-lg" onclick="finishConfiguration()">Next: Select Questions <i class="fas fa-arrow-right"></i></button></div>
+                </div>
+            </div>
+
+            <!-- STAGE 6: SELECT QUESTIONS -->
+            <div class="stage-container" id="stage6" style="display:none;">
+                <div class="stage-header"><h2>Select Questions</h2><p>Choose questions from the available pool</p></div>
+                <div class="subject-info"><h3 id="questionsSubjectName"></h3><span id="filterInfo" class="filter-badge">All CGs & Comps</span></div>
+                <div class="choose-all-container">
+                    <label><input type="checkbox" id="selectAllQuestions" onchange="toggleAllQuestions()"> Select All Questions</label>
+                    <span class="selected-count">Selected: <strong id="questionSelectedCount">0</strong> / <span id="questionTotalCount">0</span></span>
+                </div>
+                <div class="stage-content">
+                    <div class="questions-section">
+                        <div class="questions-card">
+                            <div class="card-header">Available Approved Questions <span id="availableCount">0</span></div>
+                            <div class="question-table-container">
+                                <table><thead><tr><th style="width:35px">Sel</th><th>Question</th><th style="width:55px">Marks</th><th style="width:75px">Type</th></tr></thead>
+                                <tbody id="availableQuestionsBody"><tr><td colspan="4" style="text-align:center; padding:25px;">Complete previous steps first</td></tr></tbody></table>
                             </div>
-                            <div class="questions-card">
-                                <div class="card-header">
-                                    Selected Questions
-                                    <span id="selectedCount">0</span>
-                                </div>
-                                <div class="question-table-container">
-                                    <table>
-                                        <thead>
-                                            <tr>
-                                                <th style="width: 30px">#</th>
-                                                <th>Question</th>
-                                                <th style="width: 50px">Marks</th>
-                                                <th style="width: 70px">Type</th>
-                                                <th style="width: 35px">Remove</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="selectedQuestionsBody">
-                                            <tr>
-                                                <td colspan="5" style="text-align: center; padding: 25px;">
-                                                    No questions selected
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
+                        </div>
+                        <div class="questions-card">
+                            <div class="card-header">Selected Questions <span id="selectedCount">0</span></div>
+                            <div class="question-table-container">
+                                <table><thead><tr><th style="width:30px">#</th><th>Question</th><th style="width:50px">Marks</th><th style="width:70px">Type</th><th style="width:35px">Remove</th></tr></thead>
+                                <tbody id="selectedQuestionsBody"><tr><td colspan="5" style="text-align:center; padding:25px;">No questions selected</td></tr></tbody></table>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="generate-container">
-                        <button class="btn btn-success btn-lg" onclick="generatePaper()" style="padding: 15px 50px; font-size: 18px;" id="generateBtn">
-                            <i class="fas fa-file-pdf"></i> GENERATE QUESTION PAPER
-                        </button>
-                    </div>
+                </div>
+                <div class="generate-container">
+                    <button class="btn btn-success btn-lg" onclick="generatePaper()" style="padding:15px 50px; font-size:18px;" id="generateBtn"><i class="fas fa-file-pdf"></i> GENERATE QUESTION PAPER</button>
                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- Modals -->
-    <div id="imageModal" class="image-modal" onclick="closeImageModal()">
-        <span class="image-modal-close">&times;</span>
-        <img id="modalImage" alt="Full size image">
-    </div>
-    <div class="modal" id="paperPreviewModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3><i class="fas fa-file-alt"></i> Question Paper Preview</h3>
-                <button class="close-btn" onclick="closeModal('paperPreviewModal')">&times;</button>
-            </div>
-            <div class="modal-body" id="paperPreviewBody">
-                <div class="paper-preview" id="paperPreview"></div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-success" onclick="downloadPDF()">
-                    <i class="fas fa-download"></i> Download PDF
-                </button>
-                <button class="btn btn-primary" onclick="printPaper()">
-                    <i class="fas fa-print"></i> Print Preview
-                </button>
-                <button class="btn btn-danger" onclick="closeModal('paperPreviewModal')">
-                    Close
-                </button>
-            </div>
-        </div>
-    </div>
-    <div class="modal" id="loadingModal">
-        <div class="modal-content" style="max-width: 400px; text-align: center;">
-            <div class="modal-body">
-                <i class="fas fa-spinner fa-pulse" style="font-size: 40px; color: #e67e22; margin-bottom: 15px;"></i>
-                <h3 style="color: #2c3e50; font-size: 18px;">Generating PDF...</h3>
-                <p style="color: #666; font-size: 14px;">Please wait while we create your question paper</p>
-            </div>
-        </div>
-    </div>
+</div>
 
-    <script>
-        // ============ STATE MANAGEMENT ============
-        let currentStage = 1;
-        let page1NavigationData = {};
-        let gradesData = [];
-        let subjectsList = [];
-        let chaptersData = [];
-        let selectedChapterIds = [];
-        let cgsList = [];
-        let selectedCGIds = [];
-        let approvedQuestions = [];
-        let selectedQuestions = [];
-        let generatedPDF = null;
-        let generatedPDFName = null;
-        let autoNavigateTimeout = null;
-        
-        // Cognitive domains data
-        let cognitiveDomainsData = [];
-        let knowledgeLevelsData = [];
-        let subDomainPercentages = {};
-        
-        let currentSelections = {
-            grade: null,
-            subject: null
-        };
-        
-        // ============ INITIALIZATION ============
-        document.addEventListener('DOMContentLoaded', async () => {
-            await loadGrades();
-            await loadNavigationData();
-            await loadCognitiveDomains();
-            updateTracker();
-            updateProgress();
+<!-- MODALS -->
+<div id="imageModal" class="image-modal" onclick="closeImageModal()"><span class="image-modal-close">&times;</span><img id="modalImage" alt="Full size image"></div>
+<div class="modal" id="paperPreviewModal">
+    <div class="modal-content">
+        <div class="modal-header"><h3><i class="fas fa-file-alt"></i> Question Paper Preview</h3><button class="close-btn" onclick="closeModal('paperPreviewModal')">&times;</button></div>
+        <div class="modal-body" id="paperPreviewBody"><div class="paper-preview" id="paperPreview"></div></div>
+        <div class="modal-footer">
+            <button class="btn btn-success" onclick="downloadPDF()"><i class="fas fa-download"></i> Download PDF</button>
+            <button class="btn btn-primary" onclick="printPaper()"><i class="fas fa-print"></i> Print Preview</button>
+            <button class="btn btn-danger" onclick="closeModal('paperPreviewModal')">Close</button>
+        </div>
+    </div>
+</div>
+<div class="modal" id="loadingModal"><div class="modal-content" style="max-width:400px; text-align:center;"><div class="modal-body"><i class="fas fa-spinner fa-pulse" style="font-size:40px; color:#e67e22; margin-bottom:15px;"></i><h3 style="color:#2c3e50; font-size:18px;">Generating PDF...</h3><p style="color:#666; font-size:14px;">Please wait while we create your question paper</p></div></div></div>
+
+<script>
+    // ============================================================
+    //  STATE
+    // ============================================================
+    let currentStage = 1;
+    let gradesData = [];
+    let subjectsList = [];
+    let cgsList = [];
+    let selectedCGIds = [];
+    let competenciesList = [];
+    let selectedCompIds = [];
+    let approvedQuestions = [];
+    let selectedQuestions = [];
+    let generatedPDF = null;
+    let generatedPDFName = null;
+    let autoNavigateTimeout = null;
+
+    let cognitiveDomainsData = [];
+    let knowledgeLevelsData = [];
+    let subDomainPercentages = {};
+
+    let currentSelections = { grade: null, subject: null };
+
+    // ============================================================
+    //  INIT
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', async () => {
+        await loadGrades();
+        await loadNavigationData();
+        await loadCognitiveDomains();
+        updateTracker();
+        updateProgress();
+    });
+
+    async function loadNavigationData() {
+        try {
+            const res = await fetch('/api/page1-data');
+            if (!res.ok) throw new Error('Failed to load data');
+            window.page1Data = await res.json();
+            console.log('Navigation data loaded');
+        } catch (e) { console.error('Error loading navigation data:', e); }
+    }
+
+    // ============================================================
+    //  COGNITIVE DOMAINS
+    // ============================================================
+    async function loadCognitiveDomains() {
+        try {
+            const dr = await fetch('/api/cognitive-domains');
+            if (dr.ok) { const d = await dr.json(); cognitiveDomainsData = d.domains || []; }
+            const lr = await fetch('/api/knowledge-levels');
+            if (lr.ok) { const d = await lr.json(); knowledgeLevelsData = d.knowledge_levels || []; }
+        } catch(e) { console.error('Cognitive domains error', e); }
+        renderCognitiveDomains();
+    }
+
+    function renderCognitiveDomains() {
+        const container = document.getElementById('cognitiveDomainsContainer');
+        if (!container) return;
+        if (!cognitiveDomainsData || !cognitiveDomainsData.length) {
+            container.innerHTML = '<div class="no-data">No cognitive domains found</div>';
+            return;
+        }
+        let allSubDomains = [];
+        cognitiveDomainsData.forEach(domain => {
+            const subs = knowledgeLevelsData.filter(kl => kl.domain_id === domain.id);
+            subs.forEach(sub => {
+                allSubDomains.push({
+                    domainId: domain.id,
+                    domainName: domain.domain_name || 'Domain',
+                    subId: sub.id,
+                    subName: sub.level_name || 'Sub-Domain'
+                });
+            });
         });
-        
-        async function loadNavigationData() {
-            try {
-                const response = await fetch('/api/page1-data');
-                if (!response.ok) throw new Error('Failed to load data');
-                page1NavigationData = await response.json();
-                console.log('Navigation data loaded');
-            } catch (error) {
-                console.error('Error loading navigation data:', error);
-            }
+        const totalSubDomains = allSubDomains.length;
+        if (totalSubDomains === 0) {
+            container.innerHTML = '<div class="no-data">No sub-domains found</div>';
+            return;
         }
-        
-        async function loadCognitiveDomains() {
-            try {
-                // Load cognitive domains
-                const domainsResp = await fetch('/api/cognitive-domains');
-                if (domainsResp.ok) {
-                    const data = await domainsResp.json();
-                    cognitiveDomainsData = data.domains || [];
-                }
-                
-                // Load knowledge levels (sub-domains)
-                const levelsResp = await fetch('/api/knowledge-levels');
-                if (levelsResp.ok) {
-                    const data = await levelsResp.json();
-                    knowledgeLevelsData = data.knowledge_levels || [];
-                }
-                
-                console.log('Cognitive Domains loaded:', cognitiveDomainsData);
-                console.log('Knowledge Levels loaded:', knowledgeLevelsData);
-                
-                // Render cognitive domains with sub-domains
-                renderCognitiveDomains();
-                
-            } catch (error) {
-                console.error('Error loading cognitive domains:', error);
-                // Fallback: use default data
-                cognitiveDomainsData = [
-                    { id: 1, domain_name: 'Awareness', description: 'Basic awareness of concepts and information' },
-                    { id: 2, domain_name: 'Sensitivity', description: 'Sensitivity to applications and real-world connections' },
-                    { id: 3, domain_name: 'Creativity', description: 'Creative thinking and problem solving' }
-                ];
-                knowledgeLevelsData = [
-                    { id: 1, level_name: 'Knowledge', domain_id: 1 },
-                    { id: 2, level_name: 'Remembering', domain_id: 1 },
-                    { id: 3, level_name: 'Understanding', domain_id: 1 },
-                    { id: 4, level_name: 'Comprehension', domain_id: 1 },
-                    { id: 5, level_name: 'Application', domain_id: 2 },
-                    { id: 6, level_name: 'Analysis', domain_id: 2 },
-                    { id: 7, level_name: 'Synthesis', domain_id: 2 },
-                    { id: 8, level_name: 'Empathy', domain_id: 2 },
-                    { id: 9, level_name: 'Interpretation', domain_id: 2 },
-                    { id: 10, level_name: 'Evaluation', domain_id: 3 },
-                    { id: 11, level_name: 'Creation', domain_id: 3 },
-                    { id: 12, level_name: 'Critical Thinking', domain_id: 3 },
-                    { id: 13, level_name: 'Innovation', domain_id: 3 },
-                    { id: 14, level_name: 'Design Thinking', domain_id: 3 },
-                    { id: 15, level_name: 'Reflection', domain_id: 3 }
-                ];
-                renderCognitiveDomains();
+        const basePercent = Math.floor(100 / totalSubDomains);
+        let extraRemainder = 100 - (basePercent * totalSubDomains);
+        let html = '';
+        const groupedByDomain = {};
+        allSubDomains.forEach(sub => {
+            if (!groupedByDomain[sub.domainId]) {
+                groupedByDomain[sub.domainId] = { domainName: sub.domainName, subDomains: [] };
             }
-        }
-        
-        function renderCognitiveDomains() {
-            const container = document.getElementById('cognitiveDomainsContainer');
-            if (!container) return;
-            
-            if (!cognitiveDomainsData || cognitiveDomainsData.length === 0) {
-                container.innerHTML = '<div class="no-data">No cognitive domains found</div>';
-                return;
-            }
-            
-            // Calculate total number of sub-domains across all domains
-            let allSubDomains = [];
-            
-            cognitiveDomainsData.forEach(domain => {
-                const subDomains = knowledgeLevelsData.filter(kl => kl.domain_id === domain.id);
-                subDomains.forEach(sub => {
-                    allSubDomains.push({
-                        domainId: domain.id,
-                        domainName: domain.domain_name || 'Domain',
-                        subId: sub.id,
-                        subName: sub.level_name || 'Sub-Domain'
-                    });
-                });
-            });
-            
-            const totalSubDomains = allSubDomains.length;
-            
-            // If no sub-domains, show message
-            if (totalSubDomains === 0) {
-                container.innerHTML = '<div class="no-data">No sub-domains found</div>';
-                return;
-            }
-            
-            // Calculate equal distribution: 100 / totalSubDomains
-            const basePercent = Math.floor(100 / totalSubDomains);
-            let extraRemainder = 100 - (basePercent * totalSubDomains);
-            
-            let html = '';
-            
-            // Group sub-domains by domain
-            const groupedByDomain = {};
-            allSubDomains.forEach(sub => {
-                if (!groupedByDomain[sub.domainId]) {
-                    groupedByDomain[sub.domainId] = {
-                        domainName: sub.domainName,
-                        subDomains: []
-                    };
-                }
-                groupedByDomain[sub.domainId].subDomains.push(sub);
-            });
-            
-            // Build HTML for each domain
-            Object.keys(groupedByDomain).forEach(domainId => {
-                const domain = groupedByDomain[domainId];
-                const subDomains = domain.subDomains;
-                let domainSubTotal = 0;
-                
-                html += `<div class="sub-domain-group">`;
-                html += `<span class="domain-label"><i class="fas fa-chevron-right"></i> ${domain.domainName}</span>`;
-                
-                subDomains.forEach((sub, idx) => {
-                    // Calculate percentage for this sub-domain
-                    let percent = basePercent;
-                    if (extraRemainder > 0) {
-                        percent += 1;
-                        extraRemainder -= 1;
-                    }
-                    
-                    const key = `sub_${sub.domainId}_${sub.subId}`;
-                    // Store the percentage
-                    subDomainPercentages[key] = percent;
-                    domainSubTotal += percent;
-                    
-                    html += `
-                        <div class="sub-domain-row">
-                            <span class="sub-label">${sub.subName}</span>
-                            <input type="number" class="sub-input" id="sub_${sub.domainId}_${sub.subId}" 
-                                value="${percent}" min="0" max="100" 
-                                data-domain="${sub.domainId}" data-sub="${sub.subId}"
-                                onchange="updateSubDomainTotal(${sub.domainId})">
-                            <span style="color: #e67e22;">%</span>
-                            <span class="sub-percent" id="sub_total_sub_${sub.domainId}_${sub.subId}">${percent}%</span>
-                        </div>
-                    `;
-                });
-                
-                html += `<div class="sub-domain-total">Domain Total: <strong id="domain_total_${domainId}">${domainSubTotal}%</strong></div>`;
-                html += `</div>`;
-            });
-            
-            container.innerHTML = html;
-            
-            // Update totals for each domain
-            cognitiveDomainsData.forEach(domain => {
-                updateSubDomainTotal(domain.id);
-            });
-            
-            // Update overall total
-            calculateCognitiveTotal();
-            
-            // Show total sub-domains count
-            const totalDisplay = document.getElementById('cognitiveTotal');
-            if (totalDisplay) {
-                totalDisplay.textContent = '100%';
-                totalDisplay.style.color = '#27ae60';
-            }
-        }
-        
-        function updateSubDomainTotal(domainId) {
-            const subInputs = document.querySelectorAll(`input[data-domain="${domainId}"]`);
-            let total = 0;
-            
-            subInputs.forEach(input => {
-                const val = parseInt(input.value) || 0;
-                total += val;
-                // Update individual total display
-                const id = input.id;
-                const totalSpan = document.getElementById(`sub_total_${id}`);
-                if (totalSpan) {
-                    totalSpan.textContent = val + '%';
-                }
-            });
-            
-            // Update domain total display
-            const domainTotalSpan = document.getElementById(`domain_total_${domainId}`);
-            if (domainTotalSpan) {
-                domainTotalSpan.textContent = total + '%';
-                // Color code: green if 100%, yellow if close, red if not
-                if (total === 100) {
-                    domainTotalSpan.style.color = '#27ae60';
-                } else if (total > 80 && total < 120) {
-                    domainTotalSpan.style.color = '#f39c12';
-                } else {
-                    domainTotalSpan.style.color = '#e74c3c';
-                }
-            }
-            
-            // Update overall cognitive total
-            calculateCognitiveTotal();
-        }
-        
-        function calculateCognitiveTotal() {
-            const container = document.getElementById('cognitiveDomainsContainer');
-            const inputs = container.querySelectorAll('.sub-input');
-            let grandTotal = 0;
-            
-            inputs.forEach(input => {
-                grandTotal += parseInt(input.value) || 0;
-            });
-            
-            const totalDisplay = document.getElementById('cognitiveTotal');
-            if (totalDisplay) {
-                totalDisplay.textContent = grandTotal + '%';
-                if (grandTotal === 100) {
-                    totalDisplay.style.color = '#27ae60';
-                } else if (grandTotal > 80 && grandTotal < 120) {
-                    totalDisplay.style.color = '#f39c12';
-                } else {
-                    totalDisplay.style.color = '#e74c3c';
-                }
-            }
-            
-            return grandTotal;
-        }
-        
-        async function loadGrades() {
-            try {
-                const response = await fetch('/api/grades');
-                const data = await response.json();
-                gradesData = data.grades || [];
-                const gradeGrid = document.getElementById('gradeGrid');
-                if (gradesData.length === 0) {
-                    gradeGrid.innerHTML = '<div class="empty-state">No grades available</div>';
-                    return;
-                }
-                gradeGrid.innerHTML = gradesData.map(grade => `
-                    <div class="card" onclick="selectGrade(${grade.id}, '${grade.grade_name}', this)">
-                        <div class="card-icon"><i class="fas fa-graduation-cap"></i></div>
-                        <h3>${grade.grade_name}</h3>
-                        <p>Select this grade to continue</p>
-                        <div class="badge">${grade.grade_name}</div>
+            groupedByDomain[sub.domainId].subDomains.push(sub);
+        });
+        Object.keys(groupedByDomain).forEach(domainId => {
+            const domain = groupedByDomain[domainId];
+            const subDomains = domain.subDomains;
+            let domainSubTotal = 0;
+            html += `<div class="sub-domain-group">`;
+            html += `<span class="domain-label"><i class="fas fa-chevron-right"></i> ${domain.domainName}</span>`;
+            subDomains.forEach((sub) => {
+                let percent = basePercent;
+                if (extraRemainder > 0) { percent += 1; extraRemainder -= 1; }
+                const key = `sub_${sub.domainId}_${sub.subId}`;
+                subDomainPercentages[key] = percent;
+                domainSubTotal += percent;
+                html += `
+                    <div class="sub-domain-row">
+                        <span class="sub-label">${sub.subName}</span>
+                        <input type="number" class="sub-input" id="sub_${sub.domainId}_${sub.subId}" 
+                            value="${percent}" min="0" max="100" 
+                            data-domain="${sub.domainId}" data-sub="${sub.subId}"
+                            onchange="updateSubDomainTotal(${sub.domainId})">
+                        <span style="color: #e67e22;">%</span>
+                        <span class="sub-percent" id="sub_total_sub_${sub.domainId}_${sub.subId}">${percent}%</span>
                     </div>
-                `).join('');
-            } catch (error) {
-                console.error('Error loading grades:', error);
-                document.getElementById('gradeGrid').innerHTML = '<div class="empty-state">Error loading grades</div>';
-            }
+                `;
+            });
+            html += `<div class="sub-domain-total">Domain Total: <strong id="domain_total_${domainId}">${domainSubTotal}%</strong></div>`;
+            html += `</div>`;
+        });
+        container.innerHTML = html;
+        cognitiveDomainsData.forEach(domain => updateSubDomainTotal(domain.id));
+        calculateCognitiveTotal();
+        const totalDisplay = document.getElementById('cognitiveTotal');
+        if (totalDisplay) { totalDisplay.textContent = '100%'; totalDisplay.style.color = '#27ae60'; }
+    }
+
+    function updateSubDomainTotal(domainId) {
+        const subInputs = document.querySelectorAll(`input[data-domain="${domainId}"]`);
+        let total = 0;
+        subInputs.forEach(input => {
+            const val = parseInt(input.value) || 0;
+            total += val;
+            const id = input.id;
+            const totalSpan = document.getElementById(`sub_total_${id}`);
+            if (totalSpan) totalSpan.textContent = val + '%';
+        });
+        const domainTotalSpan = document.getElementById(`domain_total_${domainId}`);
+        if (domainTotalSpan) {
+            domainTotalSpan.textContent = total + '%';
+            if (total === 100) domainTotalSpan.style.color = '#27ae60';
+            else if (total > 80 && total < 120) domainTotalSpan.style.color = '#f39c12';
+            else domainTotalSpan.style.color = '#e74c3c';
         }
-        
-        function selectGrade(id, name, element) {
-            document.querySelectorAll('#stage1 .card').forEach(c => c.classList.remove('selected'));
-            element.classList.add('selected');
-            currentSelections.grade = { id, display_name: name };
-            currentSelections.subject = null;
-            selectedChapterIds = [];
-            selectedCGIds = [];
-            selectedQuestions = [];
-            document.getElementById('selectedGradeNameDisplay').textContent = name;
-            updateTracker();
-            showAutoRedirect('Moving to Subject selection...');
-            setTimeout(() => {
-                goToStage(2);
-                loadSubjects();
-            }, 600);
+        calculateCognitiveTotal();
+    }
+
+    function calculateCognitiveTotal() {
+        const container = document.getElementById('cognitiveDomainsContainer');
+        const inputs = container.querySelectorAll('.sub-input');
+        let grandTotal = 0;
+        inputs.forEach(input => { grandTotal += parseInt(input.value) || 0; });
+        const totalDisplay = document.getElementById('cognitiveTotal');
+        if (totalDisplay) {
+            totalDisplay.textContent = grandTotal + '%';
+            if (grandTotal === 100) totalDisplay.style.color = '#27ae60';
+            else if (grandTotal > 80 && grandTotal < 120) totalDisplay.style.color = '#f39c12';
+            else totalDisplay.style.color = '#e74c3c';
         }
-        
-        async function loadSubjects() {
-            const container = document.getElementById('subjectGrid');
-            const gradeId = currentSelections.grade.id;
-            subjectsList = page1NavigationData.subjects?.filter(s => s.grade_id == gradeId) || [];
-            
-            if (subjectsList.length === 0) {
-                container.innerHTML = '<div class="empty-state">No subjects available for this grade</div>';
-                return;
-            }
-            container.innerHTML = subjectsList.map(subject => `
-                <div class="card" onclick="selectSubject(${subject.id}, '${subject.subject_name}', this)">
-                    <div class="card-icon"><i class="fas fa-book"></i></div>
-                    <h3>${subject.subject_name}</h3>
-                    <p>${subject.subject_name} for ${currentSelections.grade.display_name}</p>
+        return grandTotal;
+    }
+
+    // ============================================================
+    //  GRADES (single selection enforced)
+    // ============================================================
+    async function loadGrades() {
+        try {
+            const res = await fetch('/api/grades');
+            const data = await res.json();
+            gradesData = data.grades || [];
+            const grid = document.getElementById('gradeGrid');
+            if (!gradesData.length) { grid.innerHTML = '<div class="empty-state">No grades available</div>'; return; }
+            grid.innerHTML = gradesData.map(g => `
+                <div class="card" data-id="${g.id}" onclick="selectGrade(${g.id}, '${g.grade_name}', this)">
+                    <div class="card-icon"><i class="fas fa-graduation-cap"></i></div>
+                    <h3>${g.grade_name}</h3>
+                    <p>Select this grade to continue</p>
+                    <div class="badge">${g.grade_name}</div>
                 </div>
             `).join('');
-        }
-        
-        function selectSubject(id, name, element) {
-            document.querySelectorAll('#stage2 .card').forEach(c => c.classList.remove('selected'));
-            element.classList.add('selected');
-            currentSelections.subject = { id, name };
-            selectedChapterIds = [];
-            selectedCGIds = [];
-            selectedQuestions = [];
-            document.getElementById('selectedChapterSubjectName').textContent = name;
-            document.getElementById('currentSubjectForCG').textContent = name;
-            updateTracker();
-            showAutoRedirect('Moving to Chapter selection...');
-            setTimeout(() => {
-                goToStage(3);
-                loadChapters();
-            }, 600);
-        }
-        
-        // ============ CHAPTER FUNCTIONS - FIXED ============
-        async function loadChapters() {
-            const tbody = document.getElementById('chaptersTableBody');
-            const subjectId = currentSelections.subject.id;
-            document.getElementById('chapterSubjectHeading').textContent = currentSelections.subject.name;
-            document.getElementById('selectedChapterSubjectName').textContent = currentSelections.subject.name;
-            document.getElementById('currentSubjectForCG').textContent = currentSelections.subject.name;
-            
-            try {
-                const response = await fetch(`/api/subjects/${subjectId}/chapters`);
-                const data = await response.json();
-                chaptersData = data.chapters || [];
-                document.getElementById('chapterTotalCount').textContent = chaptersData.length;
-                
-                if (chaptersData.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">No chapters found for this subject</td></tr>';
-                    document.getElementById('nextAfterChapterBtn').disabled = true;
-                    return;
-                }
-                
-                tbody.innerHTML = chaptersData.map((ch, idx) => `
-                    <tr class="chapter-row" data-chapter-id="${ch.id}" onclick="toggleChapterRow(${ch.id})">
-                        <td style="text-align: center;">
-                            <input type="checkbox" class="chapter-checkbox" id="chk_${ch.id}" onchange="handleChapterCheckboxChange(${ch.id}, this.checked)">
-                        </td>
-                        <td>${ch.chapter_number || idx + 1}</td>
-                        <td><code>${ch.chapter_code || '-'}</code></td>
-                        <td><strong>${ch.chapter_name}</strong></td>
-                        <td>${ch.description ? ch.description.substring(0, 60) + (ch.description.length > 60 ? '...' : '') : '-'}</td>
-                    </tr>
-                `).join('');
-                
-                selectedChapterIds = [];
-                document.getElementById('selectAllChapters').checked = false;
-                updateChapterSelection();
-            } catch (error) {
-                console.error('Error loading chapters:', error);
-                tbody.innerHTML = '<tr><td colspan="5" style="color: #e74c3c; text-align: center; padding: 20px;">Error loading chapters</td></tr>';
-            }
-        }
-        
-        function handleChapterCheckboxChange(id, checked) {
-            // This function is called when the checkbox is directly clicked
-            toggleChapterSelection(id, checked);
-        }
-        
-        function toggleChapterRow(id) {
-            // This function is called when the row is clicked
-            const checkbox = document.getElementById(`chk_${id}`);
-            if (checkbox) {
-                // Toggle the checkbox state
-                const newState = !checkbox.checked;
-                checkbox.checked = newState;
-                toggleChapterSelection(id, newState);
-            }
-        }
-        
-        function toggleChapterSelection(id, checked) {
-            const row = document.querySelector(`.chapter-row[data-chapter-id="${id}"]`);
-            
-            if (checked) {
-                // Add to selected if not already present
-                if (!selectedChapterIds.includes(id)) {
-                    selectedChapterIds.push(id);
-                }
-                if (row) row.classList.add('selected-chapter');
-                // Ensure checkbox is checked
-                const checkbox = document.getElementById(`chk_${id}`);
-                if (checkbox) checkbox.checked = true;
-            } else {
-                // Remove from selected
-                selectedChapterIds = selectedChapterIds.filter(cid => cid !== id);
-                if (row) row.classList.remove('selected-chapter');
-                // Ensure checkbox is unchecked
-                const checkbox = document.getElementById(`chk_${id}`);
-                if (checkbox) checkbox.checked = false;
-            }
-            updateChapterSelection();
-        }
-        
-        function toggleAllChapters() {
-            const selectAll = document.getElementById('selectAllChapters');
-            const checkboxes = document.querySelectorAll('.chapter-checkbox');
-            
-            if (selectAll.checked) {
-                // Select all
-                checkboxes.forEach(cb => {
-                    cb.checked = true;
-                    const id = parseInt(cb.id.replace('chk_', ''));
-                    if (!selectedChapterIds.includes(id)) {
-                        selectedChapterIds.push(id);
-                    }
-                    const row = document.querySelector(`.chapter-row[data-chapter-id="${id}"]`);
-                    if (row) row.classList.add('selected-chapter');
-                });
-            } else {
-                // Deselect all
-                checkboxes.forEach(cb => {
-                    cb.checked = false;
-                });
-                selectedChapterIds = [];
-                document.querySelectorAll('.chapter-row').forEach(row => {
-                    row.classList.remove('selected-chapter');
-                });
-            }
-            updateChapterSelection();
-        }
-        
-        function updateChapterSelection() {
-            document.getElementById('chapterSelectedCount').textContent = selectedChapterIds.length;
-            const total = chaptersData.length;
-            document.getElementById('chapterTotalCount').textContent = total;
-            
-            const selectAll = document.getElementById('selectAllChapters');
-            if (selectedChapterIds.length === total && total > 0) {
-                selectAll.checked = true;
-                selectAll.indeterminate = false;
-            } else if (selectedChapterIds.length > 0 && selectedChapterIds.length < total) {
-                selectAll.checked = false;
-                selectAll.indeterminate = true;
-            } else {
-                selectAll.checked = false;
-                selectAll.indeterminate = false;
-            }
-            
-            document.getElementById('nextAfterChapterBtn').disabled = selectedChapterIds.length === 0;
-            updateTracker();
-        }
-        
-        function confirmChapterSelection() {
-            if (selectedChapterIds.length === 0) {
-                Swal.fire('Error', 'Please select at least one chapter', 'error');
+        } catch(e) { document.getElementById('gradeGrid').innerHTML = '<div class="empty-state">Error loading grades</div>'; }
+    }
+
+    function selectGrade(id, name, el) {
+        // single selection: remove 'selected' from all others
+        document.querySelectorAll('#stage1 .card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        currentSelections.grade = { id, display_name: name };
+        currentSelections.subject = null;
+        selectedCGIds = [];
+        selectedCompIds = [];
+        selectedQuestions = [];
+        document.getElementById('selectedGradeNameDisplay').textContent = name;
+        updateTracker();
+        showAutoRedirect('Moving to Subject selection...');
+        setTimeout(() => { goToStage(2); loadSubjects(); }, 600);
+    }
+
+    // ============================================================
+    //  SUBJECTS (single selection enforced)
+    // ============================================================
+    async function loadSubjects() {
+        const container = document.getElementById('subjectGrid');
+        const gradeId = currentSelections.grade.id;
+        const page1Data = window.page1Data || { subjects: [] };
+        subjectsList = page1Data.subjects?.filter(s => s.grade_id == gradeId) || [];
+        if (!subjectsList.length) { container.innerHTML = '<div class="empty-state">No subjects available</div>'; return; }
+        container.innerHTML = subjectsList.map(s => `
+            <div class="card" data-id="${s.id}" onclick="selectSubject(${s.id}, '${s.subject_name}', this)">
+                <div class="card-icon"><i class="fas fa-book"></i></div>
+                <h3>${s.subject_name}</h3>
+                <p>${s.subject_name} for ${currentSelections.grade.display_name}</p>
+            </div>
+        `).join('');
+    }
+
+    function selectSubject(id, name, el) {
+        // single selection
+        document.querySelectorAll('#stage2 .card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        currentSelections.subject = { id, name };
+        selectedCGIds = [];
+        selectedCompIds = [];
+        selectedQuestions = [];
+        document.getElementById('selectedCGSubjectName').textContent = name;
+        document.getElementById('cgSubjectHeading').textContent = name;
+        document.getElementById('selectedCompSubjectName').textContent = name;
+        document.getElementById('compSubjectHeading').textContent = name;
+        updateTracker();
+        showAutoRedirect('Loading Curricular Goals...');
+        setTimeout(() => { goToStage(3); loadCGs(); }, 600);
+    }
+
+    // ============================================================
+    //  CURRICULAR GOALS (Step 3) — LIST STYLE, supports multiple selection
+    // ============================================================
+    async function loadCGs() {
+        const container = document.getElementById('cgContainer');
+        const subjectId = currentSelections.subject.id;
+        try {
+            const page1Data = window.page1Data || {};
+            cgsList = page1Data.cgs?.filter(cg => cg.subject_id == subjectId) || [];
+            document.getElementById('cgTotalCount').textContent = cgsList.length;
+            if (!cgsList.length) {
+                container.innerHTML = '<div class="empty-state">No Curricular Goals found for this subject</div>';
+                document.getElementById('nextAfterCGBtn').disabled = true;
                 return;
             }
-            showAutoRedirect(`Loading Curricular Goals for ${selectedChapterIds.length} chapters...`);
-            setTimeout(() => {
-                goToStage(4);
-                loadCGsForChapters();
-            }, 600);
-        }
-        
-        // ============ CG FUNCTIONS ============
-        async function loadCGsForChapters() {
-            const container = document.getElementById('cgGrid');
-            const subjectId = currentSelections.subject.id;
-            
-            try {
-                let url = `/api/cgs-for-chapters?subject_id=${subjectId}`;
-                if (selectedChapterIds.length > 0) {
-                    url += `&chapter_ids=${selectedChapterIds.join(',')}`;
-                }
-                
-                const response = await fetch(url);
-                const data = await response.json();
-                cgsList = data.cgs || [];
-                document.getElementById('cgTotalCount').textContent = cgsList.length;
-                
-                if (cgsList.length === 0) {
-                    container.innerHTML = `<div class="empty-state">No Curricular Goals found for the selected chapters</div>`;
-                    document.getElementById('nextAfterCGBtn').disabled = true;
-                    return;
-                }
-                
-                container.innerHTML = cgsList.map(cg => `
-                    <div class="card" onclick="toggleCG(${cg.id}, this)" data-cg-id="${cg.id}">
-                        <div class="card-icon"><i class="fas fa-bullseye"></i></div>
-                        <h3>${cg.cg_code || 'CG ' + cg.id}</h3>
-                        <p>${cg.cg_description ? cg.cg_description.substring(0, 60) + (cg.cg_description.length > 60 ? '...' : '') : 'No description'}</p>
-                        <div class="badge">${cg.question_count || 0} questions</div>
-                    </div>
-                `).join('');
-                
-                selectedCGIds = [];
-                document.getElementById('selectAllCGs').checked = false;
-                updateCGSelection();
-            } catch (error) {
-                console.error('Error loading CGs for chapters:', error);
-                container.innerHTML = '<div class="empty-state">Error loading Curricular Goals</div>';
-            }
-        }
-        
-        function toggleCG(id, element) {
-            const index = selectedCGIds.indexOf(id);
-            if (index > -1) {
-                selectedCGIds.splice(index, 1);
-                element.classList.remove('selected');
-            } else {
-                selectedCGIds.push(id);
-                element.classList.add('selected');
-            }
-            updateCGSelection();
-        }
-        
-        function toggleAllCGs() {
-            const selectAll = document.getElementById('selectAllCGs');
-            const cards = document.querySelectorAll('#cgGrid .card');
-            
-            if (selectAll.checked) {
-                selectedCGIds = [];
-                cards.forEach(card => {
-                    const id = parseInt(card.dataset.cgId);
-                    if (!selectedCGIds.includes(id)) {
-                        selectedCGIds.push(id);
-                    }
-                    card.classList.add('selected');
-                });
-            } else {
-                selectedCGIds = [];
-                cards.forEach(card => {
-                    card.classList.remove('selected');
-                });
-            }
-            updateCGSelection();
-        }
-        
-        function updateCGSelection() {
-            document.getElementById('cgSelectedCount').textContent = selectedCGIds.length;
-            const total = cgsList.length;
-            document.getElementById('cgTotalCount').textContent = total;
-            
-            const selectAll = document.getElementById('selectAllCGs');
-            if (selectedCGIds.length === total && total > 0) {
-                selectAll.checked = true;
-                selectAll.indeterminate = false;
-            } else if (selectedCGIds.length > 0 && selectedCGIds.length < total) {
-                selectAll.checked = false;
-                selectAll.indeterminate = true;
-            } else {
-                selectAll.checked = false;
-                selectAll.indeterminate = false;
-            }
-            
-            document.getElementById('nextAfterCGBtn').disabled = selectedCGIds.length === 0;
-            updateTracker();
-        }
-        
-        function confirmCGSelection() {
-            if (selectedCGIds.length === 0) {
-                Swal.fire('Error', 'Please select at least one Curricular Goal', 'error');
-                return;
-            }
-            showAutoRedirect(`Moving to Configuration with ${selectedCGIds.length} CGs...`);
-            setTimeout(() => {
-                goToStage(5);
-                // Reload cognitive domains when reaching config stage
-                loadCognitiveDomains();
-            }, 600);
-        }
-        
-        // ============ CONFIGURATION FUNCTIONS ============
-        function calculateTotals() {
-            const easy = parseInt(document.getElementById('easyPercent').value) || 0;
-            const medium = parseInt(document.getElementById('mediumPercent').value) || 0;
-            const hard = parseInt(document.getElementById('hardPercent').value) || 0;
-            const difficultyTotal = easy + medium + hard;
-            document.getElementById('difficultyTotal').textContent = difficultyTotal + '%';
-            
-            // Color code the difficulty total
-            const diffTotalEl = document.getElementById('difficultyTotal');
-            if (difficultyTotal === 100) {
-                diffTotalEl.style.color = '#27ae60';
-            } else if (difficultyTotal > 80 && difficultyTotal < 120) {
-                diffTotalEl.style.color = '#f39c12';
-            } else {
-                diffTotalEl.style.color = '#e74c3c';
-            }
-            
-            // Also update cognitive total
-            calculateCognitiveTotal();
-        }
-        
-        function calculateQuestionMarks() {
-            const objective = (parseInt(document.getElementById('objectiveCount').value) || 0) * (parseInt(document.getElementById('objectiveMarks').value) || 0);
-            const veryShort = (parseInt(document.getElementById('veryShortCount').value) || 0) * (parseInt(document.getElementById('veryShortMarks').value) || 0);
-            const short = (parseInt(document.getElementById('shortCount').value) || 0) * (parseInt(document.getElementById('shortMarks').value) || 0);
-            const long = (parseInt(document.getElementById('longCount').value) || 0) * (parseInt(document.getElementById('longMarks').value) || 0);
-            document.getElementById('objectiveTotal').textContent = objective;
-            document.getElementById('veryShortTotal').textContent = veryShort;
-            document.getElementById('shortTotal').textContent = short;
-            document.getElementById('longTotal').textContent = long;
-            document.getElementById('grandTotal').textContent = objective + veryShort + short + long;
-        }
-        
-        function finishConfiguration() {
-            // Validate cognitive domain totals
-            const container = document.getElementById('cognitiveDomainsContainer');
-            const inputs = container.querySelectorAll('.sub-input');
-            let grandTotal = 0;
-            inputs.forEach(input => {
-                grandTotal += parseInt(input.value) || 0;
-            });
-            
-            if (grandTotal !== 100) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Cognitive Distribution Not 100%',
-                    text: `Total is ${grandTotal}%. Please adjust to exactly 100%.`,
-                    confirmButtonColor: '#e67e22'
-                });
-                return;
-            }
-            
-            // Also validate difficulty distribution
-            const easy = parseInt(document.getElementById('easyPercent').value) || 0;
-            const medium = parseInt(document.getElementById('mediumPercent').value) || 0;
-            const hard = parseInt(document.getElementById('hardPercent').value) || 0;
-            const difficultyTotal = easy + medium + hard;
-            
-            if (difficultyTotal !== 100) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Difficulty Distribution Not 100%',
-                    text: `Total is ${difficultyTotal}%. Please adjust to exactly 100%.`,
-                    confirmButtonColor: '#e67e22'
-                });
-                return;
-            }
-            
-            goToStage(6);
-            loadAllApprovedQuestions();
-        }
-        
-        // ============ NAVIGATION FUNCTIONS ============
-        function navigateToStage(stage) {
-            if (stage === 1) { goToStage(1); return; }
-            if (stage === 2) { if (currentSelections.grade) { goToStage(2); loadSubjects(); } else { Swal.fire('Warning', 'Please select a grade first', 'warning'); } return; }
-            if (stage === 3) { if (currentSelections.subject) { goToStage(3); loadChapters(); } else { Swal.fire('Warning', 'Please select a subject first', 'warning'); } return; }
-            if (stage === 4) { if (selectedChapterIds.length > 0) { goToStage(4); loadCGsForChapters(); } else { Swal.fire('Warning', 'Please select chapters first', 'warning'); } return; }
-            if (stage === 5) { if (selectedCGIds.length > 0) { goToStage(5); loadCognitiveDomains(); } else { Swal.fire('Warning', 'Please select Curricular Goals first', 'warning'); } return; }
-            if (stage === 6) { goToStage(6); loadAllApprovedQuestions(); return; }
-        }
-        
-        function goToStage(stage) {
-            for (let i = 1; i <= 6; i++) {
-                const stageEl = document.getElementById(`stage${i}`);
-                if (stageEl) stageEl.style.display = 'none';
-            }
-            const targetStage = document.getElementById(`stage${stage}`);
-            if (targetStage) targetStage.style.display = 'block';
-            currentStage = stage;
-            updateTracker();
-            updateProgress();
-            document.getElementById('autoRedirectNotice').style.display = 'none';
-        }
-        
-        function showAutoRedirect(message) {
-            const notice = document.getElementById('autoRedirectNotice');
-            notice.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${message}`;
-            notice.style.display = 'block';
-            if (autoNavigateTimeout) {
-                clearTimeout(autoNavigateTimeout);
-            }
-            autoNavigateTimeout = setTimeout(() => {
-                notice.style.display = 'none';
-            }, 2000);
-        }
-        
-        function updateTracker() {
-            document.getElementById('tracker-grade-value').textContent = currentSelections.grade ? currentSelections.grade.display_name : 'Select Grade';
-            document.getElementById('tracker-subject-value').textContent = currentSelections.subject ? currentSelections.subject.name : 'Select Subject';
-            document.getElementById('tracker-chapter-value').textContent = selectedChapterIds.length > 0 ? `${selectedChapterIds.length} Selected` : 'Select Chapters';
-            document.getElementById('tracker-cg-value').textContent = selectedCGIds.length > 0 ? `${selectedCGIds.length} Selected` : 'Select Curricular Goals';
-            document.getElementById('tracker-config-value').textContent = 'Configure Marks';
-            document.getElementById('tracker-questions-value').textContent = selectedQuestions.length > 0 ? `${selectedQuestions.length} Selected` : 'Select Questions';
-            
-            const steps = ['grade', 'subject', 'chapter', 'cg', 'config', 'questions'];
-            steps.forEach((step, index) => {
-                const element = document.getElementById(`tracker-${step}`);
-                if (element) {
-                    element.classList.remove('active', 'completed');
-                    if (index + 1 < currentStage) element.classList.add('completed');
-                    else if (index + 1 === currentStage) element.classList.add('active');
-                }
-            });
-            
-            if (currentSelections.grade) document.getElementById('tracker-grade').classList.add('completed');
-            if (currentSelections.subject) document.getElementById('tracker-subject').classList.add('completed');
-            if (selectedChapterIds.length > 0) document.getElementById('tracker-chapter').classList.add('completed');
-            if (selectedCGIds.length > 0) document.getElementById('tracker-cg').classList.add('completed');
-            if (selectedQuestions.length > 0) document.getElementById('tracker-questions').classList.add('completed');
-        }
-        
-        function updateProgress() {
-            const percent = ((currentStage - 1) / 5) * 100;
-            document.getElementById('progressFill').style.width = percent + '%';
-            document.getElementById('progressText').textContent = `Step ${currentStage} of 6`;
-        }
-        
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-        
-        // ============ STRIP HTML FOR PRINT ============
-        function stripHtmlForPrint(html) {
-            if (!html) return '';
-            // Remove HTML tags and decode entities
-            const temp = document.createElement('div');
-            temp.innerHTML = html;
-            return temp.textContent || temp.innerText || '';
-        }
-        
-        // ============ DEBUG FUNCTION ============
-        function debugQuestions() {
-            fetch('/api/debug-questions')
-                .then(r => r.json())
-                .then(data => {
-                    let message = '<b>Debug Information:</b><br><br>';
-                    message += '<b>Status Counts:</b><br>';
-                    if (data.status_counts && data.status_counts.length > 0) {
-                        data.status_counts.forEach(s => {
-                            message += `${s.status}: ${s.count} questions<br>`;
-                        });
-                    } else {
-                        message += 'No questions found in database<br>';
-                    }
-                    
-                    message += '<br><b>Subjects with Approved Questions:</b><br>';
-                    if (data.subjects_with_questions) {
-                        data.subjects_with_questions.forEach(s => {
-                            message += `${s.subject_name}: ${s.approved_count} approved questions<br>`;
-                        });
-                    }
-                    
-                    if (data.sample_approved_questions && data.sample_approved_questions.length > 0) {
-                        message += '<br><b>Sample Approved Questions:</b><br>';
-                        data.sample_approved_questions.forEach(q => {
-                            message += `ID ${q.id}: ${q.question_text ? q.question_text.substring(0, 50) : 'No text'}...<br>`;
-                            message += `  Subject: ${q.subject_id || 'NULL'}, Chapter: ${q.chapter_id || 'NULL'}<br>`;
-                        });
-                    }
-                    
-                    Swal.fire({
-                        title: 'Question Debug',
-                        html: message,
-                        width: 600,
-                        confirmButtonColor: '#3498db'
-                    });
-                })
-                .catch(e => {
-                    Swal.fire('Error', 'Failed to fetch debug info: ' + e.message, 'error');
-                });
-        }
-        
-        // ============ QUESTION LOADING ============
-        async function loadAllApprovedQuestions() {
-            const tbody = document.getElementById('availableQuestionsBody');
-            
-            if (!currentSelections.subject) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 25px;">Please select a subject first</td></tr>';
-                return;
-            }
-            
-            document.getElementById('questionsSubjectName').textContent = currentSelections.subject.name;
-            
-            const chapterFilterInfo = document.getElementById('chapterFilterInfo');
-            if (selectedChapterIds.length > 0) {
-                chapterFilterInfo.textContent = `${selectedChapterIds.length} Chapters`;
-                chapterFilterInfo.style.background = 'rgba(230,126,34,0.3)';
-            } else {
-                chapterFilterInfo.textContent = 'All Chapters';
-                chapterFilterInfo.style.background = 'rgba(39,174,96,0.3)';
-            }
-            
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 25px;"><i class="fas fa-spinner fa-pulse"></i> Loading approved questions...</td></tr>';
-            
-            try {
-                let url = `/api/builder-questions?subject_id=${currentSelections.subject.id}&status=approved`;
-                
-                if (selectedChapterIds.length > 0) {
-                    url += `&chapter_ids=${selectedChapterIds.join(',')}`;
-                }
-                if (selectedCGIds.length > 0) {
-                    url += `&cg_ids=${selectedCGIds.join(',')}`;
-                }
-                
-                console.log('Loading questions with URL:', url);
-                
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`Failed to load questions: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-                
-                const filteredQuestions = data.questions || [];
-                console.log(`Found ${filteredQuestions.length} questions`);
-                
-                approvedQuestions = filteredQuestions.map(q => ({
-                    ...q,
-                    images: q.images ? (typeof q.images === 'string' ? JSON.parse(q.images) : q.images) : []
-                }));
-                
-                document.getElementById('availableCount').textContent = approvedQuestions.length;
-                document.getElementById('questionTotalCount').textContent = approvedQuestions.length;
-                
-                // Preserve selected questions that still exist
-                const newSelectedQuestions = selectedQuestions.filter(sq => 
-                    approvedQuestions.some(aq => aq.id === sq.id)
-                );
-                selectedQuestions = newSelectedQuestions;
-                
-                if (approvedQuestions.length === 0) {
-                    tbody.innerHTML = `
-                        <tr>
-                            <td colspan="4" style="text-align: center; padding: 25px;">
-                                <div style="margin-bottom: 8px; color: #f39c12;">
-                                    <i class="fas fa-exclamation-triangle"></i> 
-                                    No approved questions found matching your criteria.
-                                </div>
-                                <button class="btn btn-primary btn-sm" onclick="debugQuestions()" style="margin-top: 8px;">
-                                    <i class="fas fa-bug"></i> Debug Questions
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                } else {
-                    displayAvailableQuestions();
-                }
-                
-                updateSelectedQuestions();
-                updateTracker();
-                
-            } catch (error) {
-                console.error('Error loading approved questions:', error);
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="4" style="text-align: center; padding: 25px; color: #e74c3c;">
-                            <i class="fas fa-exclamation-circle"></i> 
-                            Error: ${error.message}
-                            <br><br>
-                            <button class="btn btn-primary btn-sm" onclick="debugQuestions()">
-                                <i class="fas fa-bug"></i> Debug Questions
-                            </button>
-                            <button class="btn btn-success btn-sm" onclick="loadAllApprovedQuestions()" style="margin-left: 8px;">
-                                <i class="fas fa-sync-alt"></i> Retry
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            }
-        }
-        
-        function displayAvailableQuestions() {
-            const tbody = document.getElementById('availableQuestionsBody');
-            
-            if (approvedQuestions.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="4" style="text-align: center; padding: 25px; color: rgba(255,255,255,0.4);">
-                            No questions available
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-            
-            tbody.innerHTML = approvedQuestions.map((q, idx) => {
-                const isSelected = selectedQuestions.some(sq => sq.id === q.id);
-                const questionText = q.question_text || '';
-                const displayText = questionText.length > 70 ? questionText.substring(0, 70) + '...' : questionText;
-                const hasImage = q.images && q.images.length > 0;
-                const imageIcon = hasImage ? '<i class="fas fa-image has-image-icon" title="Has image"></i>' : '';
+            // Build list items — remove "General" chapter label
+            container.innerHTML = cgsList.map(cg => {
+                let chapterDisplay = cg.chapter_name && cg.chapter_name.toLowerCase() !== 'general' ? cg.chapter_name : '';
                 return `
-                    <tr>
-                        <td style="text-align: center;">
-                            <input type="checkbox" class="checkbox" id="qchk_${q.id}" onchange="handleQuestionCheck(${q.id}, this.checked)" ${isSelected ? 'checked' : ''}>
-                        </td>
-                        <td>
-                            ${escapeHtml(displayText)}
-                            ${imageIcon}
-                            ${hasImage ? `
-                                <div class="question-images-preview">
-                                    ${q.images.slice(0, 2).map(img => `
-                                        <div class="question-image-thumb" onclick="event.stopPropagation(); showFullImage('${img}')">
-                                            <img src="${img}" alt="Question image">
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            ` : ''}
-                        </td>
-                        <td style="color: #27ae60; font-weight: 600;">${q.marks || 1}</td>
-                        <td>${q.question_type_name || 'Objective'}</td>
-                    </tr>
-                `;
-            }).join('');
-            
-            updateSelectAllState();
-        }
-        
-        // ============ SELECT ALL QUESTIONS ============
-        function handleQuestionCheck(id, checked) {
-            toggleQuestion(id, checked);
-        }
-        
-        function toggleAllQuestions() {
-            const selectAll = document.getElementById('selectAllQuestions');
-            const checkboxes = document.querySelectorAll('#availableQuestionsBody .checkbox');
-            
-            if (checkboxes.length === 0) return;
-            
-            checkboxes.forEach(cb => {
-                cb.checked = selectAll.checked;
-            });
-            
-            if (selectAll.checked) {
-                approvedQuestions.forEach(q => {
-                    if (!selectedQuestions.some(sq => sq.id === q.id)) {
-                        selectedQuestions.push(q);
-                    }
-                });
-            } else {
-                selectedQuestions = [];
-            }
-            
-            updateSelectedQuestions();
-            updateTracker();
-            updateSelectAllState();
-        }
-        
-        function toggleQuestion(id, checked) {
-            if (checked) {
-                const question = approvedQuestions.find(q => q.id === id);
-                if (question && !selectedQuestions.some(sq => sq.id === id)) {
-                    selectedQuestions.push(question);
-                }
-            } else {
-                selectedQuestions = selectedQuestions.filter(q => q.id !== id);
-            }
-            updateSelectedQuestions();
-            updateSelectAllState();
-            updateTracker();
-        }
-        
-        function updateSelectAllState() {
-            const selectAll = document.getElementById('selectAllQuestions');
-            const checkboxes = document.querySelectorAll('#availableQuestionsBody .checkbox');
-            const total = checkboxes.length;
-            let checked = 0;
-            checkboxes.forEach(cb => { if (cb.checked) checked++; });
-            
-            if (total === 0) {
-                selectAll.checked = false;
-                selectAll.indeterminate = false;
-            } else if (checked === total) {
-                selectAll.checked = true;
-                selectAll.indeterminate = false;
-            } else if (checked > 0 && checked < total) {
-                selectAll.checked = false;
-                selectAll.indeterminate = true;
-            } else {
-                selectAll.checked = false;
-                selectAll.indeterminate = false;
-            }
-        }
-        
-        function updateSelectedQuestions() {
-            const tbody = document.getElementById('selectedQuestionsBody');
-            const countSpan = document.getElementById('selectedCount');
-            const selectedCountSpan = document.getElementById('questionSelectedCount');
-            
-            if (selectedQuestions.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 25px;">No questions selected</td></tr>';
-                countSpan.textContent = '0';
-                selectedCountSpan.textContent = '0';
-                return;
-            }
-            
-            tbody.innerHTML = selectedQuestions.map((q, index) => {
-                const questionText = q.question_text || '';
-                const displayText = questionText.length > 50 ? questionText.substring(0, 50) + '...' : questionText;
-                return `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td>${escapeHtml(displayText)}</td>
-                        <td style="color: #27ae60; font-weight: 600;">${q.marks || 1}</td>
-                        <td>${q.question_type_name || 'Objective'}</td>
-                        <td>
-                            <button class="remove-btn" onclick="removeQuestion(${q.id})">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-            
-            countSpan.textContent = selectedQuestions.length;
-            selectedCountSpan.textContent = selectedQuestions.length;
-        }
-        
-        function removeQuestion(id) {
-            selectedQuestions = selectedQuestions.filter(q => q.id !== id);
-            const cb = document.getElementById(`qchk_${id}`);
-            if (cb) cb.checked = false;
-            updateSelectedQuestions();
-            updateSelectAllState();
-            updateTracker();
-        }
-        
-        function showFullImage(imageUrl) {
-            const modal = document.getElementById('imageModal');
-            const modalImg = document.getElementById('modalImage');
-            modal.style.display = 'flex';
-            modalImg.src = imageUrl;
-        }
-        
-        function closeImageModal() {
-            document.getElementById('imageModal').style.display = 'none';
-        }
-        
-        // ============ PAPER GENERATION ============
-        function createPaperContent() {
-            let html = `
-                <div class="paper-header">
-                    <h2>COHSEM | PARAKH</h2>
-                    <h3>${currentSelections.grade.display_name} - ${currentSelections.subject.name}</h3>
-                    <div class="paper-meta">
-                        <span><i class="far fa-clock"></i> Time: 3 Hours</span>
-                        <span><i class="fas fa-star"></i> Total Marks: ${document.getElementById('grandTotal').textContent}</span>
-                    </div>
+                <div class="cg-list-item" data-cg-id="${cg.id}">
+                    <input type="checkbox" class="cg-check" id="cgchk_${cg.id}" 
+                           onchange="toggleCGFromCheckbox(${cg.id}, this.checked, this.closest('.cg-list-item'))">
+                    <span class="cg-code">${cg.cg_code || 'CG ' + cg.id}</span>
+                    <span class="cg-desc">${cg.cg_description ? cg.cg_description.substring(0, 100) + (cg.cg_description.length > 100 ? '...' : '') : 'No description'}</span>
+                    ${chapterDisplay ? `<span class="cg-chapter">${chapterDisplay}</span>` : ''}
+                    <span class="cg-comp-count">${cg.competency_count || 0} comps</span>
                 </div>
-            `;
-            selectedQuestions.forEach((q, index) => {
-                const hasImages = q.images && q.images.length > 0;
-                // Strip HTML tags from question text for clean print
-                const cleanQuestionText = stripHtmlForPrint(q.question_text || '');
+            `}).join('');
+            
+            // Attach click handler to each item (not the checkbox)
+            document.querySelectorAll('.cg-list-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    // Don't trigger if the click was on the checkbox itself
+                    if (e.target.type === 'checkbox') return;
+                    const id = parseInt(this.dataset.cgId);
+                    const cb = document.getElementById(`cgchk_${id}`);
+                    if (cb) {
+                        cb.checked = !cb.checked;
+                        // Trigger the change event
+                        const event = new Event('change', { bubbles: true });
+                        cb.dispatchEvent(event);
+                    }
+                });
+            });
+            
+            selectedCGIds = [];
+            document.getElementById('selectAllCGs').checked = false;
+            updateCGSelection();
+        } catch(e) {
+            console.error(e);
+            container.innerHTML = '<div class="empty-state">Error loading Curricular Goals</div>';
+        }
+    }
+
+    function toggleCGFromCheckbox(id, checked, el) {
+        const idx = selectedCGIds.indexOf(id);
+        if (checked) {
+            if (idx === -1) selectedCGIds.push(id);
+            if (el) el.classList.add('selected');
+        } else {
+            if (idx > -1) selectedCGIds.splice(idx, 1);
+            if (el) el.classList.remove('selected');
+        }
+        updateCGSelection();
+    }
+
+    function toggleAllCGs() {
+        const chk = document.getElementById('selectAllCGs');
+        const items = document.querySelectorAll('.cg-list-item');
+        // Clear all selections first
+        selectedCGIds = [];
+        items.forEach(item => {
+            const id = parseInt(item.dataset.cgId);
+            const cb = document.getElementById(`cgchk_${id}`);
+            if (cb) {
+                cb.checked = chk.checked;
+                if (chk.checked) {
+                    selectedCGIds.push(id);
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            }
+        });
+        updateCGSelection();
+    }
+
+    function updateCGSelection() {
+        document.getElementById('cgSelectedCount').textContent = selectedCGIds.length;
+        document.getElementById('nextAfterCGBtn').disabled = selectedCGIds.length === 0;
+        updateTracker();
+    }
+
+    function confirmCGSelection() {
+        if (!selectedCGIds.length) { Swal.fire('Error', 'Please select at least one Curricular Goal', 'error'); return; }
+        showAutoRedirect('Loading Competencies...');
+        setTimeout(() => { goToStage(4); loadCompetencies(); }, 600);
+    }
+
+    // ============================================================
+    //  COMPETENCIES (Step 4)
+    // ============================================================
+    async function loadCompetencies() {
+        const container = document.getElementById('compContainer');
+        const subjectId = currentSelections.subject.id;
+        try {
+            const page1Data = window.page1Data || {};
+            const allCGs = page1Data.cgs?.filter(cg => cg.subject_id == subjectId) || [];
+            const allComps = page1Data.competencies?.filter(c => {
+                const cg = allCGs.find(cg => cg.id === c.cg_id);
+                return cg && cg.subject_id == subjectId;
+            }) || [];
+            const filteredComps = allComps.filter(c => selectedCGIds.includes(c.cg_id));
+            const compsByCG = {};
+            filteredComps.forEach(comp => {
+                const cg = allCGs.find(c => c.id === comp.cg_id);
+                if (cg) {
+                    if (!compsByCG[comp.cg_id]) {
+                        compsByCG[comp.cg_id] = { cg: cg, comps: [] };
+                    }
+                    compsByCG[comp.cg_id].comps.push(comp);
+                }
+            });
+            competenciesList = filteredComps;
+            selectedCompIds = [];
+            document.getElementById('compTotalCount').textContent = filteredComps.length;
+            if (!Object.keys(compsByCG).length) {
+                container.innerHTML = '<div class="empty-state">No competencies found for the selected CGs</div>';
+                document.getElementById('nextAfterCompBtn').disabled = true;
+                return;
+            }
+            let html = '';
+            Object.keys(compsByCG).forEach(cgId => {
+                const group = compsByCG[cgId];
+                const cg = group.cg;
+                const comps = group.comps;
+                const isCgSelected = selectedCGIds.includes(cg.id);
                 html += `
-                    <div class="question-item">
-                        <div class="question-header">
-                            <span><strong>Q${index + 1}.</strong> ${escapeHtml(cleanQuestionText)}</span>
-                            <span class="question-marks">[${q.marks || 1} marks]</span>
+                    <div class="cg-card ${isCgSelected ? 'selected-cg' : ''}">
+                        <div class="cg-header" onclick="toggleCGCompList(this)">
+                            <input type="checkbox" class="cg-check" ${isCgSelected ? 'checked' : ''} onchange="event.stopPropagation(); toggleCGSelectionFromComp(${cg.id}, this.checked)" ${isCgSelected ? '' : 'disabled'}>
+                            <span class="cg-code">${cg.cg_code || 'CG ' + cg.id}</span>
+                            <span class="cg-desc">${cg.cg_description || 'No description'}</span>
+                            <span class="cg-chapter">${cg.chapter_name || ''}</span>
+                            <span class="cg-toggle"><i class="fas fa-chevron-down"></i></span>
                         </div>
-                        ${hasImages ? `
-                            <div class="question-images-preview-modal">
-                                ${q.images.map(img => `
-                                    <img src="${img}" class="preview-image" alt="Question image" crossorigin="anonymous" onerror="this.style.display='none'">
+                        <div class="comp-list-container">
+                            ${comps.map(comp => `
+                                <div class="comp-item" onclick="toggleComp(${comp.id}, this)">
+                                    <input type="checkbox" class="comp-check" id="comp_${comp.id}" onchange="event.stopPropagation(); toggleCompFromCheckbox(${comp.id}, this.checked)">
+                                    <span class="comp-code">${comp.comp_code || 'COMP-' + comp.id}</span>
+                                    <span class="comp-desc">${comp.comp_description || 'No description'}</span>
+                                    <span class="comp-meta">${comp.status ? 'Active' : 'Inactive'}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+            document.querySelectorAll('.cg-header').forEach(header => {
+                const list = header.nextElementSibling;
+                if (list) {
+                    list.classList.add('open');
+                    header.querySelector('.cg-toggle').classList.add('open');
+                }
+            });
+            document.getElementById('selectAllComps').checked = false;
+            updateCompSelection();
+        } catch(e) {
+            console.error(e);
+            container.innerHTML = '<div class="empty-state">Error loading competencies</div>';
+        }
+    }
+
+    function toggleCGCompList(header) {
+        const list = header.nextElementSibling;
+        const toggleIcon = header.querySelector('.cg-toggle');
+        if (list) {
+            list.classList.toggle('open');
+            toggleIcon.classList.toggle('open');
+        }
+    }
+
+    function toggleCGSelectionFromComp(cgId, checked) {
+        const idx = selectedCGIds.indexOf(cgId);
+        if (checked && idx === -1) selectedCGIds.push(cgId);
+        else if (!checked && idx > -1) {
+            selectedCGIds.splice(idx, 1);
+            const compsUnderCG = competenciesList.filter(c => c.cg_id === cgId);
+            compsUnderCG.forEach(comp => {
+                const compIdx = selectedCompIds.indexOf(comp.id);
+                if (compIdx > -1) selectedCompIds.splice(compIdx, 1);
+                const cb = document.getElementById(`comp_${comp.id}`);
+                if (cb) cb.checked = false;
+                const item = document.querySelector(`.comp-item[onclick*="toggleComp(${comp.id}"]`);
+                if (item) item.classList.remove('selected-comp');
+            });
+        }
+        const cards = document.querySelectorAll('.cg-card');
+        cards.forEach(card => {
+            const header = card.querySelector('.cg-header');
+            const cgCheck = header ? header.querySelector('.cg-check') : null;
+            if (cgCheck) {
+                const cgCodeSpan = header.querySelector('.cg-code');
+                const cg = cgsList.find(c => c.cg_code === cgCodeSpan?.textContent.trim());
+                if (cg && cg.id === cgId) {
+                    if (checked) card.classList.add('selected-cg');
+                    else card.classList.remove('selected-cg');
+                }
+            }
+        });
+        updateCGSelection();
+        updateCompSelection();
+    }
+
+    function toggleComp(id, el) {
+        const idx = selectedCompIds.indexOf(id);
+        const cb = document.getElementById(`comp_${id}`);
+        if (idx > -1) { 
+            selectedCompIds.splice(idx, 1); 
+            el.classList.remove('selected-comp');
+            if (cb) cb.checked = false;
+        } else { 
+            selectedCompIds.push(id); 
+            el.classList.add('selected-comp');
+            if (cb) cb.checked = true;
+        }
+        updateCompSelection();
+    }
+
+    function toggleCompFromCheckbox(id, checked) {
+        const item = document.querySelector(`.comp-item[onclick*="toggleComp(${id}"]`);
+        if (checked) { 
+            if (!selectedCompIds.includes(id)) selectedCompIds.push(id);
+            if (item) item.classList.add('selected-comp');
+        } else { 
+            selectedCompIds = selectedCompIds.filter(c => c !== id);
+            if (item) item.classList.remove('selected-comp');
+        }
+        updateCompSelection();
+    }
+
+    function toggleAllComps() {
+        const chk = document.getElementById('selectAllComps');
+        const items = document.querySelectorAll('.comp-item');
+        items.forEach(el => {
+            const id = parseInt(el.getAttribute('onclick').match(/\d+/)[0]);
+            if (chk.checked) {
+                if (!selectedCompIds.includes(id)) selectedCompIds.push(id);
+                el.classList.add('selected-comp');
+                const cb = document.getElementById(`comp_${id}`);
+                if (cb) cb.checked = true;
+            } else {
+                selectedCompIds = [];
+                el.classList.remove('selected-comp');
+                const cb = document.getElementById(`comp_${id}`);
+                if (cb) cb.checked = false;
+            }
+        });
+        updateCompSelection();
+    }
+
+    function updateCompSelection() {
+        document.getElementById('compSelectedCount').textContent = selectedCompIds.length;
+        document.getElementById('nextAfterCompBtn').disabled = selectedCompIds.length === 0;
+        updateTracker();
+    }
+
+    function confirmCompSelection() {
+        if (!selectedCompIds.length) { Swal.fire('Error', 'Please select at least one Competency', 'error'); return; }
+        showAutoRedirect('Moving to Configuration...');
+        setTimeout(() => { goToStage(5); loadCognitiveDomains(); }, 600);
+    }
+
+    // ============================================================
+    //  CONFIGURATION (unchanged)
+    // ============================================================
+    function calculateTotals() {
+        const e = parseInt(document.getElementById('easyPercent').value) || 0;
+        const m = parseInt(document.getElementById('mediumPercent').value) || 0;
+        const h = parseInt(document.getElementById('hardPercent').value) || 0;
+        const t = e + m + h;
+        document.getElementById('difficultyTotal').textContent = t + '%';
+        document.getElementById('difficultyTotal').style.color = t === 100 ? '#27ae60' : '#e74c3c';
+        calculateCognitiveTotal();
+    }
+
+    function calculateQuestionMarks() {
+        const obj = (parseInt(document.getElementById('objectiveCount').value)||0) * (parseInt(document.getElementById('objectiveMarks').value)||0);
+        const vs = (parseInt(document.getElementById('veryShortCount').value)||0) * (parseInt(document.getElementById('veryShortMarks').value)||0);
+        const sh = (parseInt(document.getElementById('shortCount').value)||0) * (parseInt(document.getElementById('shortMarks').value)||0);
+        const lg = (parseInt(document.getElementById('longCount').value)||0) * (parseInt(document.getElementById('longMarks').value)||0);
+        document.getElementById('objectiveTotal').textContent = obj;
+        document.getElementById('veryShortTotal').textContent = vs;
+        document.getElementById('shortTotal').textContent = sh;
+        document.getElementById('longTotal').textContent = lg;
+        document.getElementById('grandTotal').textContent = obj + vs + sh + lg;
+    }
+
+    function finishConfiguration() {
+        const total = calculateCognitiveTotal();
+        if (total !== 100) { Swal.fire('Warning', `Cognitive total is ${total}%. Adjust to 100%.`, 'warning'); return; }
+        const e = parseInt(document.getElementById('easyPercent').value)||0;
+        const m = parseInt(document.getElementById('mediumPercent').value)||0;
+        const h = parseInt(document.getElementById('hardPercent').value)||0;
+        if (e + m + h !== 100) { Swal.fire('Warning', 'Difficulty total must be 100%', 'warning'); return; }
+        goToStage(6);
+        loadAllApprovedQuestions();
+    }
+
+    // ============================================================
+    //  NAVIGATION
+    // ============================================================
+    function navigateToStage(stage) {
+        if (stage === 1) { goToStage(1); return; }
+        if (stage === 2) { if (currentSelections.grade) { goToStage(2); loadSubjects(); } else Swal.fire('Warning','Select grade first','warning'); return; }
+        if (stage === 3) { if (currentSelections.subject) { goToStage(3); loadCGs(); } else Swal.fire('Warning','Select subject first','warning'); return; }
+        if (stage === 4) { if (selectedCGIds.length > 0) { goToStage(4); loadCompetencies(); } else Swal.fire('Warning','Select CGs first','warning'); return; }
+        if (stage === 5) { if (selectedCompIds.length > 0) { goToStage(5); loadCognitiveDomains(); } else Swal.fire('Warning','Select Competencies first','warning'); return; }
+        if (stage === 6) { goToStage(6); loadAllApprovedQuestions(); return; }
+    }
+
+    function goToStage(stage) {
+        for (let i = 1; i <= 6; i++) { const el = document.getElementById('stage'+i); if (el) el.style.display = 'none'; }
+        const target = document.getElementById('stage'+stage);
+        if (target) target.style.display = 'block';
+        currentStage = stage;
+        updateTracker();
+        updateProgress();
+        document.getElementById('autoRedirectNotice').style.display = 'none';
+    }
+
+    function showAutoRedirect(msg) {
+        const n = document.getElementById('autoRedirectNotice');
+        n.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${msg}`;
+        n.style.display = 'block';
+        if (autoNavigateTimeout) clearTimeout(autoNavigateTimeout);
+        autoNavigateTimeout = setTimeout(() => n.style.display = 'none', 2000);
+    }
+
+    function updateTracker() {
+        document.getElementById('tracker-grade-value').textContent = currentSelections.grade ? currentSelections.grade.display_name : 'Select Grade';
+        document.getElementById('tracker-subject-value').textContent = currentSelections.subject ? currentSelections.subject.name : 'Select Subject';
+        document.getElementById('tracker-cg-value').textContent = selectedCGIds.length > 0 ? `${selectedCGIds.length} Selected` : 'Select CGs';
+        document.getElementById('tracker-comp-value').textContent = selectedCompIds.length > 0 ? `${selectedCompIds.length} Selected` : 'Select Comps';
+        document.getElementById('tracker-config-value').textContent = 'Configure Marks';
+        document.getElementById('tracker-questions-value').textContent = selectedQuestions.length > 0 ? `${selectedQuestions.length} Selected` : 'Select Questions';
+        ['grade','subject','cg','comp','config','questions'].forEach((s,i) => {
+            const el = document.getElementById('tracker-'+s);
+            if (el) { el.classList.remove('active','completed'); if (i+1 < currentStage) el.classList.add('completed'); else if (i+1 === currentStage) el.classList.add('active'); }
+        });
+        if (currentSelections.grade) document.getElementById('tracker-grade').classList.add('completed');
+        if (currentSelections.subject) document.getElementById('tracker-subject').classList.add('completed');
+        if (selectedCGIds.length > 0) document.getElementById('tracker-cg').classList.add('completed');
+        if (selectedCompIds.length > 0) document.getElementById('tracker-comp').classList.add('completed');
+        if (selectedQuestions.length > 0) document.getElementById('tracker-questions').classList.add('completed');
+    }
+
+    function updateProgress() {
+        const pct = ((currentStage - 1) / 5) * 100;
+        document.getElementById('progressFill').style.width = pct + '%';
+        document.getElementById('progressText').textContent = `Step ${currentStage} of 6`;
+    }
+
+    function escapeHtml(t) { if (!t) return ''; const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+    function stripHtmlForPrint(html) { if (!html) return ''; const d = document.createElement('div'); d.innerHTML = html; return d.textContent || d.innerText || ''; }
+
+    // ============================================================
+    //  QUESTIONS
+    // ============================================================
+    async function loadAllApprovedQuestions() {
+        const tbody = document.getElementById('availableQuestionsBody');
+        if (!currentSelections.subject) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:25px;">Please select a subject first</td></tr>';
+            return;
+        }
+        document.getElementById('questionsSubjectName').textContent = currentSelections.subject.name;
+        const filterInfo = document.getElementById('filterInfo');
+        filterInfo.textContent = `${selectedCompIds.length} Comps selected`;
+        filterInfo.style.background = 'rgba(230,126,34,0.3)';
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:25px;"><i class="fas fa-spinner fa-pulse"></i> Loading approved questions...</td></tr>';
+        try {
+            let url = `/api/builder-questions?subject_id=${currentSelections.subject.id}&status=approved`;
+            if (selectedCGIds.length) url += `&cg_ids=${selectedCGIds.join(',')}`;
+            if (selectedCompIds.length) url += `&comp_ids=${selectedCompIds.join(',')}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Failed to load questions: ${response.status}`);
+            const data = await response.json();
+            if (data.error) throw new Error(data.error);
+            const filteredQuestions = data.questions || [];
+            approvedQuestions = filteredQuestions.map(q => ({
+                ...q,
+                images: q.images ? (typeof q.images === 'string' ? JSON.parse(q.images) : q.images) : []
+            }));
+            document.getElementById('availableCount').textContent = approvedQuestions.length;
+            document.getElementById('questionTotalCount').textContent = approvedQuestions.length;
+            const newSelectedQuestions = selectedQuestions.filter(sq =>
+                approvedQuestions.some(aq => aq.id === sq.id)
+            );
+            selectedQuestions = newSelectedQuestions;
+            if (approvedQuestions.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:25px;"><div style="margin-bottom:8px;color:#f39c12;"><i class="fas fa-exclamation-triangle"></i> No approved questions found matching your criteria.</div><button class="btn btn-primary btn-sm" onclick="debugQuestions()" style="margin-top:8px;"><i class="fas fa-bug"></i> Debug</button></td></tr>`;
+            } else {
+                displayAvailableQuestions();
+            }
+            updateSelectedQuestions();
+            updateTracker();
+        } catch (error) {
+            console.error('Error loading approved questions:', error);
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:25px;color:#e74c3c;"><i class="fas fa-exclamation-circle"></i> Error: ${error.message}<br><br><button class="btn btn-primary btn-sm" onclick="debugQuestions()"><i class="fas fa-bug"></i> Debug</button><button class="btn btn-success btn-sm" onclick="loadAllApprovedQuestions()" style="margin-left:8px;"><i class="fas fa-sync-alt"></i> Retry</button></td></tr>`;
+        }
+    }
+
+    function displayAvailableQuestions() {
+        const tbody = document.getElementById('availableQuestionsBody');
+        if (!approvedQuestions.length) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:25px;color:rgba(255,255,255,0.4);">No questions available</td></tr>';
+            return;
+        }
+        tbody.innerHTML = approvedQuestions.map(q => {
+            const isSelected = selectedQuestions.some(sq => sq.id === q.id);
+            const questionText = q.question_text || '';
+            const displayText = questionText.length > 70 ? questionText.substring(0, 70) + '...' : questionText;
+            const hasImage = q.images && q.images.length > 0;
+            const imageIcon = hasImage ? '<i class="fas fa-image has-image-icon" title="Has image"></i>' : '';
+            return `
+                <tr>
+                    <td style="text-align:center;">
+                        <input type="checkbox" class="checkbox" id="qchk_${q.id}" onchange="handleQuestionCheck(${q.id}, this.checked)" ${isSelected ? 'checked' : ''}>
+                    </td>
+                    <td>
+                        ${escapeHtml(displayText)}
+                        ${imageIcon}
+                        ${hasImage ? `
+                            <div class="question-images-preview">
+                                ${q.images.slice(0, 2).map(img => `
+                                    <div class="question-image-thumb" onclick="event.stopPropagation(); showFullImage('${img}')">
+                                        <img src="${img}" alt="Question image">
+                                    </div>
                                 `).join('')}
                             </div>
                         ` : ''}
-                    </div>
-                `;
+                    </td>
+                    <td style="color:#27ae60;font-weight:600;">${q.marks || 1}</td>
+                    <td>${q.question_type_name || 'Objective'}</td>
+                </tr>
+            `;
+        }).join('');
+        updateSelectAllState();
+    }
+
+    function handleQuestionCheck(id, checked) {
+        toggleQuestion(id, checked);
+    }
+
+    function toggleAllQuestions() {
+        const selectAll = document.getElementById('selectAllQuestions');
+        const checkboxes = document.querySelectorAll('#availableQuestionsBody .checkbox');
+        if (!checkboxes.length) return;
+        checkboxes.forEach(cb => cb.checked = selectAll.checked);
+        if (selectAll.checked) {
+            approvedQuestions.forEach(q => {
+                if (!selectedQuestions.some(sq => sq.id === q.id)) selectedQuestions.push(q);
             });
-            return html;
+        } else {
+            selectedQuestions = [];
         }
-        
-        function generatePreview() {
-            document.getElementById('paperPreview').innerHTML = createPaperContent();
+        updateSelectedQuestions();
+        updateTracker();
+        updateSelectAllState();
+    }
+
+    function toggleQuestion(id, checked) {
+        if (checked) {
+            const question = approvedQuestions.find(q => q.id === id);
+            if (question && !selectedQuestions.some(sq => sq.id === id)) selectedQuestions.push(question);
+        } else {
+            selectedQuestions = selectedQuestions.filter(q => q.id !== id);
         }
-        
-        async function generatePaper() {
-            if (selectedQuestions.length === 0) {
-                Swal.fire('Error', 'Please select at least one question', 'error');
-                return;
-            }
-            document.getElementById('loadingModal').classList.add('active');
-            try {
-                generatePreview();
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                const tempDiv = document.createElement('div');
-                tempDiv.style.position = 'absolute';
-                tempDiv.style.left = '-9999px';
-                tempDiv.style.top = '0';
-                tempDiv.style.width = '800px';
-                tempDiv.style.backgroundColor = 'white';
-                tempDiv.style.padding = '30px';
-                tempDiv.innerHTML = createPaperContent();
-                document.body.appendChild(tempDiv);
-                
-                const tempImages = tempDiv.querySelectorAll('img');
-                await Promise.all(Array.from(tempImages).map(img => {
-                    if (img.complete) return Promise.resolve();
-                    return new Promise(resolve => {
-                        img.onload = resolve;
-                        img.onerror = resolve;
+        updateSelectedQuestions();
+        updateSelectAllState();
+        updateTracker();
+    }
+
+    function updateSelectAllState() {
+        const selectAll = document.getElementById('selectAllQuestions');
+        const checkboxes = document.querySelectorAll('#availableQuestionsBody .checkbox');
+        const total = checkboxes.length;
+        let checked = 0;
+        checkboxes.forEach(cb => { if (cb.checked) checked++; });
+        if (total === 0) { selectAll.checked = false; selectAll.indeterminate = false; }
+        else if (checked === total) { selectAll.checked = true; selectAll.indeterminate = false; }
+        else if (checked > 0 && checked < total) { selectAll.checked = false; selectAll.indeterminate = true; }
+        else { selectAll.checked = false; selectAll.indeterminate = false; }
+    }
+
+    function updateSelectedQuestions() {
+        const tbody = document.getElementById('selectedQuestionsBody');
+        const countSpan = document.getElementById('selectedCount');
+        const selectedCountSpan = document.getElementById('questionSelectedCount');
+        if (!selectedQuestions.length) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:25px;">No questions selected</td></tr>';
+            countSpan.textContent = '0';
+            selectedCountSpan.textContent = '0';
+            return;
+        }
+        tbody.innerHTML = selectedQuestions.map((q, index) => {
+            const questionText = q.question_text || '';
+            const displayText = questionText.length > 50 ? questionText.substring(0, 50) + '...' : questionText;
+            return `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${escapeHtml(displayText)}</td>
+                    <td style="color:#27ae60;font-weight:600;">${q.marks || 1}</td>
+                    <td>${q.question_type_name || 'Objective'}</td>
+                    <td>
+                        <button class="remove-btn" onclick="removeQuestion(${q.id})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        countSpan.textContent = selectedQuestions.length;
+        selectedCountSpan.textContent = selectedQuestions.length;
+    }
+
+    function removeQuestion(id) {
+        selectedQuestions = selectedQuestions.filter(q => q.id !== id);
+        const cb = document.getElementById(`qchk_${id}`);
+        if (cb) cb.checked = false;
+        updateSelectedQuestions();
+        updateSelectAllState();
+        updateTracker();
+    }
+
+    function showFullImage(imageUrl) {
+        const modal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('modalImage');
+        modal.style.display = 'flex';
+        modalImg.src = imageUrl;
+    }
+
+    function closeImageModal() {
+        document.getElementById('imageModal').style.display = 'none';
+    }
+
+    // ============================================================
+    //  DEBUG
+    // ============================================================
+    function debugQuestions() {
+        fetch('/api/debug-questions')
+            .then(r => r.json())
+            .then(data => {
+                let message = '<b>Debug Information:</b><br><br>';
+                message += '<b>Status Counts:</b><br>';
+                if (data.status_counts && data.status_counts.length > 0) {
+                    data.status_counts.forEach(s => { message += `${s.status}: ${s.count} questions<br>`; });
+                } else { message += 'No questions found in database<br>'; }
+                message += '<br><b>Subjects with Approved Questions:</b><br>';
+                if (data.subjects_with_questions) {
+                    data.subjects_with_questions.forEach(s => { message += `${s.subject_name}: ${s.approved_count} approved questions<br>`; });
+                }
+                if (data.sample_approved_questions && data.sample_approved_questions.length > 0) {
+                    message += '<br><b>Sample Approved Questions:</b><br>';
+                    data.sample_approved_questions.forEach(q => {
+                        message += `ID ${q.id}: ${q.question_text ? q.question_text.substring(0, 50) : 'No text'}...<br>`;
+                        message += `  Subject: ${q.subject_id || 'NULL'}, Chapter: ${q.chapter_id || 'NULL'}<br>`;
                     });
-                }));
-                
-                await new Promise(resolve => setTimeout(resolve, 300));
-                
-                const canvas = await html2canvas(tempDiv, {
-                    scale: 2,
-                    backgroundColor: '#ffffff',
-                    useCORS: true,
-                    logging: false,
-                    allowTaint: false,
-                    imageTimeout: 0
-                });
-                
-                document.body.removeChild(tempDiv);
-                
-                const imgData = canvas.toDataURL('image/jpeg', 0.95);
-                if (!imgData || imgData === 'data:,') {
-                    throw new Error('Failed to capture preview image');
                 }
-                
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF('p', 'mm', 'a4');
-                const imgWidth = 210;
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                let position = 0;
-                
-                doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-                let remainingHeight = imgHeight;
-                
-                while (remainingHeight > 297) {
-                    position = position - 297;
-                    doc.addPage();
-                    doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-                    remainingHeight -= 297;
-                }
-                
-                generatedPDF = doc.output('datauristring');
-                generatedPDFName = `${currentSelections.grade.display_name}_${currentSelections.subject.name}_Question_Paper.pdf`;
-                
-                document.getElementById('loadingModal').classList.remove('active');
-                document.getElementById('paperPreviewModal').classList.add('active');
-                Swal.fire({
-                    icon: 'success',
-                    title: 'PDF Generated!',
-                    text: 'Your question paper is ready',
-                    timer: 1500,
-                    showConfirmButton: false
-                });
-            } catch (error) {
-                console.error('Error generating paper:', error);
-                document.getElementById('loadingModal').classList.remove('active');
-                Swal.fire('Error', 'Failed to generate PDF: ' + error.message, 'error');
-            }
-        }
-        
-        function downloadPDF() {
-            if (!generatedPDF) {
-                Swal.fire('Error', 'No PDF generated yet', 'error');
-                return;
-            }
-            const link = document.createElement('a');
-            link.href = generatedPDF;
-            link.download = generatedPDFName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            Swal.fire('Success', 'PDF downloaded successfully', 'success');
-        }
-        
-        function printPaper() {
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(`
-                <html>
-                <head>
-                    <title>${currentSelections.grade.display_name} - ${currentSelections.subject.name} Question Paper</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; padding: 30px; }
-                        .paper-header { text-align: center; margin-bottom: 25px; }
-                        .paper-header h2 { color: #2c3e50; font-size: 22px; }
-                        .paper-header h3 { color: #e67e22; font-size: 18px; }
-                        .paper-meta { display: flex; justify-content: center; gap: 25px; margin: 15px 0; color: #666; font-size: 13px; }
-                        .question-item { margin-bottom: 20px; padding: 12px 15px; border: 1px solid #ddd; border-radius: 8px; page-break-inside: avoid; break-inside: avoid; }
-                        .question-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; font-size: 14px; }
-                        .question-header span:first-child { flex: 1; }
-                        .question-marks { color: #27ae60; font-weight: 600; white-space: nowrap; }
-                        .preview-image { max-width: 150px; max-height: 120px; margin: 4px; border: 1px solid #ddd; border-radius: 4px; }
-                        .question-images-preview-modal { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; }
-                        @media print { 
-                            body { padding: 0; }
-                            .question-item { page-break-inside: avoid; break-inside: avoid; }
-                        }
-                    </style>
-                </head>
-                <body>
-                    ${createPaperContent()}
-                </body>
-                </html>
-            `);
-            printWindow.document.close();
-            printWindow.print();
-        }
-        
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-        }
-        
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape') {
-                closeImageModal();
-                closeModal('paperPreviewModal');
-            }
+                Swal.fire({ title: 'Question Debug', html: message, width: 600, confirmButtonColor: '#3498db' });
+            })
+            .catch(e => { Swal.fire('Error', 'Failed to fetch debug info: ' + e.message, 'error'); });
+    }
+
+    // ============================================================
+    //  PAPER GENERATION
+    // ============================================================
+    function createPaperContent() {
+        let html = `
+            <div class="paper-header">
+                <h2>COHSEM | PARAKH</h2>
+                <h3>${currentSelections.grade.display_name} - ${currentSelections.subject.name}</h3>
+                <div class="paper-meta">
+                    <span><i class="far fa-clock"></i> Time: 3 Hours</span>
+                    <span><i class="fas fa-star"></i> Total Marks: ${document.getElementById('grandTotal').textContent}</span>
+                </div>
+            </div>
+        `;
+        selectedQuestions.forEach((q, index) => {
+            const hasImages = q.images && q.images.length > 0;
+            const cleanQuestionText = stripHtmlForPrint(q.question_text || '');
+            html += `
+                <div class="question-item">
+                    <div class="question-header">
+                        <span><strong>Q${index + 1}.</strong> ${escapeHtml(cleanQuestionText)}</span>
+                        <span class="question-marks">[${q.marks || 1} marks]</span>
+                    </div>
+                    ${hasImages ? `
+                        <div class="question-images-preview-modal">
+                            ${q.images.map(img => `<img src="${img}" class="preview-image" alt="Question image" crossorigin="anonymous" onerror="this.style.display='none'">`).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
         });
-    </script>
-</body>  
+        return html;
+    }
+
+    function generatePreview() {
+        document.getElementById('paperPreview').innerHTML = createPaperContent();
+    }
+
+    async function generatePaper() {
+        if (!selectedQuestions.length) { Swal.fire('Error', 'Please select at least one question', 'error'); return; }
+        document.getElementById('loadingModal').classList.add('active');
+        try {
+            generatePreview();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const tempDiv = document.createElement('div');
+            tempDiv.style.position = 'absolute';
+            tempDiv.style.left = '-9999px';
+            tempDiv.style.top = '0';
+            tempDiv.style.width = '800px';
+            tempDiv.style.backgroundColor = 'white';
+            tempDiv.style.padding = '30px';
+            tempDiv.innerHTML = createPaperContent();
+            document.body.appendChild(tempDiv);
+            const tempImages = tempDiv.querySelectorAll('img');
+            await Promise.all(Array.from(tempImages).map(img => {
+                if (img.complete) return Promise.resolve();
+                return new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
+            }));
+            await new Promise(resolve => setTimeout(resolve, 300));
+            const canvas = await html2canvas(tempDiv, {
+                scale: 2,
+                backgroundColor: '#ffffff',
+                useCORS: true,
+                logging: false,
+                allowTaint: false,
+                imageTimeout: 0
+            });
+            document.body.removeChild(tempDiv);
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            if (!imgData || imgData === 'data:,') throw new Error('Failed to capture preview image');
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const imgWidth = 210;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            let position = 0;
+            doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+            let remainingHeight = imgHeight;
+            while (remainingHeight > 297) {
+                position = position - 297;
+                doc.addPage();
+                doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+                remainingHeight -= 297;
+            }
+            generatedPDF = doc.output('datauristring');
+            generatedPDFName = `${currentSelections.grade.display_name}_${currentSelections.subject.name}_Question_Paper.pdf`;
+            document.getElementById('loadingModal').classList.remove('active');
+            document.getElementById('paperPreviewModal').classList.add('active');
+            Swal.fire({ icon: 'success', title: 'PDF Generated!', text: 'Your question paper is ready', timer: 1500, showConfirmButton: false });
+        } catch (error) {
+            console.error('Error generating paper:', error);
+            document.getElementById('loadingModal').classList.remove('active');
+            Swal.fire('Error', 'Failed to generate PDF: ' + error.message, 'error');
+        }
+    }
+
+    function downloadPDF() {
+        if (!generatedPDF) { Swal.fire('Error', 'No PDF generated yet', 'error'); return; }
+        const link = document.createElement('a');
+        link.href = generatedPDF;
+        link.download = generatedPDFName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        Swal.fire('Success', 'PDF downloaded successfully', 'success');
+    }
+
+    function printPaper() {
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>${currentSelections.grade.display_name} - ${currentSelections.subject.name} Question Paper</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 30px; }
+                    .paper-header { text-align: center; margin-bottom: 25px; }
+                    .paper-header h2 { color: #2c3e50; font-size: 22px; }
+                    .paper-header h3 { color: #e67e22; font-size: 18px; }
+                    .paper-meta { display: flex; justify-content: center; gap: 25px; margin: 15px 0; color: #666; font-size: 13px; }
+                    .question-item { margin-bottom: 20px; padding: 12px 15px; border: 1px solid #ddd; border-radius: 8px; page-break-inside: avoid; break-inside: avoid; }
+                    .question-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; font-size: 14px; }
+                    .question-header span:first-child { flex: 1; }
+                    .question-marks { color: #27ae60; font-weight: 600; white-space: nowrap; }
+                    .preview-image { max-width: 150px; max-height: 120px; margin: 4px; border: 1px solid #ddd; border-radius: 4px; }
+                    .question-images-preview-modal { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; }
+                    @media print { body { padding: 0; } .question-item { page-break-inside: avoid; break-inside: avoid; } }
+                </style>
+            </head>
+            <body>
+                ${createPaperContent()}
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') { closeImageModal(); closeModal('paperPreviewModal'); }
+    });
+</script>
+</body>
 </html>

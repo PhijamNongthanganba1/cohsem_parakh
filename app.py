@@ -61,6 +61,36 @@ def add_foreign_key_if_not_exists(cursor, table, column, ref_table, ref_column):
         print(f"Note: Could not add foreign key: {e}")
     return False
 
+def add_chapter_id_to_cgs():
+    """Add chapter_id column to curricular_goals table"""
+    db = get_db()
+    cur = db.cursor()
+    try:
+        cur.execute("SHOW COLUMNS FROM curricular_goals LIKE 'chapter_id'")
+        if not cur.fetchone():
+            cur.execute("ALTER TABLE curricular_goals ADD COLUMN chapter_id INT DEFAULT NULL")
+            print("Added chapter_id column to curricular_goals")
+            
+            try:
+                cur.execute("""
+                    ALTER TABLE curricular_goals 
+                    ADD FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE
+                """)
+                print("Added foreign key constraint on chapter_id")
+            except Exception as e:
+                print(f"Note: Could not add foreign key: {e}")
+            
+            db.commit()
+            return True
+        return False
+    except Exception as e:
+        print(f"Error adding chapter_id to curricular_goals: {e}")
+        db.rollback()
+        return False
+    finally:
+        cur.close()
+        db.close()
+
 def strip_html_tags(html_content):
     """Strip HTML tags and return plain text"""
     if not html_content:
@@ -206,7 +236,7 @@ def init_db():
             )
         """)
 
-        # Create textbooks table
+        # Create textbooks table with is_reference column
         cur.execute("""
             CREATE TABLE IF NOT EXISTS textbooks (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -214,6 +244,7 @@ def init_db():
                 subject_id INT NOT NULL,
                 grade_id INT NOT NULL,
                 publisher VARCHAR(200),
+                is_reference BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
                 FOREIGN KEY (grade_id) REFERENCES grades(id),
@@ -222,6 +253,7 @@ def init_db():
                 INDEX idx_grade_id (grade_id)
             )
         """)
+        add_column_if_not_exists(cur, 'textbooks', 'is_reference', 'BOOLEAN DEFAULT FALSE')
 
         # Create cognitive_domains table
         cur.execute("""
@@ -252,7 +284,6 @@ def init_db():
             )
         """)
         
-        # Add columns if not exists
         add_column_if_not_exists(cur, 'knowledge_levels', 'domain_id', 'INT DEFAULT NULL')
         add_column_if_not_exists(cur, 'knowledge_levels', 'difficulty_id', 'INT DEFAULT NULL')
 
@@ -267,17 +298,22 @@ def init_db():
             )
         """)
 
-        # Create curricular_goals table
+        # Create curricular_goals table with chapter_id
         cur.execute("""
             CREATE TABLE IF NOT EXISTS curricular_goals (
                 id INT PRIMARY KEY AUTO_INCREMENT,
                 cg_code VARCHAR(50),
                 cg_description TEXT,
                 subject_id INT,
+                chapter_id INT DEFAULT NULL,
                 FOREIGN KEY (subject_id) REFERENCES subjects(id),
-                INDEX idx_subject_id (subject_id)
+                INDEX idx_subject_id (subject_id),
+                INDEX idx_chapter_id (chapter_id)
             )
         """)
+        
+        # Add chapter_id column if it doesn't exist (for existing databases)
+        add_column_if_not_exists(cur, 'curricular_goals', 'chapter_id', 'INT DEFAULT NULL')
 
         # Create competencies table
         cur.execute("""
@@ -353,6 +389,12 @@ def init_db():
                 master_reviewed_at TIMESTAMP NULL,
                 master_reviewed_comment TEXT,
                 language VARCHAR(20) DEFAULT 'en',
+                textbook_id INT,
+                textbook_name VARCHAR(200),
+                textbook_publisher VARCHAR(200),
+                textbook_page VARCHAR(50),
+                reference_book VARCHAR(500),
+                reference_page VARCHAR(50),
                 INDEX idx_comp_id (comp_id),
                 INDEX idx_created_by (created_by),
                 INDEX idx_created_at (created_at),
@@ -391,6 +433,12 @@ def init_db():
         add_column_if_not_exists(cur, 'simple_questions', 'knowledge_level_id', 'INT')
         add_column_if_not_exists(cur, 'simple_questions', 'question_type_id', 'INT')
         add_column_if_not_exists(cur, 'simple_questions', 'difficulty_id', 'INT')
+        add_column_if_not_exists(cur, 'simple_questions', 'textbook_id', 'INT')
+        add_column_if_not_exists(cur, 'simple_questions', 'textbook_name', 'VARCHAR(200)')
+        add_column_if_not_exists(cur, 'simple_questions', 'textbook_publisher', 'VARCHAR(200)')
+        add_column_if_not_exists(cur, 'simple_questions', 'textbook_page', 'VARCHAR(50)')
+        add_column_if_not_exists(cur, 'simple_questions', 'reference_book', 'VARCHAR(500)')
+        add_column_if_not_exists(cur, 'simple_questions', 'reference_page', 'VARCHAR(50)')
 
         db.commit()
 
@@ -418,24 +466,30 @@ def init_db():
             for s in all_subjects:
                 subject_map[(s[2], s[1])] = s[0]
 
-            # Add sample textbooks
+            # Add sample textbooks with is_reference flag
             sample_textbooks = [
-                ('NCERT Physics Part 1', subject_map.get((1, 'Physics'), 1), 1, 'NCERT'),
-                ('NCERT Physics Part 2', subject_map.get((1, 'Physics'), 1), 1, 'NCERT'),
-                ('NCERT Chemistry Part 1', subject_map.get((1, 'Chemistry'), 2), 1, 'NCERT'),
-                ('NCERT Mathematics', subject_map.get((1, 'Mathematics'), 4), 1, 'NCERT'),
-                ('NCERT Biology', subject_map.get((1, 'Biology'), 3), 1, 'NCERT'),
-                ('NCERT Physics Part 1', subject_map.get((2, 'Physics'), 5), 2, 'NCERT'),
-                ('NCERT Chemistry Part 1', subject_map.get((2, 'Chemistry'), 6), 2, 'NCERT'),
-                ('NCERT Mathematics', subject_map.get((2, 'Mathematics'), 8), 2, 'NCERT'),
-                ('NCERT Biology', subject_map.get((2, 'Biology'), 7), 2, 'NCERT'),
+                ('NCERT Physics Part 1', subject_map.get((1, 'Physics'), 1), 1, 'NCERT', 0),
+                ('NCERT Physics Part 2', subject_map.get((1, 'Physics'), 1), 1, 'NCERT', 0),
+                ('NCERT Chemistry Part 1', subject_map.get((1, 'Chemistry'), 2), 1, 'NCERT', 0),
+                ('NCERT Mathematics', subject_map.get((1, 'Mathematics'), 4), 1, 'NCERT', 0),
+                ('NCERT Biology', subject_map.get((1, 'Biology'), 3), 1, 'NCERT', 0),
+                ('Concepts of Physics by H.C. Verma', subject_map.get((1, 'Physics'), 1), 1, 'H.C. Verma', 1),
+                ('Organic Chemistry by Morrison & Boyd', subject_map.get((1, 'Chemistry'), 2), 1, 'Morrison & Boyd', 1),
+                ('Higher Algebra by Hall & Knight', subject_map.get((1, 'Mathematics'), 4), 1, 'Hall & Knight', 1),
+                ('Molecular Biology of the Cell', subject_map.get((1, 'Biology'), 3), 1, 'Alberts', 1),
+                ('NCERT Physics Part 1', subject_map.get((2, 'Physics'), 5), 2, 'NCERT', 0),
+                ('NCERT Chemistry Part 1', subject_map.get((2, 'Chemistry'), 6), 2, 'NCERT', 0),
+                ('NCERT Mathematics', subject_map.get((2, 'Mathematics'), 8), 2, 'NCERT', 0),
+                ('NCERT Biology', subject_map.get((2, 'Biology'), 7), 2, 'NCERT', 0),
+                ('Concepts of Physics by H.C. Verma', subject_map.get((2, 'Physics'), 5), 2, 'H.C. Verma', 1),
+                ('Organic Chemistry by Morrison & Boyd', subject_map.get((2, 'Chemistry'), 6), 2, 'Morrison & Boyd', 1),
             ]
-            for textbook_name, subject_id, grade_id, publisher in sample_textbooks:
+            for textbook_name, subject_id, grade_id, publisher, is_reference in sample_textbooks:
                 if subject_id:
                     cur.execute("""
-                        INSERT INTO textbooks (textbook_name, subject_id, grade_id, publisher)
-                        VALUES (%s, %s, %s, %s)
-                    """, (textbook_name, subject_id, grade_id, publisher))
+                        INSERT INTO textbooks (textbook_name, subject_id, grade_id, publisher, is_reference)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """, (textbook_name, subject_id, grade_id, publisher, is_reference))
 
             sample_chapters = [
                 (subject_map.get((1, 'Physics'), 1), 'Physical World', 1, None, ''),
@@ -453,7 +507,7 @@ def init_db():
                         VALUES (%s, %s, %s, %s, %s)
                     """, (subject_id, name, number, textbook_id, ref_book))
 
-            # Create Curricular Goals for ALL subjects
+            # Create Curricular Goals for ALL subjects with chapter association
             print("Creating Curricular Goals for all subjects...")
             cg_counter = 1
             for subject in all_subjects:
@@ -461,17 +515,38 @@ def init_db():
                 subject_name = subject[1]
                 grade_id = subject[2]
                 
-                cg_codes = [
-                    (f'CG-{cg_counter:03d}', f'Basic Knowledge and Understanding - {subject_name}'),
-                    (f'CG-{cg_counter+1:03d}', f'Application and Analysis - {subject_name}'),
-                    (f'CG-{cg_counter+2:03d}', f'Synthesis and Evaluation - {subject_name}')
-                ]
-                for code, desc in cg_codes:
-                    cur.execute("""
-                        INSERT INTO curricular_goals (cg_code, cg_description, subject_id)
-                        VALUES (%s, %s, %s)
-                    """, (code, desc, subject_id))
-                cg_counter += 3
+                # Get chapters for this subject
+                cur.execute("SELECT id, chapter_name FROM chapters WHERE subject_id = %s", (subject_id,))
+                subject_chapters = cur.fetchall()
+                
+                if subject_chapters:
+                    for chapter in subject_chapters[:2]:  # Create CGs for first 2 chapters
+                        chapter_id = chapter[0]
+                        chapter_name = chapter[1]
+                        cg_codes = [
+                            (f'CG-{cg_counter:03d}', f'Basic Knowledge and Understanding - {chapter_name}', subject_id, chapter_id),
+                            (f'CG-{cg_counter+1:03d}', f'Application and Analysis - {chapter_name}', subject_id, chapter_id),
+                            (f'CG-{cg_counter+2:03d}', f'Synthesis and Evaluation - {chapter_name}', subject_id, chapter_id)
+                        ]
+                        for code, desc, subj_id, ch_id in cg_codes:
+                            cur.execute("""
+                                INSERT INTO curricular_goals (cg_code, cg_description, subject_id, chapter_id)
+                                VALUES (%s, %s, %s, %s)
+                            """, (code, desc, subj_id, ch_id))
+                        cg_counter += 3
+                else:
+                    # Fallback: create CGs without chapter association
+                    cg_codes = [
+                        (f'CG-{cg_counter:03d}', f'Basic Knowledge and Understanding - {subject_name}', subject_id, None),
+                        (f'CG-{cg_counter+1:03d}', f'Application and Analysis - {subject_name}', subject_id, None),
+                        (f'CG-{cg_counter+2:03d}', f'Synthesis and Evaluation - {subject_name}', subject_id, None)
+                    ]
+                    for code, desc, subj_id, ch_id in cg_codes:
+                        cur.execute("""
+                            INSERT INTO curricular_goals (cg_code, cg_description, subject_id, chapter_id)
+                            VALUES (%s, %s, %s, %s)
+                        """, (code, desc, subj_id, ch_id))
+                    cg_counter += 3
             
             print(f"Created CGs for {len(all_subjects)} subjects")
 
@@ -666,7 +741,7 @@ def init_db():
         db.close()
 
 def fix_missing_cgs_and_comps():
-    """Force create missing CGs and Competencies for all subjects"""
+    """Force create missing CGs and Competencies for all subjects with chapter association"""
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
@@ -680,45 +755,82 @@ def fix_missing_cgs_and_comps():
         print(f"Found {len(subjects)} subjects. Checking for missing CGs and Competencies...")
         
         for subject in subjects:
-            cur.execute("SELECT COUNT(*) as count FROM curricular_goals WHERE subject_id = %s", (subject['id'],))
-            cg_count = cur.fetchone()['count']
+            # Get chapters for this subject
+            cur.execute("SELECT id, chapter_name FROM chapters WHERE subject_id = %s", (subject['id'],))
+            subject_chapters = cur.fetchall()
             
-            if cg_count == 0:
-                print(f"Creating CGs for subject {subject['subject_name']} (ID: {subject['id']})")
-                sample_cgs = [
-                    (f'CG-{subject["id"]:03d}-01', f'Basic Knowledge and Understanding - {subject["subject_name"]}', subject['id']),
-                    (f'CG-{subject["id"]:03d}-02', f'Application and Analysis - {subject["subject_name"]}', subject['id']),
-                    (f'CG-{subject["id"]:03d}-03', f'Synthesis and Evaluation - {subject["subject_name"]}', subject['id']),
-                ]
-                for code, desc, subj_id in sample_cgs:
-                    cur.execute("""
-                        INSERT INTO curricular_goals (cg_code, cg_description, subject_id)
-                        VALUES (%s, %s, %s)
-                    """, (code, desc, subj_id))
-                db.commit()
-                print(f"Created 3 CGs for {subject['subject_name']}")
+            if not subject_chapters:
+                print(f"No chapters found for subject {subject['subject_name']}, skipping CG creation")
+                continue
             
-            cur.execute("SELECT id, cg_code FROM curricular_goals WHERE subject_id = %s", (subject['id'],))
-            cgs = cur.fetchall()
-            
-            for cg in cgs:
-                cur.execute("SELECT COUNT(*) as count FROM competencies WHERE cg_id = %s", (cg['id'],))
-                comp_count = cur.fetchone()['count']
+            for chapter in subject_chapters:
+                cur.execute("""
+                    SELECT COUNT(*) as count FROM curricular_goals 
+                    WHERE subject_id = %s AND chapter_id = %s
+                """, (subject['id'], chapter['id']))
+                cg_count = cur.fetchone()['count']
                 
-                if comp_count == 0:
-                    print(f"Creating Competencies for CG {cg['cg_code']}")
-                    sample_comps = [
-                        (f'COMP-{cg["id"]:03d}-A', f'Recall and Remember for {cg["cg_code"]}', cg['id'], 1),
-                        (f'COMP-{cg["id"]:03d}-B', f'Understand and Explain for {cg["cg_code"]}', cg['id'], 1),
-                        (f'COMP-{cg["id"]:03d}-C', f'Apply and Analyze for {cg["cg_code"]}', cg['id'], 1),
+                if cg_count == 0:
+                    print(f"Creating CGs for chapter {chapter['chapter_name']} (Subject: {subject['subject_name']})")
+                    sample_cgs = [
+                        (f'CG-{subject["id"]:03d}-{chapter["id"]:03d}-01', f'Basic Knowledge and Understanding - {chapter["chapter_name"]}', subject['id'], chapter['id']),
+                        (f'CG-{subject["id"]:03d}-{chapter["id"]:03d}-02', f'Application and Analysis - {chapter["chapter_name"]}', subject['id'], chapter['id']),
+                        (f'CG-{subject["id"]:03d}-{chapter["id"]:03d}-03', f'Synthesis and Evaluation - {chapter["chapter_name"]}', subject['id'], chapter['id']),
                     ]
-                    for code, desc, cg_id, status in sample_comps:
+                    for code, desc, subj_id, ch_id in sample_cgs:
                         cur.execute("""
-                            INSERT INTO competencies (comp_code, comp_description, cg_id, status)
+                            INSERT INTO curricular_goals (cg_code, cg_description, subject_id, chapter_id)
                             VALUES (%s, %s, %s, %s)
-                        """, (code, desc, cg_id, status))
+                        """, (code, desc, subj_id, ch_id))
                     db.commit()
-                    print(f"Created 3 Competencies for CG {cg['cg_code']}")
+                    print(f"Created 3 CGs for chapter {chapter['chapter_name']}")
+        
+        # Also create CGs for subjects that have no chapters
+        for subject in subjects:
+            cur.execute("SELECT COUNT(*) as count FROM chapters WHERE subject_id = %s", (subject['id'],))
+            chapter_count = cur.fetchone()['count']
+            
+            if chapter_count == 0:
+                cur.execute("SELECT COUNT(*) as count FROM curricular_goals WHERE subject_id = %s", (subject['id'],))
+                cg_count = cur.fetchone()['count']
+                
+                if cg_count == 0:
+                    print(f"Creating CGs for subject {subject['subject_name']} (no chapters found)")
+                    sample_cgs = [
+                        (f'CG-{subject["id"]:03d}-01', f'Basic Knowledge and Understanding - {subject["subject_name"]}', subject['id'], None),
+                        (f'CG-{subject["id"]:03d}-02', f'Application and Analysis - {subject["subject_name"]}', subject['id'], None),
+                        (f'CG-{subject["id"]:03d}-03', f'Synthesis and Evaluation - {subject["subject_name"]}', subject['id'], None),
+                    ]
+                    for code, desc, subj_id, ch_id in sample_cgs:
+                        cur.execute("""
+                            INSERT INTO curricular_goals (cg_code, cg_description, subject_id, chapter_id)
+                            VALUES (%s, %s, %s, %s)
+                        """, (code, desc, subj_id, ch_id))
+                    db.commit()
+                    print(f"Created 3 CGs for {subject['subject_name']}")
+        
+        # Create Competencies for all CGs that don't have them
+        cur.execute("SELECT id, cg_code FROM curricular_goals")
+        all_cgs = cur.fetchall()
+        
+        for cg in all_cgs:
+            cur.execute("SELECT COUNT(*) as count FROM competencies WHERE cg_id = %s", (cg['id'],))
+            comp_count = cur.fetchone()['count']
+            
+            if comp_count == 0:
+                print(f"Creating Competencies for CG {cg['cg_code']}")
+                sample_comps = [
+                    (f'COMP-{cg["id"]:03d}-A', f'Recall and Remember for {cg["cg_code"]}', cg['id'], 1),
+                    (f'COMP-{cg["id"]:03d}-B', f'Understand and Explain for {cg["cg_code"]}', cg['id'], 1),
+                    (f'COMP-{cg["id"]:03d}-C', f'Apply and Analyze for {cg["cg_code"]}', cg['id'], 1),
+                ]
+                for code, desc, cg_id, status in sample_comps:
+                    cur.execute("""
+                        INSERT INTO competencies (comp_code, comp_description, cg_id, status)
+                        VALUES (%s, %s, %s, %s)
+                    """, (code, desc, cg_id, status))
+                db.commit()
+                print(f"Created 3 Competencies for CG {cg['cg_code']}")
         
         cur.execute("SELECT COUNT(*) as count FROM curricular_goals")
         total_cgs = cur.fetchone()['count']
@@ -758,20 +870,20 @@ def ensure_approved_questions():
         
         all_cgs = []
         for subject in subjects:
-            cur.execute("SELECT id, cg_code FROM curricular_goals WHERE subject_id = %s", (subject['id'],))
+            cur.execute("SELECT id, cg_code, chapter_id FROM curricular_goals WHERE subject_id = %s", (subject['id'],))
             cgs = cur.fetchall()
             if not cgs:
                 default_cgs = [
-                    (f'DEF-CG-{subject["id"]}-01', f'Default CG 1 - {subject["subject_name"]}', subject['id']),
-                    (f'DEF-CG-{subject["id"]}-02', f'Default CG 2 - {subject["subject_name"]}', subject['id']),
+                    (f'DEF-CG-{subject["id"]}-01', f'Default CG 1 - {subject["subject_name"]}', subject['id'], None),
+                    (f'DEF-CG-{subject["id"]}-02', f'Default CG 2 - {subject["subject_name"]}', subject['id'], None),
                 ]
-                for code, desc, subj_id in default_cgs:
+                for code, desc, subj_id, ch_id in default_cgs:
                     cur.execute("""
-                        INSERT INTO curricular_goals (cg_code, cg_description, subject_id)
-                        VALUES (%s, %s, %s)
-                    """, (code, desc, subj_id))
+                        INSERT INTO curricular_goals (cg_code, cg_description, subject_id, chapter_id)
+                        VALUES (%s, %s, %s, %s)
+                    """, (code, desc, subj_id, ch_id))
                 db.commit()
-                cur.execute("SELECT id, cg_code FROM curricular_goals WHERE subject_id = %s", (subject['id'],))
+                cur.execute("SELECT id, cg_code, chapter_id FROM curricular_goals WHERE subject_id = %s", (subject['id'],))
                 cgs = cur.fetchall()
             all_cgs.extend(cgs)
         
@@ -847,12 +959,24 @@ def ensure_approved_questions():
         difficulty = cur.fetchone()
         difficulty_id = difficulty['id'] if difficulty else 1
         
+        # Get textbooks for reference
+        cur.execute("SELECT id, textbook_name, is_reference FROM textbooks LIMIT 5")
+        sample_textbooks = cur.fetchall()
+        
         question_counter = 0
         for subject in subjects:
+            # Get chapters for this subject
+            cur.execute("SELECT id, chapter_name FROM chapters WHERE subject_id = %s", (subject['id'],))
+            subject_chapters = cur.fetchall()
+            
+            if not subject_chapters:
+                continue
+                
             for i, (q_text, ans, marks, duration) in enumerate(sample_questions):
-                chapter = all_chapters[i % len(all_chapters)] if all_chapters else None
+                chapter = subject_chapters[i % len(subject_chapters)] if subject_chapters else None
                 cg = all_cgs[i % len(all_cgs)] if all_cgs else None
                 comp = all_comps[i % len(all_comps)] if all_comps else None
+                textbook = sample_textbooks[i % len(sample_textbooks)] if sample_textbooks else None
                 
                 if not cg:
                     cur.execute("SELECT id, cg_code FROM curricular_goals WHERE subject_id = %s LIMIT 1", (subject['id'],))
@@ -872,14 +996,26 @@ def ensure_approved_questions():
                     if not chapter:
                         continue
                 
+                # Determine if textbook or reference
+                textbook_id = None
+                textbook_name = None
+                reference_book = None
+                if textbook:
+                    if textbook['is_reference'] == 1:
+                        reference_book = textbook['textbook_name']
+                    else:
+                        textbook_id = textbook['id']
+                        textbook_name = textbook['textbook_name']
+                
                 cur.execute("""
                     INSERT INTO simple_questions 
                     (question_text, answer, marks, duration_minutes, 
                      subject_id, grade_id, chapter_id, chapter_name,
                      cg_id, cg_code, comp_id, competency_code,
                      domain_id, knowledge_level_id, question_type_id, difficulty_id,
-                     status, created_by, created_at, language)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s)
+                     status, created_by, created_at, language,
+                     textbook_id, textbook_name, reference_book)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s, %s, %s, %s)
                 """, (
                     q_text, ans, marks, duration,
                     subject['id'], 1,
@@ -887,7 +1023,8 @@ def ensure_approved_questions():
                     cg['id'], cg['cg_code'],
                     comp['id'], comp['comp_code'],
                     domain_id, knowledge_level_id, question_type_id, difficulty_id,
-                    'approved', 'admin', 'en'
+                    'approved', 'admin', 'en',
+                    textbook_id, textbook_name, reference_book
                 ))
                 question_counter += 1
         
@@ -1540,7 +1677,7 @@ def get_chapters():
                 return jsonify({'error': 'Access denied'}), 403
             cur.execute("""
                 SELECT c.*, s.subject_name, s.grade_id, g.grade_name,
-                       t.textbook_name, t.id as textbook_id, t.publisher
+                       t.textbook_name, t.id as textbook_id, t.publisher, t.is_reference
                 FROM chapters c 
                 LEFT JOIN subjects s ON c.subject_id = s.id 
                 LEFT JOIN grades g ON s.grade_id = g.id
@@ -1553,7 +1690,7 @@ def get_chapters():
                 placeholders = ','.join(['%s'] * len(user_subject_ids))
                 cur.execute(f"""
                     SELECT c.*, s.subject_name, s.grade_id, g.grade_name,
-                           t.textbook_name, t.id as textbook_id, t.publisher
+                           t.textbook_name, t.id as textbook_id, t.publisher, t.is_reference
                     FROM chapters c 
                     LEFT JOIN subjects s ON c.subject_id = s.id 
                     LEFT JOIN grades g ON s.grade_id = g.id
@@ -1564,7 +1701,7 @@ def get_chapters():
             else:
                 cur.execute("""
                     SELECT c.*, s.subject_name, s.grade_id, g.grade_name,
-                           t.textbook_name, t.id as textbook_id, t.publisher
+                           t.textbook_name, t.id as textbook_id, t.publisher, t.is_reference
                     FROM chapters c 
                     LEFT JOIN subjects s ON c.subject_id = s.id 
                     LEFT JOIN grades g ON s.grade_id = g.id
@@ -1699,7 +1836,7 @@ def get_subject_chapters(subject_id):
         
         cur.execute("""
             SELECT c.id, c.chapter_name, c.chapter_number, c.textbook_id, c.reference_book,
-                   t.textbook_name, t.publisher
+                   t.textbook_name, t.publisher, t.is_reference
             FROM chapters c
             LEFT JOIN textbooks t ON c.textbook_id = t.id
             WHERE c.subject_id = %s 
@@ -1724,6 +1861,7 @@ def get_textbooks():
     
     subject_id = request.args.get('subject_id')
     grade_id = request.args.get('grade_id')
+    book_type = request.args.get('book_type')  # 'textbook' or 'reference'
     
     db = get_db()
     cur = db.cursor(dictionary=True)
@@ -1743,6 +1881,10 @@ def get_textbooks():
         if grade_id:
             query += " AND t.grade_id = %s"
             params.append(grade_id)
+        if book_type == 'textbook':
+            query += " AND (t.is_reference = 0 OR t.is_reference IS NULL)"
+        elif book_type == 'reference':
+            query += " AND t.is_reference = 1"
             
         query += " ORDER BY t.textbook_name"
         cur.execute(query, params)
@@ -1765,6 +1907,7 @@ def create_textbook():
     subject_id = data.get('subject_id')
     grade_id = data.get('grade_id')
     publisher = data.get('publisher', '')
+    is_reference = data.get('is_reference', 0)  # 0 = textbook, 1 = reference book
     
     if not textbook_name or not subject_id or not grade_id:
         return jsonify({'error': 'Textbook name, subject, and grade are required'}), 400
@@ -1773,13 +1916,13 @@ def create_textbook():
     cur = db.cursor()
     try:
         cur.execute("""
-            INSERT INTO textbooks (textbook_name, subject_id, grade_id, publisher)
-            VALUES (%s, %s, %s, %s)
-        """, (textbook_name, subject_id, grade_id, publisher))
+            INSERT INTO textbooks (textbook_name, subject_id, grade_id, publisher, is_reference)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (textbook_name, subject_id, grade_id, publisher, is_reference))
         db.commit()
-        return jsonify({'success': True, 'id': cur.lastrowid, 'message': 'Textbook created successfully'})
+        return jsonify({'success': True, 'id': cur.lastrowid, 'message': 'Book saved successfully'})
     except mysql.connector.IntegrityError:
-        return jsonify({'error': 'Textbook already exists for this subject'}), 400
+        return jsonify({'error': 'Book already exists for this subject'}), 400
     except Exception as e:
         print(f"Error creating textbook: {e}")
         db.rollback()
@@ -1798,6 +1941,7 @@ def update_textbook(textbook_id):
     subject_id = data.get('subject_id')
     grade_id = data.get('grade_id')
     publisher = data.get('publisher', '')
+    is_reference = data.get('is_reference', 0)
     
     if not textbook_name or not subject_id or not grade_id:
         return jsonify({'error': 'Textbook name, subject, and grade are required'}), 400
@@ -1807,15 +1951,16 @@ def update_textbook(textbook_id):
     try:
         cur.execute("""
             UPDATE textbooks 
-            SET textbook_name = %s, subject_id = %s, grade_id = %s, publisher = %s
+            SET textbook_name = %s, subject_id = %s, grade_id = %s, 
+                publisher = %s, is_reference = %s
             WHERE id = %s
-        """, (textbook_name, subject_id, grade_id, publisher, textbook_id))
+        """, (textbook_name, subject_id, grade_id, publisher, is_reference, textbook_id))
         db.commit()
         if cur.rowcount == 0:
-            return jsonify({'error': 'Textbook not found'}), 404
-        return jsonify({'success': True, 'message': 'Textbook updated successfully'})
+            return jsonify({'error': 'Book not found'}), 404
+        return jsonify({'success': True, 'message': 'Book updated successfully'})
     except mysql.connector.IntegrityError:
-        return jsonify({'error': 'Textbook already exists for this subject'}), 400
+        return jsonify({'error': 'Book already exists for this subject'}), 400
     except Exception as e:
         print(f"Error updating textbook: {e}")
         db.rollback()
@@ -1840,8 +1985,8 @@ def delete_textbook(textbook_id):
         cur.execute("DELETE FROM textbooks WHERE id = %s", (textbook_id,))
         db.commit()
         if cur.rowcount == 0:
-            return jsonify({'error': 'Textbook not found'}), 404
-        return jsonify({'success': True, 'message': 'Textbook deleted successfully'})
+            return jsonify({'error': 'Book not found'}), 404
+        return jsonify({'success': True, 'message': 'Book deleted successfully'})
     except Exception as e:
         print(f"Error deleting textbook: {e}")
         db.rollback()
@@ -1855,15 +2000,26 @@ def get_subject_textbooks(subject_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
+    book_type = request.args.get('book_type')  # 'textbook' or 'reference'
+    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
-        cur.execute("""
-            SELECT id, textbook_name, publisher, grade_id
+        query = """
+            SELECT id, textbook_name, publisher, grade_id, is_reference
             FROM textbooks 
-            WHERE subject_id = %s 
-            ORDER BY textbook_name
-        """, (subject_id,))
+            WHERE subject_id = %s
+        """
+        params = [subject_id]
+        
+        if book_type == 'textbook':
+            query += " AND (is_reference = 0 OR is_reference IS NULL)"
+        elif book_type == 'reference':
+            query += " AND is_reference = 1"
+            
+        query += " ORDER BY textbook_name"
+        
+        cur.execute(query, params)
         textbooks = cur.fetchall()
         return jsonify({'textbooks': textbooks})
     except Exception as e:
@@ -2255,7 +2411,9 @@ def get_review_questions():
                    c.comp_code as competency, sq.images,
                    sq.question_type_name, sq.language,
                    cd.domain_name, kl.level_name as knowledge_level_name,
-                   dl.level_name as difficulty_name
+                   dl.level_name as difficulty_name,
+                   sq.textbook_name, sq.textbook_publisher, sq.textbook_page,
+                   sq.reference_book, sq.reference_page
             FROM simple_questions sq
             LEFT JOIN grades g ON sq.grade_id = g.id
             LEFT JOIN subjects sub ON sq.subject_id = sub.id
@@ -2353,6 +2511,16 @@ def get_review_questions():
             if user_role in ['reviewer', 'approver', 'master'] and q['status'] != 'approved':
                 can_rework = True
             
+            # Parse images
+            images = []
+            try:
+                if q.get('images'):
+                    images = json.loads(q['images'])
+                    if not isinstance(images, list):
+                        images = []
+            except:
+                images = []
+            
             formatted_questions.append({
                 'id': q['id'],
                 'question': q['question'],
@@ -2377,12 +2545,17 @@ def get_review_questions():
                 'chapter': q['chapter'] or 'N/A',
                 'chapter_id': q['chapter_id'],
                 'competency': q['competency'] or 'N/A',
-                'images': q['images'] or '[]',
+                'images': images,
                 'question_type_name': q['question_type_name'] or 'Objective',
                 'language': q.get('language', 'en'),
                 'domain_name': q.get('domain_name') or 'N/A',
                 'knowledge_level_name': q.get('knowledge_level_name') or 'N/A',
                 'difficulty_name': q.get('difficulty_name') or 'N/A',
+                'textbook_name': q.get('textbook_name'),
+                'textbook_publisher': q.get('textbook_publisher'),
+                'textbook_page': q.get('textbook_page'),
+                'reference_book': q.get('reference_book'),
+                'reference_page': q.get('reference_page'),
                 'can_edit': can_edit,
                 'can_review': can_review,
                 'can_approve': can_approve,
@@ -2684,12 +2857,9 @@ def update_question(question_id):
     duration_minutes = data.get('duration_minutes', 0)
     status = data.get('status')
     
-    # FIXED: More lenient validation for question text
-    # Allow content if it has any text, images, or structural elements
     if not question_text:
         return jsonify({'error': 'Question text is required'}), 400
     
-    # Check if question has actual content (text, images, or structure)
     if not has_actual_content(question_text):
         return jsonify({'error': 'Question text must have actual content (text, images, or structured content)'}), 400
     
@@ -2751,6 +2921,14 @@ def update_question(question_id):
         images = data.get('images', '[]')
         language = data.get('language', 'en')
         
+        # Textbook/Reference fields
+        textbook_id = data.get('textbook_id')
+        textbook_name = data.get('textbook_name')
+        textbook_publisher = data.get('textbook_publisher')
+        textbook_page = data.get('textbook_page')
+        reference_book = data.get('reference_book')
+        reference_page = data.get('reference_page')
+        
         try:
             image_list = json.loads(images) if isinstance(images, str) else images
             filtered_images = []
@@ -2770,13 +2948,17 @@ def update_question(question_id):
             domain_id = %s, knowledge_level_id = %s,
             question_type_id = %s, difficulty_id = %s,
             images = %s, language = %s,
+            textbook_id = %s, textbook_name = %s, textbook_publisher = %s,
+            textbook_page = %s, reference_book = %s, reference_page = %s,
             updated_at = NOW()
         """
         params = [question_text, answer, marks, duration_minutes, 
                   chapter_id, cg_id, comp_id,
                   domain_id, knowledge_level_id,
                   question_type_id, difficulty_id,
-                  images, language]
+                  images, language,
+                  textbook_id, textbook_name, textbook_publisher,
+                  textbook_page, reference_book, reference_page]
         
         if status is not None:
             update_fields += ", status = %s"
@@ -2865,7 +3047,9 @@ def get_builder_questions():
                    ch.chapter_name, ch.id as chapter_id,
                    sq.cg_code, sq.comp_id,
                    sq.created_by, sq.created_at, sq.approved_at,
-                   sq.reviewed_by, sq.reviewed_comment, sq.language
+                   sq.reviewed_by, sq.reviewed_comment, sq.language,
+                   sq.textbook_name, sq.textbook_publisher, sq.textbook_page,
+                   sq.reference_book, sq.reference_page
             FROM simple_questions sq
             LEFT JOIN grades g ON sq.grade_id = g.id
             LEFT JOIN subjects sub ON sq.subject_id = sub.id
@@ -3091,19 +3275,21 @@ def debug_cgs():
     cur = db.cursor(dictionary=True)
     try:
         cur.execute("""
-            SELECT cg.id, cg.cg_code, cg.cg_description, cg.subject_id,
+            SELECT cg.id, cg.cg_code, cg.cg_description, cg.subject_id, cg.chapter_id,
                    s.subject_name, s.grade_id, g.grade_name,
+                   ch.chapter_name,
                    (SELECT COUNT(*) FROM competencies WHERE cg_id = cg.id) as comp_count
             FROM curricular_goals cg
             LEFT JOIN subjects s ON cg.subject_id = s.id
             LEFT JOIN grades g ON s.grade_id = g.id
+            LEFT JOIN chapters ch ON cg.chapter_id = ch.id
             ORDER BY cg.id
         """)
         cgs = cur.fetchall()
         
         cur.execute("""
             SELECT c.id, c.comp_code, c.comp_description, c.cg_id, c.status,
-                   cg.cg_code, cg.subject_id
+                   cg.cg_code, cg.subject_id, cg.chapter_id
             FROM competencies c
             LEFT JOIN curricular_goals cg ON c.cg_id = cg.id
             ORDER BY c.id
@@ -3198,7 +3384,14 @@ def create_simple_question():
     language = data.get('language', 'en')
     status = data.get('status', 'draft')
     
-    # FIXED: More lenient validation
+    # Textbook/Reference fields
+    textbook_id = data.get('textbook_id')
+    textbook_name = data.get('textbook_name')
+    textbook_publisher = data.get('textbook_publisher')
+    textbook_page = data.get('textbook_page')
+    reference_book = data.get('reference_book')
+    reference_page = data.get('reference_page')
+    
     if not question_text:
         return jsonify({'error': 'Question text is required'}), 400
     
@@ -3254,8 +3447,10 @@ def create_simple_question():
                 competency_code, domain_name, knowledge_level_name,
                 question_type_name, difficulty_name, grade_name,
                 subject_name, chapter_name, chapter_code, cg_code, 
-                images, status, language
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                images, status, language,
+                textbook_id, textbook_name, textbook_publisher,
+                textbook_page, reference_book, reference_page
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             question_text, answer, marks, duration_minutes,
             comp_id, session['user'], datetime.now(),
@@ -3264,7 +3459,9 @@ def create_simple_question():
             competency_code, domain_name, knowledge_level_name,
             question_type_name, difficulty_name, grade_name,
             subject_name, chapter_name, chapter_code, cg_code,
-            images, status, language
+            images, status, language,
+            textbook_id, textbook_name, textbook_publisher,
+            textbook_page, reference_book, reference_page
         ))
         db.commit()
         
@@ -3344,20 +3541,24 @@ def get_page1_data():
         
         if user_role == 'admin':
             cur.execute("""
-                SELECT cg.*, s.subject_name, s.grade_id, g.grade_name 
+                SELECT cg.*, s.subject_name, s.grade_id, g.grade_name,
+                       ch.chapter_name, ch.id as chapter_id
                 FROM curricular_goals cg 
                 LEFT JOIN subjects s ON cg.subject_id = s.id 
-                LEFT JOIN grades g ON s.grade_id = g.id 
+                LEFT JOIN grades g ON s.grade_id = g.id
+                LEFT JOIN chapters ch ON cg.chapter_id = ch.id
                 ORDER BY cg.subject_id, cg.id
             """)
         else:
             if user_subject_ids:
                 placeholders = ','.join(['%s'] * len(user_subject_ids))
                 cur.execute(f"""
-                    SELECT cg.*, s.subject_name, s.grade_id, g.grade_name 
+                    SELECT cg.*, s.subject_name, s.grade_id, g.grade_name,
+                           ch.chapter_name, ch.id as chapter_id
                     FROM curricular_goals cg 
                     LEFT JOIN subjects s ON cg.subject_id = s.id 
-                    LEFT JOIN grades g ON s.grade_id = g.id 
+                    LEFT JOIN grades g ON s.grade_id = g.id
+                    LEFT JOIN chapters ch ON cg.chapter_id = ch.id
                     WHERE cg.subject_id IN ({placeholders})
                     ORDER BY cg.subject_id, cg.id
                 """, tuple(user_subject_ids))
@@ -3451,7 +3652,6 @@ def get_knowledge_levels():
     cur = db.cursor(dictionary=True)
     try:
         if domain_id:
-            # Get knowledge levels filtered by cognitive domain
             cur.execute("""
                 SELECT kl.*, cd.domain_name 
                 FROM knowledge_levels kl
@@ -3461,7 +3661,6 @@ def get_knowledge_levels():
                 ORDER BY kl.id
             """, (domain_id,))
         elif difficulty_id:
-            # Filter by difficulty if domain_id not provided
             cur.execute("""
                 SELECT kl.*, cd.domain_name 
                 FROM knowledge_levels kl
@@ -3480,23 +3679,17 @@ def get_knowledge_levels():
             """)
         levels = cur.fetchall()
         
-        # If no levels found, return default mapping
         if not levels:
             default_mapping = [
-                # Awareness Domain (domain_id = 1)
                 {'id': 1, 'level_name': 'Knowledge', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Basic recall of information and facts'},
                 {'id': 2, 'level_name': 'Remembering', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Retrieving knowledge from memory'},
                 {'id': 3, 'level_name': 'Understanding', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Constructing meaning from information'},
                 {'id': 4, 'level_name': 'Comprehension', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Grasping the meaning of information'},
-                
-                # Sensitivity Domain (domain_id = 2)
                 {'id': 5, 'level_name': 'Application', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Apply knowledge to new situations'},
                 {'id': 6, 'level_name': 'Analysis', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Break down information into parts'},
                 {'id': 7, 'level_name': 'Synthesis', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Combine elements to form a new whole'},
                 {'id': 8, 'level_name': 'Empathy', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': "Understanding others' perspectives and feelings"},
                 {'id': 9, 'level_name': 'Interpretation', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Explaining and interpreting information'},
-                
-                # Creativity Domain (domain_id = 3)
                 {'id': 10, 'level_name': 'Evaluation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Make judgments based on criteria and standards'},
                 {'id': 11, 'level_name': 'Creation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Generate new ideas and products'},
                 {'id': 12, 'level_name': 'Critical Thinking', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Deep analysis and evaluation of information'},
@@ -3505,7 +3698,6 @@ def get_knowledge_levels():
                 {'id': 15, 'level_name': 'Reflection', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Thoughtful consideration and self-assessment'}
             ]
             
-            # If domain_id is specified, filter by it
             if domain_id:
                 levels = [l for l in default_mapping if l['domain_id'] == int(domain_id)]
             else:
@@ -3520,8 +3712,6 @@ def get_knowledge_levels():
         db.close()
 
 
-# ============ COGNITIVE DOMAINS API ENDPOINT ============
-
 @app.route('/api/cognitive-domains', methods=['GET'])
 def get_cognitive_domains():
     if 'user' not in session:
@@ -3530,11 +3720,9 @@ def get_cognitive_domains():
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
-        # First try to get from database
         cur.execute("SELECT id, domain_name, description FROM cognitive_domains ORDER BY id")
         domains = cur.fetchall()
         
-        # If no domains found, return default ones
         if not domains:
             domains = [
                 {'id': 1, 'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
@@ -3545,7 +3733,6 @@ def get_cognitive_domains():
         return jsonify({'domains': domains})
     except Exception as e:
         print(f"Error fetching cognitive domains: {e}")
-        # Return default domains on error
         return jsonify({
             'domains': [
                 {'id': 1, 'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
@@ -3650,7 +3837,9 @@ def get_simple_questions():
                    created_by, created_at, comp_id,
                    status, rejection_reason, reviewed_by, reviewed_at,
                    images, language,
-                   domain_id, knowledge_level_id, question_type_id, difficulty_id
+                   domain_id, knowledge_level_id, question_type_id, difficulty_id,
+                   textbook_id, textbook_name, textbook_publisher, textbook_page,
+                   reference_book, reference_page
             FROM simple_questions 
             WHERE created_by = %s
         """
@@ -3890,20 +4079,29 @@ def get_cgs():
         return jsonify({'error': 'Not authenticated'}), 401
     
     subject_id = request.args.get('subject_id')
+    chapter_id = request.args.get('chapter_id')
+    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
         query = """
-            SELECT cg.*, s.subject_name, g.grade_name 
+            SELECT cg.*, s.subject_name, g.grade_name,
+                   ch.chapter_name, ch.id as chapter_id
             FROM curricular_goals cg 
             LEFT JOIN subjects s ON cg.subject_id = s.id 
-            LEFT JOIN grades g ON s.grade_id = g.id 
+            LEFT JOIN grades g ON s.grade_id = g.id
+            LEFT JOIN chapters ch ON cg.chapter_id = ch.id
+            WHERE 1=1
         """
         params = []
         
         if subject_id:
-            query += " WHERE cg.subject_id = %s"
+            query += " AND cg.subject_id = %s"
             params.append(subject_id)
+        
+        if chapter_id:
+            query += " AND (cg.chapter_id = %s OR cg.chapter_id IS NULL)"
+            params.append(chapter_id)
         
         query += " ORDER BY cg.subject_id, cg.id"
         
@@ -3921,21 +4119,45 @@ def get_cgs():
 def create_cg():
     if 'user' not in session or session.get('user_role') != 'admin':
         return jsonify({'error': 'Admin access required'}), 403
+    
     data = request.json
     code = data.get('code')
     description = data.get('description', '')
     subject_id = data.get('subject_id')
+    chapter_id = data.get('chapter_id')
+    
     if not code or not subject_id:
         return jsonify({'error': 'Code and subject required'}), 400
+    
     db = get_db()
-    cur = db.cursor()
+    cur = db.cursor(dictionary=True)
     try:
+        # Check if CG with same code already exists for this subject and chapter
+        if chapter_id:
+            cur.execute("""
+                SELECT id FROM curricular_goals 
+                WHERE cg_code = %s AND subject_id = %s AND chapter_id = %s
+            """, (code, subject_id, chapter_id))
+        else:
+            cur.execute("""
+                SELECT id FROM curricular_goals 
+                WHERE cg_code = %s AND subject_id = %s AND chapter_id IS NULL
+            """, (code, subject_id))
+        
+        if cur.fetchone():
+            return jsonify({'error': f'Curricular Goal "{code}" already exists for this subject and chapter'}), 400
+        
         cur.execute("""
-            INSERT INTO curricular_goals (cg_code, cg_description, subject_id) 
-            VALUES (%s, %s, %s)
-        """, (code, description, subject_id))
+            INSERT INTO curricular_goals (cg_code, cg_description, subject_id, chapter_id) 
+            VALUES (%s, %s, %s, %s)
+        """, (code, description, subject_id, chapter_id))
         db.commit()
         return jsonify({'success': True, 'id': cur.lastrowid})
+    except mysql.connector.IntegrityError as e:
+        db.rollback()
+        if 'Duplicate entry' in str(e):
+            return jsonify({'error': f'Curricular Goal "{code}" already exists'}), 400
+        return jsonify({'error': str(e)}), 500
     except Exception as e:
         db.rollback()
         return jsonify({'error': str(e)}), 500
@@ -3947,20 +4169,39 @@ def create_cg():
 def update_cg(cg_id):
     if 'user' not in session or session.get('user_role') != 'admin':
         return jsonify({'error': 'Admin access required'}), 403
+    
     data = request.json
     code = data.get('code')
     description = data.get('description', '')
     subject_id = data.get('subject_id')
+    chapter_id = data.get('chapter_id')
+    
     if not code or not subject_id:
         return jsonify({'error': 'Code and subject required'}), 400
+    
     db = get_db()
     cur = db.cursor()
     try:
+        # Check for duplicates excluding current CG
+        if chapter_id:
+            cur.execute("""
+                SELECT id FROM curricular_goals 
+                WHERE cg_code = %s AND subject_id = %s AND chapter_id = %s AND id != %s
+            """, (code, subject_id, chapter_id, cg_id))
+        else:
+            cur.execute("""
+                SELECT id FROM curricular_goals 
+                WHERE cg_code = %s AND subject_id = %s AND chapter_id IS NULL AND id != %s
+            """, (code, subject_id, cg_id))
+        
+        if cur.fetchone():
+            return jsonify({'error': f'Curricular Goal "{code}" already exists for this subject and chapter'}), 400
+        
         cur.execute("""
             UPDATE curricular_goals 
-            SET cg_code = %s, cg_description = %s, subject_id = %s 
+            SET cg_code = %s, cg_description = %s, subject_id = %s, chapter_id = %s 
             WHERE id = %s
-        """, (code, description, subject_id, cg_id))
+        """, (code, description, subject_id, chapter_id, cg_id))
         db.commit()
         return jsonify({'success': True})
     except Exception as e:
@@ -4209,16 +4450,19 @@ if __name__ == '__main__':
     print("1. Initializing database...")
     init_db()
     
-    print("2. Fixing missing CGs and Competencies...")
+    print("2. Adding chapter_id to curricular_goals if missing...")
+    add_chapter_id_to_cgs()
+    
+    print("3. Fixing missing CGs and Competencies...")
     fix_missing_cgs_and_comps()
     
-    print("3. Ensuring approved questions...")
+    print("4. Ensuring approved questions...")
     ensure_approved_questions()
     
-    print("4. Fixing question relationships...")
+    print("5. Fixing question relationships...")
     fix_question_relationships()
     
-    print("5. Adding sample relationships...")
+    print("6. Adding sample relationships...")
     add_sample_relationships_to_questions()
     
     print("-" * 60)

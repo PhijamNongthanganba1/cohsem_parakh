@@ -107,381 +107,401 @@
         .form-label { display: block; color: white; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
         .form-required { color: #e74c3c; font-size: 14px; margin-left: 5px; }
 
-        .textbook-reference-section {
-            background: rgba(52,152,219,0.08);
-            border: 1px solid rgba(52,152,219,0.2);
-            border-radius: 12px;
-            padding: 20px;
-            margin: 15px 0;
-        }
-        .textbook-reference-section .section-title {
-            color: #3498db;
-            font-size: 15px;
-            font-weight: 600;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .textbook-reference-section .section-title i { color: #3498db; }
-        .textbook-reference-grid {
+        /* ===== TEXTBOOK & REFERENCE - DARK FRAME ===== */
+        .book-ref-side-by-side {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            gap: 16px;
+            background: rgba(52,152,219,0.05);
+            border-radius: 12px;
+            padding: 14px 14px 6px 14px;
+            margin: 12px 0 10px 0;
+            border: 1px solid rgba(52,152,219,0.15);
         }
-        .textbook-reference-grid .field-group {
+        .book-ref-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            padding: 10px 12px 6px 12px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .book-ref-card .card-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 8px;
             display: flex;
-            flex-direction: column;
-            gap: 5px;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 6px;
         }
-        .textbook-reference-grid .field-group label {
-            color: rgba(255,255,255,0.7);
-            font-size: 12px;
+        .book-ref-card .card-title i { font-size: 14px; }
+        .book-ref-card .card-title .textbook-icon { color: #2ecc71; }
+        .book-ref-card .card-title .reference-icon { color: #9b59b6; }
+        .book-ref-card .field-group {
+            margin-bottom: 8px;
+        }
+        .book-ref-card .field-group label {
+            display: block;
+            color: rgba(255,255,255,0.5);
+            font-size: 10px;
             font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 2px;
         }
-        .textbook-reference-grid .field-group .form-control {
-            padding: 10px 12px;
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.15);
+        .book-ref-card .field-group .form-control {
+            width: 100%;
+            padding: 6px 10px;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
             border-radius: 6px;
             color: white;
             font-size: 13px;
-            transition: all 0.3s ease;
+            transition: all 0.2s;
         }
-        .textbook-reference-grid .field-group .form-control:focus {
+        .book-ref-card .field-group .form-control:focus {
             outline: none;
             border-color: #3498db;
             background: rgba(255,255,255,0.12);
         }
-        .textbook-reference-grid .field-group .form-control::placeholder {
-            color: rgba(255,255,255,0.3);
+        .book-ref-card .field-group .form-control::placeholder {
+            color: rgba(255,255,255,0.25);
         }
-        .textbook-reference-grid .field-group .form-control option {
+        .book-ref-card .field-group .form-control option {
             background: #1a3a6d;
             color: white;
         }
-        .textbook-reference-grid .field-group .form-control:read-only {
-            cursor: default;
-            opacity: 0.7;
-        }
-        .textbook-reference-grid .field-group .hint-text {
-            color: rgba(255,255,255,0.3);
-            font-size: 10px;
+        .book-ref-card .field-group .hint-text {
+            color: rgba(255,255,255,0.2);
+            font-size: 8px;
             font-style: italic;
+            display: block;
+            margin-top: 1px;
         }
         .textbook-ref-display {
-            background: rgba(255,255,255,0.05);
+            background: rgba(255,255,255,0.04);
             border-radius: 6px;
-            padding: 8px 12px;
-            margin-top: 5px;
-            font-size: 13px;
-            color: rgba(255,255,255,0.6);
+            padding: 4px 12px;
+            margin-top: 4px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
             border-left: 2px solid #3498db;
         }
-        .textbook-ref-display strong { color: rgba(255,255,255,0.8); }
+        .textbook-ref-display strong { color: rgba(255,255,255,0.7); }
+        .optional-badge {
+            font-size: 9px;
+            background: rgba(255,255,255,0.08);
+            padding: 1px 8px;
+            border-radius: 10px;
+            color: rgba(255,255,255,0.3);
+            margin-left: 6px;
+            font-weight: 400;
+        }
 
-        .auto-save-status {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            color: rgba(255,255,255,0.6);
-            margin-bottom: 10px;
-        }
-        .auto-save-status .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #2ecc71;
-            display: inline-block;
-            transition: all 0.3s ease;
-        }
+        .auto-save-status { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 20px; font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 10px; }
+        .auto-save-status .dot { width: 8px; height: 8px; border-radius: 50%; background: #2ecc71; display: inline-block; transition: all 0.3s ease; }
         .auto-save-status .dot.saving { background: #f39c12; animation: pulse 0.8s infinite; }
         .auto-save-status .dot.saved { background: #2ecc71; }
         .auto-save-status .dot.error { background: #e74c3c; }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(0.8); }
+        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
+
+        /* COMPACT ROW: keyboard + upload + metrics side by side */
+        .toolbar-compact-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .toolbar-compact-row .keyboard-btn-wrap {
+            flex: 0 0 auto;
+        }
+        .toolbar-compact-row .upload-wrap {
+            flex: 0 1 auto;
+            min-width: 140px;
+            max-width: 280px;
+        }
+        /* Metrics inline with toolbar */
+        .metrics-inline {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1 1 auto;
+            flex-wrap: wrap;
+            background: rgba(255,255,255,0.04);
+            border-radius: 30px;
+            padding: 4px 14px 4px 18px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .metrics-inline .metric-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .metrics-inline .metric-group label {
+            color: rgba(255,255,255,0.5);
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .metrics-inline .metric-group label i {
+            font-size: 12px;
+        }
+        .metrics-inline .metric-group label .fa-star { color: #2ecc71; }
+        .metrics-inline .metric-group label .fa-clock { color: #f39c12; }
+        .metrics-inline .metric-group input {
+            width: 50px;
+            padding: 4px 6px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 4px;
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+        }
+        .metrics-inline .metric-group input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        .metrics-inline .metric-group .unit {
+            color: rgba(255,255,255,0.3);
+            font-size: 10px;
+        }
+        .metrics-inline .metric-divider {
+            color: rgba(255,255,255,0.08);
+            font-size: 18px;
+            font-weight: 100;
         }
 
         .show-keyboard-btn {
             background: #3498db !important;
             color: white !important;
-            padding: 12px 25px !important;
-            font-size: 16px !important;
-            border-radius: 10px !important;
+            padding: 5px 14px !important;
+            font-size: 12px !important;
+            border-radius: 30px !important;
             border: 2px solid white !important;
             cursor: pointer !important;
-            margin-bottom: 15px !important;
             font-weight: bold !important;
-            z-index: 999999 !important;
-            position: relative !important;
-            width: 100% !important;
             transition: all 0.3s ease !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 5px !important;
+            white-space: nowrap;
         }
-        .show-keyboard-btn:hover { background: #2980b9 !important; transform: scale(1.01); }
+        .show-keyboard-btn:hover { background: #2980b9 !important; transform: scale(1.02); }
         .show-keyboard-btn.active { background: #e74c3c !important; }
         .show-keyboard-btn.answer-btn { background: #2ecc71 !important; border-color: #2ecc71 !important; }
         .show-keyboard-btn.answer-btn:hover { background: #27ae60 !important; }
         .show-keyboard-btn.answer-btn.active { background: #e74c3c !important; border-color: #e74c3c !important; }
 
-        .ql-container {
-            min-height: 120px;
-            border-radius: 0 0 8px 8px;
-            background: rgba(255,255,255,0.08);
-            font-size: 14px;
-        }
-        .ql-toolbar {
-            border-radius: 8px 8px 0 0;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-        .ql-toolbar .ql-picker-label,
-        .ql-toolbar .ql-stroke { color: #fff !important; stroke: #fff !important; }
-        .ql-toolbar .ql-fill { fill: #fff !important; }
-        .ql-toolbar .ql-picker-options { background: #1a3a6d !important; border-color: rgba(255,255,255,0.2) !important; }
-        .ql-toolbar .ql-picker-item { color: #fff !important; }
-        .ql-toolbar .ql-picker-item:hover { color: #3498db !important; }
-        .ql-editor { min-height: 100px; color: #fff; font-size: 14px; font-family: 'Segoe UI', Arial, sans-serif; }
-        .ql-editor.ql-blank::before { color: rgba(255,255,255,0.4); font-style: italic; }
-        .ql-editor p, .ql-editor h1, .ql-editor h2, .ql-editor h3, .ql-editor ul, .ql-editor ol, .ql-editor blockquote, .ql-editor li { color: #fff; }
-        .ql-editor a { color: #3498db; }
-        .ql-editor strong { color: #f39c12; }
-        .ql-editor em { color: #2ecc71; }
-        .ql-editor u { color: #e74c3c; }
-        .ql-editor img { max-width: 100%; max-height: 200px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); }
-        .ql-editor blockquote { border-left: 3px solid #3498db; padding-left: 15px; color: rgba(255,255,255,0.8); }
-        .ql-editor code { background: rgba(0,0,0,0.3); color: #2ecc71; padding: 2px 6px; border-radius: 3px; }
-
-        .answer-section {
-            background: rgba(39,174,96,0.1);
-            border: 1px solid rgba(39,174,96,0.3);
-            border-radius: 12px;
-            padding: 20px;
-            margin: 15px 0;
-        }
-        .answer-section .ql-container { background: rgba(255,255,255,0.05); }
-        .answer-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .answer-section-title { color: #2ecc71; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-        .answer-section-title i { color: #2ecc71; }
-
-        .image-upload-section {
-            background: rgba(255,255,255,0.05);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
+        /* compact image upload — short & fit */
+        .image-upload-compact {
+            background: rgba(255,255,255,0.04);
+            border-radius: 30px;
+            padding: 2px 6px 2px 12px;
             border: 1px solid rgba(255,255,255,0.08);
-        }
-        .image-upload-section .section-title {
-            color: rgba(255,255,255,0.7);
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 10px;
             display: flex;
             align-items: center;
-            gap: 8px;
-        }
-        .image-upload-section .section-title i { font-size: 14px; }
-        .image-upload-section .section-title .count-badge {
-            font-size: 10px;
-            color: rgba(255,255,255,0.4);
-            margin-left: auto;
-        }
-        .image-upload-grid {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        .image-upload-grid .upload-box {
-            flex: 1;
-            min-width: 150px;
-            background: rgba(255,255,255,0.03);
-            border: 1px dashed rgba(52,152,219,0.4);
-            border-radius: 8px;
-            padding: 10px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .image-upload-grid .upload-box:hover {
-            border-color: #3498db;
-            background: rgba(52,152,219,0.08);
-        }
-        .image-upload-grid .upload-box.drag-over {
-            border-color: #2ecc71;
-            background: rgba(46,204,113,0.1);
-        }
-        .image-upload-grid .upload-box.answer-upload {
-            border-color: rgba(46,204,113,0.4);
-        }
-        .image-upload-grid .upload-box.answer-upload:hover {
-            border-color: #2ecc71;
-            background: rgba(46,204,113,0.08);
-        }
-        .image-upload-grid .upload-box .icon {
-            font-size: 20px;
-            color: #3498db;
-            margin-bottom: 4px;
-        }
-        .image-upload-grid .upload-box .icon.answer-icon {
-            color: #2ecc71;
-        }
-        .image-upload-grid .upload-box .label {
-            color: rgba(255,255,255,0.7);
-            font-size: 11px;
-        }
-        .image-upload-grid .upload-box .hint {
-            color: rgba(255,255,255,0.3);
-            font-size: 9px;
-            margin-top: 2px;
-        }
-        .image-upload-grid .upload-box input[type="file"] {
-            display: none;
-        }
-
-        .preview-container {
-            display: flex;
-            flex-wrap: wrap;
             gap: 6px;
-            margin-top: 8px;
-            min-height: 20px;
-            max-height: 80px;
-            overflow-y: auto;
+            flex-wrap: nowrap;
         }
-        .preview-container::-webkit-scrollbar { height: 3px; width: 3px; }
-        .preview-container::-webkit-scrollbar-thumb { background: #3498db; border-radius: 10px; }
-        .image-preview {
-            position: relative;
-            width: 50px;
-            height: 50px;
-            border-radius: 6px;
+        .image-upload-compact .upload-box {
+            background: rgba(255,255,255,0.03);
+            border: 1px dashed rgba(52,152,219,0.3);
+            border-radius: 20px;
+            padding: 2px 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .image-upload-compact .upload-box:hover { border-color: #3498db; background: rgba(52,152,219,0.06); }
+        .image-upload-compact .upload-box .icon { font-size: 12px; color: #3498db; }
+        .image-upload-compact .upload-box .label { font-size: 10px; color: rgba(255,255,255,0.6); }
+        .image-upload-compact .upload-box input[type="file"] { display: none; }
+        .image-upload-compact .preview-strip {
+            display: flex;
+            gap: 3px;
+            flex-wrap: nowrap;
+            align-items: center;
+            max-width: 100px;
+            overflow-x: auto;
+            padding: 2px 0;
+        }
+        .image-upload-compact .preview-strip::-webkit-scrollbar { height: 2px; }
+        .image-upload-compact .preview-strip::-webkit-scrollbar-thumb { background: #3498db; border-radius: 10px; }
+        .image-upload-compact .preview-strip .image-preview {
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
             overflow: hidden;
             background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
             flex-shrink: 0;
         }
-        .image-preview img { width: 100%; height: 100%; object-fit: cover; }
-        .remove-btn {
+        .image-upload-compact .preview-strip .image-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .image-upload-compact .preview-strip .image-preview .remove-btn {
             position: absolute;
-            top: 2px;
-            right: 2px;
+            top: -2px;
+            right: -2px;
             background: rgba(231,76,60,0.9);
             color: white;
             border: none;
             border-radius: 50%;
-            width: 18px;
-            height: 18px;
+            width: 14px;
+            height: 14px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 7px;
+            line-height: 1;
+        }
+        .image-upload-compact .count-badge {
             font-size: 9px;
-        }
-        .remove-btn:hover { background: #e74c3c; }
-
-        .metrics-row { display: flex; gap: 15px; margin-top: 15px; flex-wrap: wrap; }
-        .metrics-container { flex: 1; display: flex; gap: 15px; min-width: 200px; }
-        .metric-item { flex: 1; display: flex; flex-direction: column; gap: 5px; }
-        .metric-label { color: white; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 5px; }
-        .metric-label i { font-size: 14px; }
-        .marks-label i { color: #2ecc71; }
-        .time-label i { color: #f39c12; }
-        .metric-input-wrapper { display: flex; align-items: center; gap: 8px; }
-        .metric-input {
-            width: 100%; max-width: 100px; padding: 10px 12px; background: white;
-            border: 1px solid rgba(255,255,255,0.3); border-radius: 6px;
-            font-size: 15px; font-weight: 600; text-align: center;
-        }
-        .marks-input { color: #27ae60; border-color: #2ecc71; }
-        .time-input { color: #e67e22; border-color: #f39c12; }
-        .metric-input:focus { outline: none; }
-        .metric-unit { color: rgba(255,255,255,0.6); font-size: 13px; white-space: nowrap; }
-        .metric-hint { color: rgba(255,255,255,0.4); font-size: 10px; margin-top: 2px; padding-left: 10px; }
-
-        .success-message {
-            background: rgba(46,204,113,0.2);
-            border: 1px solid rgba(46,204,113,0.3);
-            color: #2ecc71;
-            padding: 12px;
-            border-radius: 8px;
-            margin: 15px 0;
-            display: none;
-            font-weight: 600;
-            font-size: 14px;
+            color: rgba(255,255,255,0.3);
+            min-width: 14px;
             text-align: center;
+            flex-shrink: 0;
         }
-        .action-buttons { 
+
+        /* ===== QUILL EDITOR - WHITE BACKGROUND WITH BLACK TEXT (both question and answer) ===== */
+        .ql-container { 
+            min-height: 120px; 
+            border-radius: 0 0 8px 8px; 
+            background: #ffffff !important; 
+            font-size: 14px; 
+        }
+        .ql-toolbar { 
+            border-radius: 8px 8px 0 0; 
+            background: rgba(255,255,255,0.15); 
+            border: 1px solid rgba(255,255,255,0.2); 
+        }
+        .ql-toolbar .ql-picker-label, .ql-toolbar .ql-stroke { 
+            color: #fff !important; 
+            stroke: #fff !important; 
+        }
+        .ql-toolbar .ql-fill { fill: #fff !important; }
+        .ql-toolbar .ql-picker-options { 
+            background: #1a3a6d !important; 
+            border-color: rgba(255,255,255,0.2) !important; 
+        }
+        .ql-toolbar .ql-picker-item { color: #fff !important; }
+        .ql-toolbar .ql-picker-item:hover { color: #3498db !important; }
+        .ql-editor { 
+            min-height: 100px; 
+            color: #1a2a3a !important; 
+            font-size: 14px; 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background: #ffffff !important;
+        }
+        .ql-editor.ql-blank::before { 
+            color: #aab5c0 !important; 
+            font-style: italic; 
+        }
+        .ql-editor p, .ql-editor h1, .ql-editor h2, .ql-editor ul, .ql-editor ol, .ql-editor blockquote, .ql-editor li { 
+            color: #1a2a3a !important; 
+        }
+        .ql-editor a { color: #3498db !important; }
+        .ql-editor strong { color: #e67e22 !important; }
+        .ql-editor em { color: #27ae60 !important; }
+        .ql-editor u { color: #c0392b !important; }
+        .ql-editor img { 
+            max-width: 100%; 
+            max-height: 200px; 
+            border-radius: 4px; 
+            border: 1px solid #dde4ec; 
+        }
+        .ql-editor blockquote { 
+            border-left: 3px solid #3498db; 
+            padding-left: 15px; 
+            color: #2c3e50 !important; 
+        }
+        .ql-editor code { 
+            background: #f0f4f8 !important; 
+            color: #c0392b !important; 
+            padding: 2px 6px; 
+            border-radius: 3px; 
+        }
+
+        /* ===== ANSWER SECTION - DARK FRAME, WHITE EDITOR ONLY ===== */
+        .answer-section { 
+            background: rgba(39,174,96,0.1); 
+            border: 1px solid rgba(39,174,96,0.3); 
+            border-radius: 12px; 
+            padding: 20px; 
+            margin: 15px 0; 
+        }
+        .answer-section .ql-container { 
+            background: #ffffff !important; 
+        }
+        .answer-section .ql-editor { 
+            background: #ffffff !important; 
+        }
+        .answer-section-header { 
             display: flex; 
-            gap: 15px; 
-            margin-top: 20px; 
-            flex-wrap: wrap;
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 15px; 
         }
-        .action-btn {
-            flex: 1; 
-            padding: 14px 20px; 
-            border: none; 
-            border-radius: 8px;
-            font-size: 15px; 
+        .answer-section-title { 
+            color: #2ecc71; 
+            font-size: 16px; 
             font-weight: 600; 
-            cursor: pointer;
-            transition: all 0.3s ease;
             display: flex; 
             align-items: center; 
+            gap: 8px; 
+        }
+        .answer-section-title i { color: #2ecc71; }
+        .answer-section .editor-toolbar-hint {
+            color: rgba(255,255,255,0.3);
+        }
+
+        .success-message { background: rgba(46,204,113,0.2); border: 1px solid rgba(46,204,113,0.3); color: #2ecc71; padding: 12px; border-radius: 8px; margin: 15px 0; display: none; font-weight: 600; font-size: 14px; text-align: center; }
+        
+       
+        .action-buttons { 
+            display: flex; 
+            gap: 12px; 
+            margin-top:28px; 
+            flex-wrap: wrap; 
+            justify-content: flex-end;
+        }
+        .action-btn { 
+            padding: 8px 18px; 
+            border: none; 
+            border-radius: 30px; 
+            font-size: 16px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+            display: inline-flex; 
+            align-items: center; 
             justify-content: center; 
-            gap: 8px;
-            min-width: 150px;
+            gap: 6px; 
+            min-width: auto;
         }
         .submit-btn { background: #27ae60; color: white; }
-        .submit-btn:hover { background: #229954; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(39,174,96,0.3); }
+        .submit-btn:hover { background: #229954; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(39,174,96,0.3); }
         .reset-btn { background: #7f8c8d; color: white; }
         .reset-btn:hover { background: #6c7a7a; transform: translateY(-2px); }
 
-        .questions-list {
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 15px;
-            padding: 25px;
-            margin-top: 20px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
+        .questions-list { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); border-radius: 15px; padding: 25px; margin-top: 20px; max-height: 400px; overflow-y: auto; }
         .questions-list h3 { color: white; font-size: 18px; font-weight: 600; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; background: rgba(10,26,58,0.95); backdrop-filter: blur(10px); padding-bottom: 10px; z-index: 10; }
         .questions-list h3 i { color: #f39c12; }
         #questionsContainer { display: flex; flex-direction: column; gap: 15px; }
-        .question-item {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 10px;
-            padding: 15px;
-            position: relative;
-            transition: all 0.3s ease;
-        }
+        .question-item { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 15px; position: relative; transition: all 0.3s ease; }
         .question-item:hover { background: rgba(255,255,255,0.08); border-color: rgba(52,152,219,0.3); }
-        .question-item.editing {
-            border-color: #f39c12 !important;
-            background: rgba(243,156,18,0.1) !important;
-        }
-        .question-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-            flex-wrap: wrap;
-        }
-        .question-actions .action-icon {
-            padding: 5px 12px;
-            border-radius: 15px;
-            border: none;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
+        .question-item.editing { border-color: #f39c12 !important; background: rgba(243,156,18,0.1) !important; }
+        .question-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        .question-actions .action-icon { padding: 5px 12px; border-radius: 15px; border: none; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 5px; }
         .question-actions .edit-btn { background: rgba(52,152,219,0.2); color: #3498db; }
         .question-actions .edit-btn:hover { background: rgba(52,152,219,0.4); }
         .question-actions .delete-btn { background: rgba(231,76,60,0.2); color: #e74c3c; }
@@ -509,180 +529,43 @@
         .status-badge.rejected { background: rgba(231,76,60,0.2); color: #e74c3c; }
         .question-text { color: white; font-weight: 500; margin-bottom: 10px; font-size: 14px; line-height: 1.5; }
         .question-text img { max-width: 100%; max-height: 150px; border-radius: 4px; margin: 5px 0; border: 1px solid rgba(255,255,255,0.1); }
-        .question-images-display {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin: 8px 0;
-        }
-        .question-images-display .thumb {
-            width: 60px;
-            height: 60px;
-            border-radius: 4px;
-            overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.1);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .question-images-display .thumb:hover {
-            transform: scale(1.05);
-            border-color: #3498db;
-        }
-        .question-images-display .thumb img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .answer-display { 
-            background: rgba(46,204,113,0.1); 
-            border-left: 3px solid #2ecc71; 
-            padding: 10px; 
-            border-radius: 4px; 
-            margin: 10px 0; 
-            color: rgba(255,255,255,0.9); 
-            font-size: 13px; 
-            line-height: 1.5; 
-        }
+        .question-images-display { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+        .question-images-display .thumb { width: 60px; height: 60px; border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; transition: all 0.3s ease; }
+        .question-images-display .thumb:hover { transform: scale(1.05); border-color: #3498db; }
+        .question-images-display .thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .answer-display { background: rgba(46,204,113,0.1); border-left: 3px solid #2ecc71; padding: 10px; border-radius: 4px; margin: 10px 0; color: rgba(255,255,255,0.9); font-size: 13px; line-height: 1.5; }
         .answer-display img { max-width: 100%; max-height: 100px; border-radius: 4px; margin: 5px 0; }
-        .criteria-info { 
-            font-size: 11px; 
-            color: rgba(255,255,255,0.6); 
-            padding: 10px; 
-            background: rgba(0,0,0,0.2); 
-            border-radius: 6px; 
-            line-height: 1.6; 
-            display: flex; 
-            flex-wrap: wrap; 
-            gap: 12px; 
-        }
+        .criteria-info { font-size: 11px; color: rgba(255,255,255,0.6); padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px; line-height: 1.6; display: flex; flex-wrap: wrap; gap: 12px; }
         .chapter-badge { background: rgba(52,152,219,0.2); color: #3498db; }
         .empty-state { text-align: center; padding: 30px; color: rgba(255,255,255,0.5); }
         .empty-state i { font-size: 40px; margin-bottom: 10px; opacity: 0.3; }
 
-        .shortcut-hint {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 30px;
-            padding: 8px 14px;
-            color: rgba(255,255,255,0.7);
-            font-size: 11px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            z-index: 100;
-        }
+        .shortcut-hint { position: fixed; bottom: 20px; right: 20px; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 30px; padding: 8px 14px; color: rgba(255,255,255,0.7); font-size: 11px; display: flex; align-items: center; gap: 6px; z-index: 100; }
         .shortcut-hint kbd { background: rgba(255,255,255,0.2); border-radius: 4px; padding: 2px 6px; color: white; font-family: monospace; font-size: 10px; }
 
-        .image-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.95);
-            z-index: 1000000;
-            cursor: pointer;
-        }
+        .image-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000000; cursor: pointer; }
         .image-modal img { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 90%; max-height: 90%; object-fit: contain; }
         .image-modal-close { position: absolute; top: 20px; right: 35px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; }
 
         .editor-toolbar-hint { color: rgba(255,255,255,0.3); font-size: 11px; margin-top: 5px; font-style: italic; }
 
-        .floating-keyboard {
-            display: none !important;
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(10,20,50,0.97);
-            backdrop-filter: blur(20px);
-            border: 4px solid #f39c12 !important;
-            border-radius: 16px;
-            padding: 15px;
-            max-width: 95%;
-            max-height: 55vh;
-            overflow-y: auto;
-            z-index: 999999 !important;
-            box-shadow: 0 10px 60px rgba(0,0,0,0.9);
-            width: 800px;
-        }
-        .floating-keyboard.active {
-            display: block !important;
-            border-color: #2ecc71 !important;
-        }
-        .floating-keyboard .kb-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-        }
-        .floating-keyboard .kb-header span {
-            color: rgba(255,255,255,0.7);
-            font-size: 13px;
-            font-weight: 600;
-        }
+        .floating-keyboard { display: none !important; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(10,20,50,0.97); backdrop-filter: blur(20px); border: 4px solid #f39c12 !important; border-radius: 16px; padding: 15px; max-width: 95%; max-height: 55vh; overflow-y: auto; z-index: 999999 !important; box-shadow: 0 10px 60px rgba(0,0,0,0.9); width: 800px; }
+        .floating-keyboard.active { display: block !important; border-color: #2ecc71 !important; }
+        .floating-keyboard .kb-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .floating-keyboard .kb-header span { color: rgba(255,255,255,0.7); font-size: 13px; font-weight: 600; }
         .floating-keyboard .kb-header span i { color: #8e44ad; }
-        .floating-keyboard .kb-close {
-            background: rgba(255,255,255,0.1);
-            border: none;
-            color: rgba(255,255,255,0.5);
-            padding: 4px 14px;
-            border-radius: 15px;
-            cursor: pointer;
-            font-size: 12px;
-        }
+        .floating-keyboard .kb-close { background: rgba(255,255,255,0.1); border: none; color: rgba(255,255,255,0.5); padding: 4px 14px; border-radius: 15px; cursor: pointer; font-size: 12px; }
         .floating-keyboard .kb-close:hover { background: rgba(255,255,255,0.2); }
-        .floating-keyboard .kb-langs {
-            display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
-            margin-bottom: 10px;
-        }
-        .floating-keyboard .kb-lang {
-            padding: 4px 12px;
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.1);
-            background: rgba(255,255,255,0.04);
-            color: rgba(255,255,255,0.4);
-            cursor: pointer;
-            font-size: 10px;
-            font-weight: 600;
-            transition: all 0.2s ease;
-        }
+        .floating-keyboard .kb-langs { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+        .floating-keyboard .kb-lang { padding: 4px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.4); cursor: pointer; font-size: 10px; font-weight: 600; transition: all 0.2s ease; }
         .floating-keyboard .kb-lang:hover { background: rgba(255,255,255,0.1); color: white; }
         .floating-keyboard .kb-lang.active { background: #3498db; color: white; border-color: #3498db; }
         .floating-keyboard .kb-lang.math-lang { background: rgba(142,68,173,0.15); color: #8e44ad; }
         .floating-keyboard .kb-lang.math-lang.active { background: #8e44ad; color: white; border-color: #8e44ad; }
         .floating-keyboard .kb-lang.meitei-lang { background: rgba(46,204,113,0.15); color: #2ecc71; }
         .floating-keyboard .kb-lang.meitei-lang.active { background: #2ecc71; color: white; border-color: #2ecc71; }
-        .floating-keyboard .kb-keys {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-            justify-content: center;
-        }
-        .floating-keyboard .kb-key {
-            min-width: 32px;
-            height: 34px;
-            padding: 0 8px;
-            border-radius: 5px;
-            border: 1px solid rgba(255,255,255,0.1);
-            background: rgba(255,255,255,0.06);
-            color: white;
-            cursor: pointer;
-            font-size: 13px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.15s ease;
-        }
+        .floating-keyboard .kb-keys { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+        .floating-keyboard .kb-key { min-width: 32px; height: 34px; padding: 0 8px; border-radius: 5px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.06); color: white; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s ease; }
         .floating-keyboard .kb-key:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); }
         .floating-keyboard .kb-key:active { transform: scale(0.9); background: rgba(52,152,219,0.3); }
         .floating-keyboard .kb-key.space { min-width: 80px; flex: 2; }
@@ -695,102 +578,32 @@
         .floating-keyboard .kb-key.math-key.greek { color: #2ecc71; }
         .floating-keyboard .kb-key.math-key.operator { color: #f39c12; }
         .floating-keyboard .kb-key.math-key.integral { color: #e74c3c; }
-        .floating-keyboard .kb-key.meitei-key {
-            font-family: 'Noto Sans Meitei Mayek', 'Segoe UI', Arial, sans-serif;
-            font-size: 16px;
-            color: #2ecc71;
-            background: rgba(46,204,113,0.08);
-        }
-        .floating-keyboard .kb-key.meitei-key:hover {
-            background: rgba(46,204,113,0.2);
-        }
-        .drag-handle {
-            cursor: move;
-            color: rgba(255,255,255,0.3);
-            padding: 5px 10px;
-            font-size: 14px;
-            user-select: none;
-        }
-        .drag-handle:hover {
-            color: rgba(255,255,255,0.7);
-        }
+        .floating-keyboard .kb-key.meitei-key { font-family: 'Noto Sans Meitei Mayek', 'Segoe UI', Arial, sans-serif; font-size: 16px; color: #2ecc71; background: rgba(46,204,113,0.08); }
+        .floating-keyboard .kb-key.meitei-key:hover { background: rgba(46,204,113,0.2); }
+        .drag-handle { cursor: move; color: rgba(255,255,255,0.3); padding: 5px 10px; font-size: 14px; user-select: none; }
+        .drag-handle:hover { color: rgba(255,255,255,0.7); }
 
-        .editing-indicator {
-            background: rgba(243,156,18,0.2);
-            border: 1px solid rgba(243,156,18,0.3);
-            color: #f39c12;
-            padding: 8px 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            display: none;
-            font-size: 13px;
-            font-weight: 600;
-            align-items: center;
-            gap: 8px;
-        }
-        .editing-indicator .cancel-edit {
-            background: rgba(231,76,60,0.2);
-            color: #e74c3c;
-            border: none;
-            padding: 2px 12px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 11px;
-            font-weight: 600;
-            margin-left: auto;
-        }
-        .editing-indicator .cancel-edit:hover {
-            background: rgba(231,76,60,0.4);
-        }
-
-        .debug-section {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 8px;
-            padding: 10px 15px;
-            margin-bottom: 15px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .debug-section .label {
-            color: rgba(255,255,255,0.5);
-            font-size: 12px;
-            font-weight: 600;
-        }
-        .debug-btn {
-            padding: 4px 12px;
-            border-radius: 12px;
-            border: none;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .debug-btn.blue { background: rgba(52,152,219,0.2); color: #3498db; }
-        .debug-btn.blue:hover { background: rgba(52,152,219,0.4); }
-        .debug-btn.red { background: rgba(231,76,60,0.2); color: #e74c3c; }
-        .debug-btn.red:hover { background: rgba(231,76,60,0.4); }
-        .debug-btn.green { background: rgba(46,204,113,0.2); color: #2ecc71; }
-        .debug-btn.green:hover { background: rgba(46,204,113,0.4); }
+        .editing-indicator { background: rgba(243,156,18,0.2); border: 1px solid rgba(243,156,18,0.3); color: #f39c12; padding: 8px 15px; border-radius: 8px; margin-bottom: 15px; display: none; font-size: 13px; font-weight: 600; align-items: center; gap: 8px; }
+        .editing-indicator .cancel-edit { background: rgba(231,76,60,0.2); color: #e74c3c; border: none; padding: 2px 12px; border-radius: 12px; cursor: pointer; font-size: 11px; font-weight: 600; margin-left: auto; }
+        .editing-indicator .cancel-edit:hover { background: rgba(231,76,60,0.4); }
 
         @media (max-width: 768px) {
             body { padding: 10px; overflow: auto; height: auto; }
             .dashboard { height: auto; }
             .header { flex-direction: column; align-items: flex-start; gap: 10px; border-radius: 20px; padding: 15px; }
             .header-right { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
-            .action-buttons { flex-direction: column; }
-            .action-btn { width: 100%; }
-            .image-upload-grid .upload-box { min-width: 100%; }
+            .action-buttons { flex-direction: column; align-items: stretch; }
+            .action-btn { width: 100%; justify-content: center; }
+            .book-ref-side-by-side { grid-template-columns: 1fr; }
             .floating-keyboard { max-width: 98%; bottom: 10px; width: 98%; }
             .floating-keyboard .kb-key { min-width: 26px; height: 30px; font-size: 11px; padding: 0 4px; }
             .floating-keyboard .kb-key.space { min-width: 60px; }
-            .show-keyboard-btn { font-size: 14px !important; padding: 10px 15px !important; }
-            .debug-section { flex-direction: column; align-items: stretch; }
-            .textbook-reference-grid {
-                grid-template-columns: 1fr;
-            }
+            .show-keyboard-btn { font-size: 11px !important; padding: 4px 10px !important; }
+            .toolbar-compact-row { flex-direction: column; align-items: stretch; }
+            .image-upload-compact { border-radius: 30px; padding: 2px 8px; max-width: 100%; }
+            .image-upload-compact .upload-wrap { max-width: 100%; }
+            .image-upload-compact .preview-strip { max-width: 120px; }
+            .metrics-inline { border-radius: 20px; padding: 8px 12px; flex-wrap: wrap; justify-content: center; }
         }
     </style>
 </head>
@@ -824,45 +637,46 @@
                 </div>
 
                 <form id="questionForm" onsubmit="return false;">
-                    <!-- TEXTBOOK & REFERENCE SECTION -->
-                    <div class="textbook-reference-section">
-                        <div class="section-title">
-                            <i class="fas fa-book-open"></i> Textbook & Reference Info
-                            <span style="font-size: 11px; color: rgba(255,255,255,0.4); margin-left: auto;">Select from available options</span>
+                    <!-- TEXTBOOK & REFERENCE SIDE BY SIDE -->
+                    <div style="margin-bottom:8px;">
+                        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:4px;">
+                            <span style="color:rgba(255,255,255,0.7); font-weight:600; font-size:14px;"><i class="fas fa-book-open" style="color:#3498db;"></i> Choose a Book</span>
+                            <span style="font-size:11px; color:rgba(255,255,255,0.25);"><i class="fas fa-info-circle"></i> Select textbook or reference</span>
                         </div>
-                        <div class="textbook-reference-grid">
-                            <div class="field-group">
-                                <label><i class="fas fa-book-open"></i> Textbook</label>
-                                <select id="textbookSelect" class="form-control" onchange="onTextbookSelect()">
-                                    <option value="">-- Select Textbook --</option>
-                                </select>
-                                <span class="hint-text">Select the main textbook for this question</span>
+                        <div class="book-ref-side-by-side" id="bookRefContainer">
+                            <div class="book-ref-card" id="textbookCard">
+                                <div class="card-title"><i class="fas fa-book textbook-icon"></i> Textbook </div>
+                                <div class="field-group">
+                                    
+                                    <select id="textbookSelect" class="form-control" onchange="onTextbookSelect()">
+                                        <option value="">-- Select --</option>
+                                    </select>
+                                    <span class="hint-text">Choose a textbook</span>
+                                </div>
+                                <div class="field-group">
+                                    <label><i class="fas fa-hashtag"></i> Page No.</label>
+                                    <input type="text" id="textbookPage" class="form-control" placeholder="e.g., 45, 78-82">
+                                    <span class="hint-text">Page number(s)</span>
+                                </div>
                             </div>
-                            <div class="field-group">
-                                <label><i class="fas fa-user"></i> Author / Publisher</label>
-                                <input type="text" id="textbookPublisher" class="form-control" placeholder="Auto-populated" readonly style="background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.7);">
-                                <span class="hint-text">Auto-populated from selected textbook</span>
-                            </div>
-                            <div class="field-group">
-                                <label><i class="fas fa-hashtag"></i> Textbook Page No.</label>
-                                <input type="text" id="textbookPage" class="form-control" placeholder="e.g., 45, 78-82">
-                                <span class="hint-text">Page number(s) where this topic appears</span>
-                            </div>
-                            <div class="field-group">
-                                <label><i class="fas fa-book"></i> Reference Book</label>
-                                <select id="referenceBookSelect" class="form-control" onchange="onReferenceSelect()">
-                                    <option value="">-- None --</option>
-                                </select>
-                                <span class="hint-text">Select a reference book from the list</span>
-                            </div>
-                            <div class="field-group">
-                                <label><i class="fas fa-hashtag"></i> Reference Page No.</label>
-                                <input type="text" id="referencePage" class="form-control" placeholder="e.g., 123, 456-462">
-                                <span class="hint-text">Page number(s) in the reference book</span>
+                            <div class="book-ref-card" id="referenceCard">
+                                <div class="card-title"><i class="fas fa-book reference-icon"></i> Reference Book <span class="optional-badge">optional</span></div>
+                                <div class="field-group">
+                                    
+                                    <select id="referenceSelect" class="form-control" onchange="onReferenceSelect()">
+                                        <option value="">-- Select --</option>
+                                    </select>
+                                    <span class="hint-text">Choose a reference book</span>
+                                </div>
+                                <div class="field-group">
+                                    <label><i class="fas fa-hashtag"></i> Page No.</label>
+                                    <input type="text" id="referencePage" class="form-control" placeholder="e.g., 45, 78-82">
+                                    <span class="hint-text">Page number(s)</span>
+                                </div>
                             </div>
                         </div>
-                        <div class="textbook-ref-display" id="textbookRefDisplay" style="display: none;">
-                            <strong>Source:</strong> <span id="displayTextbookInfo">No selection</span>
+                        <div class="textbook-ref-display" id="textbookRefDisplay">
+                            <strong>Selected:</strong> <span id="displayTextbookInfo">No textbook / reference selected</span>
                         </div>
                     </div>
 
@@ -872,80 +686,72 @@
                             Question <span class="form-required">*</span>
                         </label>
 
-                        <button type="button" class="show-keyboard-btn" id="questionKeyboardBtn">
-                            <i class="fas fa-keyboard"></i> Show Keyboard
-                        </button>
-                        
-                        <div class="image-upload-section">
-                            <div class="section-title">
-                                <i class="fas fa-image" style="color: #3498db;"></i>
-                                <span>Upload Question Images</span>
-                                <span class="count-badge" id="questionImageCount">0 images</span>
+                        <!-- COMPACT ROW: keyboard + upload + metrics side by side -->
+                        <div class="toolbar-compact-row">
+                            <div class="keyboard-btn-wrap">
+                                <button type="button" class="show-keyboard-btn" id="questionKeyboardBtn">
+                                    <i class="fas fa-keyboard"></i> Keyboard
+                                </button>
                             </div>
-                            <div class="image-upload-grid">
-                                <div class="upload-box" id="questionImageUploadArea">
-                                    <div class="icon"><i class="fas fa-cloud-upload-alt"></i></div>
-                                    <div class="label">Click or drag images here</div>
-                                    <div class="hint">JPG, PNG, GIF, WebP (Max 5MB each, up to 5)</div>
-                                    <input type="file" id="questionImageInput" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+                            <div class="upload-wrap">
+                                <div class="image-upload-compact" id="questionImageUploadArea">
+                                    <div class="upload-box" style="border:none; padding:2px 8px;">
+                                        <span class="icon"><i class="fas fa-image"></i></span>
+                                        <span class="label">Add images</span>
+                                        <input type="file" id="questionImageInput" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+                                    </div>
+                                    <div class="preview-strip" id="questionImagePreviewContainer"></div>
+                                    <span class="count-badge" id="questionImageCount">0</span>
                                 </div>
                             </div>
-                            <div class="preview-container" id="questionImagePreviewContainer"></div>
+                            <!-- METRICS INLINE -->
+                            <div class="metrics-inline">
+                                <div class="metric-group">
+                                    <label><i class="fas fa-star"></i> Marks</label>
+                                    <input type="number" id="marks" min="0" max="100" step="1" value="1">
+                                    <span class="unit">pts</span>
+                                </div>
+                                <span class="metric-divider">|</span>
+                                <div class="metric-group">
+                                    <label><i class="fas fa-clock"></i> Time</label>
+                                    <input type="number" id="duration_minutes" min="0" max="180" step="1" value="5">
+                                    <span class="unit">min</span>
+                                </div>
+                            </div>
                         </div>
-                        
+
                         <div id="questionEditor"></div>
-                        <div class="editor-toolbar-hint"><i class="fas fa-info-circle"></i> Click "Show Keyboard" to open on-screen keyboard</div>
+                        <div class="editor-toolbar-hint"><i class="fas fa-info-circle"></i> Click "Keyboard" to open on-screen keyboard</div>
                     </div>
                     
+                    <!-- ===== ANSWER SECTION - DARK FRAME, WHITE EDITOR ONLY ===== -->
                     <div class="answer-section">
                         <div class="answer-section-header">
                             <h4 class="answer-section-title"><i class="fas fa-check-circle"></i> Answer <span class="form-required">*</span></h4>
                         </div>
 
-                        <button type="button" class="show-keyboard-btn answer-btn" id="answerKeyboardBtn">
-                            <i class="fas fa-keyboard"></i> Show Keyboard
-                        </button>
-                        
-                        <div class="image-upload-section">
-                            <div class="section-title">
-                                <i class="fas fa-image" style="color: #2ecc71;"></i>
-                                <span>Upload Answer Images</span>
-                                <span class="count-badge" id="answerImageCount">0 images</span>
+                        <!-- COMPACT ROW: keyboard + upload only (no metrics) -->
+                        <div class="toolbar-compact-row">
+                            <div class="keyboard-btn-wrap">
+                                <button type="button" class="show-keyboard-btn answer-btn" id="answerKeyboardBtn">
+                                    <i class="fas fa-keyboard"></i> Keyboard
+                                </button>
                             </div>
-                            <div class="image-upload-grid">
-                                <div class="upload-box answer-upload" id="answerImageUploadArea">
-                                    <div class="icon answer-icon"><i class="fas fa-cloud-upload-alt"></i></div>
-                                    <div class="label">Click or drag images here</div>
-                                    <div class="hint">JPG, PNG, GIF, WebP (Max 5MB each, up to 5)</div>
-                                    <input type="file" id="answerImageInput" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+                            <div class="upload-wrap">
+                                <div class="image-upload-compact" id="answerImageUploadArea">
+                                    <div class="upload-box" style="border:none; padding:2px 8px;">
+                                        <span class="icon"><i class="fas fa-image"></i></span>
+                                        <span class="label">Add images</span>
+                                        <input type="file" id="answerImageInput" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+                                    </div>
+                                    <div class="preview-strip" id="answerImagePreviewContainer"></div>
+                                    <span class="count-badge" id="answerImageCount">0</span>
                                 </div>
                             </div>
-                            <div class="preview-container" id="answerImagePreviewContainer"></div>
                         </div>
                         
                         <div id="answerEditor"></div>
-                        <div class="editor-toolbar-hint" style="color: rgba(46,204,113,0.4);"><i class="fas fa-info-circle"></i> Use keyboard to type in different languages</div>
-                        
-                        <div class="metrics-row">
-                            <div class="metrics-container">
-                                <div class="metric-item">
-                                    <div class="metric-label marks-label"><i class="fas fa-star"></i> Marks</div>
-                                    <div class="metric-input-wrapper">
-                                        <input type="number" id="marks" class="metric-input marks-input" min="0" max="100" step="1" value="1" required>
-                                        <span class="metric-unit">pts</span>
-                                    </div>
-                                    <div class="metric-hint">[0-100]</div>
-                                </div>
-                                <div class="metric-item">
-                                    <div class="metric-label time-label"><i class="fas fa-clock"></i> Time</div>
-                                    <div class="metric-input-wrapper">
-                                        <input type="number" id="duration_minutes" class="metric-input time-input" min="0" max="180" step="1" value="5">
-                                        <span class="metric-unit">min</span>
-                                    </div>
-                                    <div class="metric-hint">[0-180]</div>
-                                </div>
-                            </div>
-                        </div>
+                        <div class="editor-toolbar-hint"><i class="fas fa-info-circle"></i> Use keyboard to type in different languages</div>
                     </div>
                 </form>
                 
@@ -954,7 +760,7 @@
                 <div class="form-footer">
                     <div class="action-buttons">
                         <button type="button" class="action-btn submit-btn" id="submitBtn">
-                            <i class="fas fa-paper-plane"></i> Submit for Review
+                            <i class=""></i> Submit
                         </button>
                         <button type="button" class="action-btn reset-btn" onclick="resetForm()">
                             <i class="fas fa-undo"></i> Clear
@@ -963,20 +769,7 @@
                 </div>
             </div>
             
-            <div class="questions-list" id="questionsList" style="display: none;">
-                <h3>
-                    <i class="fas fa-list" style="color: #f39c12;"></i> 
-                    <span>My Questions</span>
-                    <span style="font-size: 12px; color: rgba(255,255,255,0.4); margin-left: auto;" id="questionCount"></span>
-                </h3>
-                <div class="debug-section">
-                    <span class="label"><i class="fas fa-bug"></i> Debug:</span>
-                    <button class="debug-btn blue" onclick="forceShowQuestions()">Show Questions</button>
-                    <button class="debug-btn green" onclick="forceShowButtons()">Show All Buttons</button>
-                    <button class="debug-btn red" onclick="debugReload()">Reload</button>
-                </div>
-                <div id="questionsContainer"></div>
-            </div>
+            
         </div>
     </div>
     
@@ -1018,130 +811,18 @@
         // KEYBOARD LAYOUTS
         // ========================================
         var kbLayouts = {
-            en: {
-                name: 'English',
-                rows: [
-                    ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 'Backspace'],
-                    ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\\'],
-                    ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', "'", 'Enter'],
-                    ['Shift', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', 'Shift'],
-                    ['Space']
-                ]
-            },
-            hi: {
-                name: 'हिंदी',
-                rows: [
-                    ['१', '२', '३', '४', '५', '६', '७', '८', '९', '०', '-', '=', 'Backspace'],
-                    ['क', 'ख', 'ग', 'घ', 'च', 'छ', 'ज', 'झ', 'ट', 'ठ', 'ड', 'ढ', 'ण'],
-                    ['त', 'थ', 'द', 'ध', 'न', 'प', 'फ', 'ब', 'भ', 'म', 'य', 'र', 'Enter'],
-                    ['Shift', 'ल', 'व', 'श', 'ष', 'स', 'ह', 'क्ष', 'त्र', 'ज्ञ', '।', 'Shift'],
-                    ['Space']
-                ]
-            },
-            bn: {
-                name: 'বাংলা',
-                rows: [
-                    ['১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯', '০', '-', '=', 'Backspace'],
-                    ['ক', 'খ', 'গ', 'ঘ', 'চ', 'ছ', 'জ', 'ঝ', 'ট', 'ঠ', 'ড', 'ঢ', 'ণ'],
-                    ['ত', 'থ', 'দ', 'ধ', 'ন', 'প', 'ফ', 'ব', 'ভ', 'ম', 'য', 'র', 'Enter'],
-                    ['Shift', 'ল', 'শ', 'ষ', 'স', 'হ', 'ড়', 'ঢ়', 'য়', 'ং', 'ঃ', 'Shift'],
-                    ['Space']
-                ]
-            },
-            ur: {
-                name: 'اردو',
-                rows: [
-                    ['١', '٢', '٣', '۴', '۵', '۶', '۷', '۸', '۹', '۰', '-', '=', 'Backspace'],
-                    ['ا', 'ب', 'پ', 'ت', 'ٹ', 'ث', 'ج', 'چ', 'ح', 'خ', 'د', 'ڈ', 'ذ'],
-                    ['ر', 'ڑ', 'ز', 'ژ', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'Enter'],
-                    ['Shift', 'ف', 'ق', 'ک', 'گ', 'ل', 'م', 'ن', 'و', 'ہ', 'ی', 'Shift'],
-                    ['Space']
-                ]
-            },
-            mr: {
-                name: 'मराठी',
-                rows: [
-                    ['१', '२', '३', '४', '५', '६', '७', '८', '९', '०', '-', '=', 'Backspace'],
-                    ['क', 'ख', 'ग', 'घ', 'च', 'छ', 'ज', 'झ', 'ट', 'ठ', 'ड', 'ढ', 'ण'],
-                    ['त', 'थ', 'द', 'ध', 'न', 'प', 'फ', 'ब', 'भ', 'म', 'य', 'र', 'Enter'],
-                    ['Shift', 'ल', 'व', 'श', 'ष', 'स', 'ह', 'ळ', 'क्ष', 'त्र', 'ज्ञ', 'Shift'],
-                    ['Space']
-                ]
-            },
-            te: {
-                name: 'తెలుగు',
-                rows: [
-                    ['౧', '౨', '౩', '౪', '౫', '౬', '౭', '౮', '౯', '౦', '-', '=', 'Backspace'],
-                    ['క', 'ఖ', 'గ', 'ఘ', 'చ', 'ఛ', 'జ', 'ఝ', 'ట', 'ఠ', 'డ', 'ఢ', 'ణ'],
-                    ['త', 'థ', 'ద', 'ధ', 'న', 'ప', 'ఫ', 'బ', 'భ', 'మ', 'య', 'ర', 'Enter'],
-                    ['Shift', 'ల', 'వ', 'శ', 'ష', 'స', 'హ', 'ళ', 'క్ష', 'జ్ఞ', 'ం', 'Shift'],
-                    ['Space']
-                ]
-            },
-            ta: {
-                name: 'தமிழ்',
-                rows: [
-                    ['௧', '௨', '௩', '௪', '௫', '௬', '௭', '௮', '௯', '௦', '-', '=', 'Backspace'],
-                    ['க', 'ங', 'ச', 'ஞ', 'ட', 'ண', 'த', 'ந', 'ப', 'ம', 'ய', 'ர', 'ல'],
-                    ['வ', 'ழ', 'ள', 'ற', 'ன', 'ஜ', 'ஷ', 'ஸ', 'ஹ', 'க்ஷ', 'ஸ்ரீ', 'Enter'],
-                    ['Shift', 'அ', 'ஆ', 'இ', 'ஈ', 'உ', 'ஊ', 'எ', 'ஏ', 'ஐ', 'ஒ', 'Shift'],
-                    ['Space']
-                ]
-            },
-            kn: {
-                name: 'ಕನ್ನಡ',
-                rows: [
-                    ['೧', '೨', '೩', '೪', '೫', '೬', '೭', '೮', '೯', '೦', '-', '=', 'Backspace'],
-                    ['ಕ', 'ಖ', 'ಗ', 'ಘ', 'ಚ', 'ಛ', 'ಜ', 'ಝ', 'ಟ', 'ಠ', 'ಡ', 'ಢ', 'ಣ'],
-                    ['ತ', 'ಥ', 'ದ', 'ಧ', 'ನ', 'ಪ', 'ಫ', 'ಬ', 'ಭ', 'ಮ', 'ಯ', 'ರ', 'Enter'],
-                    ['Shift', 'ಲ', 'ವ', 'ಶ', 'ಷ', 'ಸ', 'ಹ', 'ಳ', 'ಕ್ಷ', 'ಜ್ಞ', 'ಂ', 'Shift'],
-                    ['Space']
-                ]
-            },
-            ml: {
-                name: 'മലയാളം',
-                rows: [
-                    ['൧', '൨', '൩', '൪', '൫', '൬', '൭', '൮', '൯', '൦', '-', '=', 'Backspace'],
-                    ['ക', 'ഖ', 'ഗ', 'ഘ', 'ച', 'ഛ', 'ജ', 'ഝ', 'ട', 'ഠ', 'ഡ', 'ഢ', 'ണ'],
-                    ['ത', 'ഥ', 'ദ', 'ധ', 'ന', 'പ', 'ഫ', 'ബ', 'ഭ', 'മ', 'യ', 'ര', 'Enter'],
-                    ['Shift', 'ല', 'വ', 'ശ', 'ഷ', 'സ', 'ഹ', 'ള', 'ക്ഷ', 'ജ്ഞ', 'ം', 'Shift'],
-                    ['Space']
-                ]
-            },
-            gu: {
-                name: 'ગુજરાતી',
-                rows: [
-                    ['૧', '૨', '૩', '૪', '૫', '૬', '૭', '૮', '૯', '૦', '-', '=', 'Backspace'],
-                    ['ક', 'ખ', 'ગ', 'ઘ', 'ચ', 'છ', 'જ', 'ઝ', 'ટ', 'ઠ', 'ડ', 'ઢ', 'ણ'],
-                    ['ત', 'થ', 'દ', 'ધ', 'ન', 'પ', 'ફ', 'બ', 'ભ', 'મ', 'ય', 'ર', 'Enter'],
-                    ['Shift', 'લ', 'વ', 'શ', 'ष', 'સ', 'હ', 'ળ', 'ક્ષ', 'જ્ઞ', 'ં', 'Shift'],
-                    ['Space']
-                ]
-            },
-            mni: {
-                name: 'Meitei Mayek',
-                rows: [
-                    ['꯰', '꯱', '꯲', '꯳', '꯴', '꯵', '꯶', '꯷', '꯸', '꯹', '-', '=', 'Backspace'],
-                    ['ꯀ', 'ꯁ', 'ꯂ', 'ꯃ', 'ꯄ', 'ꯅ', 'ꯆ', 'ꯇ', 'ꯈ', 'ꯉ', 'ꯊ', 'ꯋ', 'ꯌ'],
-                    ['ꯍ', 'ꯎ', 'ꯏ', 'ꯐ', 'ꯑ', 'ꯒ', 'ꯓ', 'ꯔ', 'ꯕ', 'ꯖ', 'ꯗ', 'ꯘ', 'Enter'],
-                    ['Shift', 'ꯙ', 'ꯚ', 'ꯛ', 'ꯜ', 'ꯝ', 'ꯞ', 'ꯟ', 'ꯠ', 'ꯡ', 'ꯢ', 'ꯣ', 'Shift'],
-                    ['ꯤ', 'ꯥ', 'ꯦ', 'ꯧ', 'ꯨ', 'ꯩ', 'ꯪ', '꯫', '।', 'Space']
-                ]
-            },
-            math: {
-                name: 'Math Symbols',
-                rows: [
-                    ['α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η', 'θ', 'ι', 'κ', 'λ', 'μ', 'ν', 'ξ', 'ο', 'π', 'ρ', 'σ', 'τ', 'υ', 'φ', 'χ', 'ψ', 'ω'],
-                    ['Α', 'Β', 'Γ', 'Δ', 'Ε', 'Ζ', 'Η', 'Θ', 'Ι', 'Κ', 'Λ', 'Μ', 'Ν', 'Ξ', 'Ο', 'Π', 'Ρ', 'Σ', 'Τ', 'Υ', 'Φ', 'Χ', 'Ψ', 'Ω'],
-                    ['+', '−', '×', '÷', '±', '∓', '∗', '⋅', '⊗', '⊕', '⊙', '⊖', '⊘', '⊚'],
-                    ['=', '≠', '≈', '≅', '∼', '∝', '∞', '≤', '≥', '≪', '≫', '≃', '≐'],
-                    ['∫', '∬', '∭', '∮', '∑', '∏', '√', '∛', '∜', '∂', '∇', '∆'],
-                    ['→', '←', '↑', '↓', '↔', '⇒', '⇐', '⇔', '⟹', '⟸', '⟺', '↦', '⟼'],
-                    ['∈', '∉', '⊂', '⊃', '⊆', '⊇', '∪', '∩', '∅', '∀', '∃', '∄', '¬', '∧', '∨', '⊕'],
-                    ['°', '′', '″', 'ℵ', 'ℶ', '℘', 'ℜ', 'ℑ', '℧', 'Ω'],
-                    ['Space']
-                ]
-            }
+            en: { name: 'English', rows: [ ['1','2','3','4','5','6','7','8','9','0','-','=','Backspace'], ['q','w','e','r','t','y','u','i','o','p','[',']','\\'], ['a','s','d','f','g','h','j','k','l',';',"'",'Enter'], ['Shift','z','x','c','v','b','n','m',',','.','/','Shift'], ['Space'] ] },
+            hi: { name: 'हिंदी', rows: [ ['१','२','३','४','५','६','७','८','९','०','-','=','Backspace'], ['क','ख','ग','घ','च','छ','ज','झ','ट','ठ','ड','ढ','ण'], ['त','थ','द','ध','न','प','फ','ब','भ','म','य','र','Enter'], ['Shift','ल','व','श','ष','स','ह','क्ष','त्र','ज्ञ','।','Shift'], ['Space'] ] },
+            bn: { name: 'বাংলা', rows: [ ['১','২','৩','৪','৫','৬','৭','৮','৯','০','-','=','Backspace'], ['ক','খ','গ','ঘ','চ','ছ','জ','ঝ','ট','ঠ','ড','ঢ','ণ'], ['ত','থ','দ','ধ','ন','প','ফ','ব','ভ','ম','য','র','Enter'], ['Shift','ল','শ','ষ','স','হ','ড়','ঢ়','য়','ং','ঃ','Shift'], ['Space'] ] },
+            ur: { name: 'اردو', rows: [ ['١','٢','٣','۴','۵','۶','۷','۸','۹','۰','-','=','Backspace'], ['ا','ب','پ','ت','ٹ','ث','ج','چ','ح','خ','د','ڈ','ذ'], ['ر','ڑ','ز','ژ','س','ش','ص','ض','ط','ظ','ع','غ','Enter'], ['Shift','ف','ق','ک','گ','ل','م','ن','و','ہ','ی','Shift'], ['Space'] ] },
+            mr: { name: 'मराठी', rows: [ ['१','२','३','४','५','६','७','८','९','०','-','=','Backspace'], ['क','ख','ग','घ','च','छ','ज','झ','ट','ठ','ड','ढ','ण'], ['त','थ','द','ध','न','प','फ','ब','भ','म','य','र','Enter'], ['Shift','ल','व','श','ष','स','ह','ळ','क्ष','त्र','ज्ञ','Shift'], ['Space'] ] },
+            te: { name: 'తెలుగు', rows: [ ['౧','౨','౩','౪','౫','౬','౭','౮','౯','౦','-','=','Backspace'], ['క','ఖ','గ','ఘ','చ','ఛ','జ','ఝ','ట','ఠ','డ','ఢ','ణ'], ['త','థ','ద','ధ','న','ప','ఫ','బ','భ','మ','య','ర','Enter'], ['Shift','ల','వ','శ','ష','స','హ','ళ','క్ష','జ్ఞ','ం','Shift'], ['Space'] ] },
+            ta: { name: 'தமிழ்', rows: [ ['௧','௨','௩','௪','௫','௬','௭','௮','௯','௦','-','=','Backspace'], ['க','ங','ச','ஞ','ட','ண','த','ந','ப','ம','ய','ர','ல'], ['வ','ழ','ள','ற','ன','ஜ','ஷ','ஸ','ஹ','க்ஷ','ஸ்ரீ','Enter'], ['Shift','அ','ஆ','இ','ஈ','உ','ஊ','எ','ஏ','ஐ','ஒ','Shift'], ['Space'] ] },
+            kn: { name: 'ಕನ್ನಡ', rows: [ ['೧','೨','೩','೪','೫','೬','೭','೮','೯','೦','-','=','Backspace'], ['ಕ','ಖ','ಗ','ಘ','ಚ','ಛ','ಜ','ಝ','ಟ','ಠ','ಡ','ಢ','ಣ'], ['ತ','ಥ','ದ','ಧ','ನ','ಪ','ಫ','ಬ','ಭ','ಮ','ಯ','ರ','Enter'], ['Shift','ಲ','ವ','ಶ','ಷ','ಸ','ಹ','ಳ','ಕ್ಷ','ಜ್ಞ','ಂ','Shift'], ['Space'] ] },
+            ml: { name: 'മലയാളം', rows: [ ['൧','൨','൩','൪','൫','൬','൭','൮','൯','൦','-','=','Backspace'], ['ക','ഖ','ഗ','ഘ','ച','ഛ','ജ','ഝ','ട','ഠ','ഡ','ഢ','ണ'], ['ത','ഥ','ദ','ധ','ന','പ','ഫ','ബ','ഭ','മ','യ','ര','Enter'], ['Shift','ല','വ','ശ','ഷ','സ','ഹ','ള','ക്ഷ','ജ്ഞ','ം','Shift'], ['Space'] ] },
+            gu: { name: 'ગુજરાતી', rows: [ ['૧','૨','૩','૪','૫','૬','૭','૮','૯','૦','-','=','Backspace'], ['ક','ખ','ગ','ઘ','ચ','છ','જ','ઝ','ટ','ઠ','ડ','ઢ','ણ'], ['ત','થ','દ','ધ','ન','પ','ફ','બ','ભ','મ','ય','ર','Enter'], ['Shift','લ','વ','શ','ष','સ','હ','ળ','ક્ષ','જ્ઞ','ં','Shift'], ['Space'] ] },
+            mni: { name: 'Meitei Mayek', rows: [ ['꯰','꯱','꯲','꯳','꯴','꯵','꯶','꯷','꯸','꯹','-','=','Backspace'], ['ꯀ','ꯁ','ꯂ','ꯃ','ꯄ','ꯅ','ꯆ','ꯇ','ꯈ','ꯉ','ꯊ','ꯋ','ꯌ'], ['ꯍ','ꯎ','ꯏ','ꯐ','ꯑ','ꯒ','ꯓ','ꯔ','ꯕ','ꯖ','ꯗ','ꯘ','Enter'], ['Shift','ꯙ','ꯚ','ꯛ','ꯜ','ꯝ','ꯞ','ꯟ','ꯠ','ꯡ','ꯢ','ꯣ','Shift'], ['ꯤ','ꯥ','ꯦ','ꯧ','ꯨ','ꯩ','ꯪ','꯫','।','Space'] ] },
+            math: { name: 'Math Symbols', rows: [ ['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','φ','χ','ψ','ω'], ['Α','Β','Γ','Δ','Ε','Ζ','Η','Θ','Ι','Κ','Λ','Μ','Ν','Ξ','Ο','Π','Ρ','Σ','Τ','Υ','Φ','Χ','Ψ','Ω'], ['+','−','×','÷','±','∓','∗','⋅','⊗','⊕','⊙','⊖','⊘','⊚'], ['=','≠','≈','≅','∼','∝','∞','≤','≥','≪','≫','≃','≐'], ['∫','∬','∭','∮','∑','∏','√','∛','∜','∂','∇','∆'], ['→','←','↑','↓','↔','⇒','⇐','⇔','⟹','⟸','⟺','↦','⟼'], ['∈','∉','⊂','⊃','⊆','⊇','∪','∩','∅','∀','∃','∄','¬','∧','∨','⊕'], ['°','′','″','ℵ','ℶ','℘','ℜ','ℑ','℧','Ω'], ['Space'] ] }
         };
 
         // ========================================
@@ -1163,7 +844,7 @@
         var questionsData = [];
         var forceShowAllButtons = false;
         var allTextbooks = [];
-        var allReferenceBooks = [];
+        var allReferences = [];
 
         // ========================================
         // QUILL EDITORS
@@ -1171,35 +852,13 @@
         var questionEditor = new Quill('#questionEditor', {
             theme: 'snow',
             placeholder: 'Enter your question here...',
-            modules: {
-                toolbar: [
-                    [{ 'header': [1, 2, 3, false] }],
-                    ['bold', 'italic', 'underline', 'strike'],
-                    [{ 'color': [] }, { 'background': [] }],
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                    [{ 'indent': '-1'}, { 'indent': '+1' }],
-                    ['blockquote', 'code-block'],
-                    ['link', 'image'],
-                    ['clean']
-                ]
-            }
+            modules: { toolbar: [ [{ 'header': [1,2,3,false] }], ['bold','italic','underline','strike'], [{ 'color': [] }, { 'background': [] }], [{ 'list': 'ordered'}, { 'list': 'bullet' }], [{ 'indent': '-1'}, { 'indent': '+1' }], ['blockquote','code-block'], ['link','image'], ['clean'] ] }
         });
 
         var answerEditor = new Quill('#answerEditor', {
             theme: 'snow',
             placeholder: 'Enter the complete answer here...',
-            modules: {
-                toolbar: [
-                    [{ 'header': [1, 2, 3, false] }],
-                    ['bold', 'italic', 'underline', 'strike'],
-                    [{ 'color': [] }, { 'background': [] }],
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                    [{ 'indent': '-1'}, { 'indent': '+1' }],
-                    ['blockquote', 'code-block'],
-                    ['link', 'image'],
-                    ['clean']
-                ]
-            }
+            modules: { toolbar: [ [{ 'header': [1,2,3,false] }], ['bold','italic','underline','strike'], [{ 'color': [] }, { 'background': [] }], [{ 'list': 'ordered'}, { 'list': 'bullet' }], [{ 'indent': '-1'}, { 'indent': '+1' }], ['blockquote','code-block'], ['link','image'], ['clean'] ] }
         });
 
         // ========================================
@@ -1217,252 +876,132 @@
         }
 
         // ========================================
-        // TEXTBOOK & REFERENCE FUNCTIONS - FIXED
+        // TEXTBOOK & REFERENCE FUNCTIONS
         // ========================================
         function loadTextbooksAndReferences() {
             var subjectId = localStorage.getItem('selectedSubjectId');
             if (!subjectId || subjectId === 'null') {
-                console.log('No subject selected, skipping textbook load');
+                console.log('No subject selected, skipping book load');
                 return;
             }
+            var selectT = document.getElementById('textbookSelect');
+            var selectR = document.getElementById('referenceSelect');
+            selectT.innerHTML = '<option value="">Loading...</option>';
+            selectR.innerHTML = '<option value="">Loading...</option>';
             
-            console.log('Loading textbooks for subject:', subjectId);
-            
-            // Use the general textbooks endpoint with subject_id filter (this definitely returns reference_book)
             fetch('/api/textbooks?subject_id=' + subjectId)
-                .then(function(response) {
-                    if (!response.ok) throw new Error('Failed to fetch textbooks');
-                    return response.json();
-                })
+                .then(function(response) { if (!response.ok) throw new Error('Failed: ' + response.status); return response.json(); })
                 .then(function(data) {
                     allTextbooks = data.textbooks || [];
-                    console.log('Loaded textbooks:', allTextbooks);
-                    
-                    // Log reference books for debugging
-                    console.log('📚 Textbooks with reference books:');
-                    allTextbooks.forEach(function(t) {
-                        console.log('  - ' + t.textbook_name + ' | reference_book: "' + (t.reference_book || '') + '"');
-                    });
-                    
-                    // Extract unique reference books from textbooks
-                    var refBooks = [];
-                    allTextbooks.forEach(function(t) {
-                        if (t.reference_book && t.reference_book.trim() !== '') {
-                            var exists = refBooks.some(function(r) { 
-                                return r.toLowerCase() === t.reference_book.toLowerCase(); 
-                            });
-                            if (!exists) {
-                                refBooks.push(t.reference_book);
-                            }
-                        }
-                    });
-                    allReferenceBooks = refBooks;
-                    console.log('✅ Unique Reference Books found:', allReferenceBooks);
-                    console.log('✅ Total Reference Books:', allReferenceBooks.length);
-                    
-                    populateTextbookSelect();
-                    populateReferenceSelect();
+                    allReferences = data.textbooks ? data.textbooks.filter(function(t) { return t.is_reference === 1 || t.is_reference === true; }) : [];
+                    populateBookSelects();
                 })
                 .catch(function(error) {
-                    console.error('Error loading textbooks:', error);
-                    // Fallback to subject-specific endpoint
-                    fetch('/api/subjects/' + subjectId + '/textbooks')
-                        .then(function(response) { return response.json(); })
-                        .then(function(data) {
-                            allTextbooks = data.textbooks || [];
-                            console.log('Loaded textbooks (fallback):', allTextbooks);
-                            
-                            var refBooks = [];
-                            allTextbooks.forEach(function(t) {
-                                if (t.reference_book && t.reference_book.trim() !== '') {
-                                    var exists = refBooks.some(function(r) { 
-                                        return r.toLowerCase() === t.reference_book.toLowerCase(); 
-                                    });
-                                    if (!exists) {
-                                        refBooks.push(t.reference_book);
-                                    }
-                                }
-                            });
-                            allReferenceBooks = refBooks;
-                            console.log('Unique Reference Books (fallback):', allReferenceBooks);
-                            
-                            populateTextbookSelect();
-                            populateReferenceSelect();
-                        })
-                        .catch(function(err) {
-                            console.error('Fallback error:', err);
-                        });
+                    console.error('Error loading books:', error);
+                    var selectT2 = document.getElementById('textbookSelect');
+                    var selectR2 = document.getElementById('referenceSelect');
+                    selectT2.innerHTML = '<option value="">Error loading</option>';
+                    selectR2.innerHTML = '<option value="">Error loading</option>';
                 });
         }
 
-        function populateTextbookSelect() {
-            var select = document.getElementById('textbookSelect');
-            select.innerHTML = '<option value="">-- Select Textbook --</option>';
+        function populateBookSelects() {
+            var selectT = document.getElementById('textbookSelect');
+            var selectR = document.getElementById('referenceSelect');
             
-            if (allTextbooks.length === 0) {
-                select.innerHTML += '<option value="" disabled>No textbooks available for this subject</option>';
-                return;
-            }
-            
-            allTextbooks.forEach(function(t) {
+            var textbooks = allTextbooks.filter(function(t) { return t.is_reference !== 1 && t.is_reference !== true; });
+            selectT.innerHTML = '<option value="">-- Select --</option>';
+            textbooks.forEach(function(t) {
                 var opt = document.createElement('option');
                 opt.value = t.id;
-                var label = t.textbook_name;
-                if (t.publisher) label += ' (' + t.publisher + ')';
-                if (t.reference_book) label += ' [Ref: ' + t.reference_book + ']';
-                opt.textContent = label;
+                opt.textContent = t.textbook_name + (t.publisher ? ' (' + t.publisher + ')' : '');
                 opt.dataset.publisher = t.publisher || '';
-                opt.dataset.referenceBook = t.reference_book || '';
-                select.appendChild(opt);
+                selectT.appendChild(opt);
             });
+            if (textbooks.length === 0) selectT.innerHTML += '<option value="" disabled>No textbooks available</option>';
             
-            var selectedId = localStorage.getItem('selectedTextbookId');
-            if (selectedId) {
-                select.value = selectedId;
-                updatePublisherField(selectedId);
-            }
-            updateTextbookDisplay();
-        }
-
-        function updatePublisherField(textbookId) {
-            var publisherField = document.getElementById('textbookPublisher');
-            if (textbookId) {
-                var textbook = allTextbooks.find(function(t) { return t.id == textbookId; });
-                if (textbook) {
-                    publisherField.value = textbook.publisher || 'Not specified';
-                }
-            } else {
-                publisherField.value = '';
-            }
-        }
-
-        function populateReferenceSelect() {
-            var select = document.getElementById('referenceBookSelect');
-            select.innerHTML = '<option value="">-- None --</option>';
-            
-            if (allReferenceBooks.length === 0) {
-                select.innerHTML += '<option value="" disabled>No reference books available</option>';
-                return;
-            }
-            
-            allReferenceBooks.forEach(function(ref) {
+            var references = allTextbooks.filter(function(t) { return t.is_reference === 1 || t.is_reference === true; });
+            selectR.innerHTML = '<option value="">-- Select --</option>';
+            references.forEach(function(t) {
                 var opt = document.createElement('option');
-                opt.value = ref;
-                opt.textContent = ref;
-                select.appendChild(opt);
+                opt.value = t.id;
+                opt.textContent = t.textbook_name + (t.publisher ? ' (' + t.publisher + ')' : '');
+                opt.dataset.publisher = t.publisher || '';
+                selectR.appendChild(opt);
             });
+            if (references.length === 0) selectR.innerHTML += '<option value="" disabled>No reference books available</option>';
             
-            var selectedRef = localStorage.getItem('selectedReferenceBook');
-            if (selectedRef) {
-                var options = select.options;
-                var found = false;
-                for (var i = 0; i < options.length; i++) {
-                    if (options[i].value === selectedRef) {
-                        select.value = selectedRef;
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found && selectedRef) {
-                    var opt = document.createElement('option');
-                    opt.value = selectedRef;
-                    opt.textContent = selectedRef + ' (custom)';
-                    select.appendChild(opt);
-                    select.value = selectedRef;
-                }
-            }
-            updateTextbookDisplay();
+            localStorage.removeItem('selectedTextbookId');
+            localStorage.removeItem('selectedReferenceId');
+            updateBookDisplay();
         }
 
         function onTextbookSelect() {
-            var select = document.getElementById('textbookSelect');
-            var selectedId = select.value;
-            
-            if (selectedId) {
-                localStorage.setItem('selectedTextbookId', selectedId);
-                var textbook = allTextbooks.find(function(t) { return t.id == selectedId; });
-                if (textbook) {
-                    localStorage.setItem('selectedTextbookName', textbook.textbook_name);
-                    document.getElementById('textbookPublisher').value = textbook.publisher || 'Not specified';
-                }
-            } else {
-                localStorage.removeItem('selectedTextbookId');
-                localStorage.removeItem('selectedTextbookName');
-                document.getElementById('textbookPublisher').value = '';
-            }
-            updateTextbookDisplay();
+            var val = document.getElementById('textbookSelect').value;
+            if (val) localStorage.setItem('selectedTextbookId', val);
+            else localStorage.removeItem('selectedTextbookId');
+            updateBookDisplay();
             triggerAutoSave();
         }
 
         function onReferenceSelect() {
-            var select = document.getElementById('referenceBookSelect');
-            var selectedRef = select.value;
-            
-            if (selectedRef) {
-                localStorage.setItem('selectedReferenceBook', selectedRef);
-            } else {
-                localStorage.removeItem('selectedReferenceBook');
-            }
-            updateTextbookDisplay();
+            var val = document.getElementById('referenceSelect').value;
+            if (val) localStorage.setItem('selectedReferenceId', val);
+            else localStorage.removeItem('selectedReferenceId');
+            updateBookDisplay();
             triggerAutoSave();
         }
 
-        function updateTextbookDisplay() {
-            var textbookSelect = document.getElementById('textbookSelect');
-            var textbookPage = document.getElementById('textbookPage').value.trim();
-            var referenceSelect = document.getElementById('referenceBookSelect');
-            var referencePage = document.getElementById('referencePage').value.trim();
-            
+        function updateBookDisplay() {
+            var tSelect = document.getElementById('textbookSelect');
+            var rSelect = document.getElementById('referenceSelect');
+            var tPage = document.getElementById('textbookPage').value.trim();
+            var rPage = document.getElementById('referencePage').value.trim();
             var display = document.getElementById('textbookRefDisplay');
-            var displayText = document.getElementById('displayTextbookInfo');
+            var text = document.getElementById('displayTextbookInfo');
             
             var parts = [];
+            var tId = tSelect.value;
+            var rId = rSelect.value;
             
-            var textbookId = textbookSelect.value;
-            if (textbookId) {
-                var textbook = allTextbooks.find(function(t) { return t.id == textbookId; });
-                if (textbook) {
-                    var text = textbook.textbook_name;
-                    if (textbook.publisher) text += ' (' + textbook.publisher + ')';
-                    if (textbookPage) text += ' (p. ' + textbookPage + ')';
-                    parts.push(text);
+            if (tId) {
+                var tb = allTextbooks.find(function(t) { return t.id == tId; });
+                if (tb) {
+                    var label = 'Textbook: ' + tb.textbook_name;
+                    if (tb.publisher) label += ' (' + tb.publisher + ')';
+                    if (tPage) label += ' (p. ' + tPage + ')';
+                    parts.push(label);
                 }
             }
-            
-            var refValue = referenceSelect.value;
-            if (refValue) {
-                var text = refValue;
-                if (referencePage) text += ' (p. ' + referencePage + ')';
-                parts.push('Ref: ' + text);
+            if (rId) {
+                var rb = allTextbooks.find(function(t) { return t.id == rId; });
+                if (rb) {
+                    var label = 'Reference: ' + rb.textbook_name;
+                    if (rb.publisher) label += ' (' + rb.publisher + ')';
+                    if (rPage) label += ' (p. ' + rPage + ')';
+                    parts.push(label);
+                }
             }
-            
             if (parts.length > 0) {
                 display.style.display = 'block';
-                displayText.textContent = parts.join(' | ');
+                text.textContent = parts.join(' | ');
             } else {
-                display.style.display = 'none';
-                displayText.textContent = 'No selection';
+                display.style.display = 'block';
+                text.textContent = 'No textbook / reference selected';
             }
         }
 
         // ========================================
-        // AUTO-SAVE FUNCTIONS
+        // AUTO-SAVE
         // ========================================
         function updateAutoSaveStatus(status, message) {
             var dot = document.getElementById('autoSaveDot');
             var text = document.getElementById('autoSaveText');
             if (!dot || !text) return;
             dot.className = 'dot';
-            if (status === 'saving') {
-                dot.classList.add('saving');
-                text.textContent = message || 'Saving draft...';
-            } else if (status === 'saved') {
-                dot.classList.add('saved');
-                text.textContent = message || 'All changes saved';
-            } else if (status === 'error') {
-                dot.classList.add('error');
-                text.textContent = message || 'Save failed';
-            }
+            if (status === 'saving') { dot.classList.add('saving'); text.textContent = message || 'Saving draft...'; }
+            else if (status === 'saved') { dot.classList.add('saved'); text.textContent = message || 'All changes saved'; }
+            else if (status === 'error') { dot.classList.add('error'); text.textContent = message || 'Save failed'; }
         }
 
         function triggerAutoSave() {
@@ -1474,60 +1013,31 @@
 
         function autoSaveDraft() {
             if (isAutoSaving || isLoadingQuestion) return;
-            
             var questionHtml = questionEditor.root.innerHTML;
             var answerHtml = answerEditor.root.innerHTML;
             var marks = document.getElementById('marks').value.trim() || '1';
             var durationMinutes = document.getElementById('duration_minutes').value.trim() || '5';
             
             var textbookId = document.getElementById('textbookSelect').value;
+            var referenceId = document.getElementById('referenceSelect').value;
             var textbookPage = document.getElementById('textbookPage').value.trim();
-            var textbookPublisher = document.getElementById('textbookPublisher').value.trim();
-            var referenceBook = document.getElementById('referenceBookSelect').value;
             var referencePage = document.getElementById('referencePage').value.trim();
             
-            var textbookName = '';
-            if (textbookId) {
-                var tb = allTextbooks.find(function(t) { return t.id == textbookId; });
-                if (tb) textbookName = tb.textbook_name;
-            }
+            var textbookName = '', referenceBook = '';
+            if (textbookId) { var tb = allTextbooks.find(function(t) { return t.id == textbookId; }); if (tb) textbookName = tb.textbook_name; }
+            if (referenceId) { var rb = allTextbooks.find(function(t) { return t.id == referenceId; }); if (rb) referenceBook = rb.textbook_name; }
             
             var hasQuestion = hasActualContent(questionHtml);
             var hasAnswer = hasActualContent(answerHtml);
-            
-            if (!hasQuestion && !hasAnswer) {
-                updateAutoSaveStatus('saved', 'Nothing to save');
-                return;
-            }
+            if (!hasQuestion && !hasAnswer) { updateAutoSaveStatus('saved', 'Nothing to save'); return; }
             
             isAutoSaving = true;
-            
             var compId = localStorage.getItem('selectedCompId');
-            if (!compId || compId === 'null') {
-                updateAutoSaveStatus('error', 'No competency selected');
-                isAutoSaving = false;
-                return;
-            }
+            if (!compId || compId === 'null') { updateAutoSaveStatus('error', 'No competency selected'); isAutoSaving = false; return; }
             
             var allImageUrls = [];
-            questionImages.forEach(function(img) {
-                if (img.isExisting && img.dataUrl) {
-                    allImageUrls.push(img.dataUrl);
-                } else if (img.preview && img.preview.startsWith('blob:')) {
-                    if (img.dataUrl) {
-                        allImageUrls.push(img.dataUrl);
-                    }
-                }
-            });
-            answerImages.forEach(function(img) {
-                if (img.isExisting && img.dataUrl) {
-                    allImageUrls.push(img.dataUrl);
-                } else if (img.preview && img.preview.startsWith('blob:')) {
-                    if (img.dataUrl) {
-                        allImageUrls.push(img.dataUrl);
-                    }
-                }
-            });
+            questionImages.forEach(function(img) { if (img.isExisting && img.dataUrl) allImageUrls.push(img.dataUrl); else if (img.preview && img.preview.startsWith('blob:') && img.dataUrl) allImageUrls.push(img.dataUrl); });
+            answerImages.forEach(function(img) { if (img.isExisting && img.dataUrl) allImageUrls.push(img.dataUrl); else if (img.preview && img.preview.startsWith('blob:') && img.dataUrl) allImageUrls.push(img.dataUrl); });
             
             var chapterId = localStorage.getItem('selectedChapterId');
             var chapterName = localStorage.getItem('selectedChapterName');
@@ -1561,54 +1071,34 @@
                 images: JSON.stringify(allImageUrls),
                 textbook_id: textbookId || null,
                 textbook_name: textbookName || null,
-                textbook_publisher: textbookPublisher || null,
+                textbook_publisher: '', 
                 textbook_page: textbookPage || null,
                 reference_book: referenceBook || null,
+                reference_publisher: '',
                 reference_page: referencePage || null,
                 status: 'draft'
             };
             
             var url, method;
-            if (editingQuestionId) {
-                url = '/api/update-question/' + editingQuestionId;
-                method = 'POST';
-                draftData.question_id = editingQuestionId;
-            } else {
-                url = '/api/create-question';
-                method = 'POST';
-            }
+            if (editingQuestionId) { url = '/api/update-question/' + editingQuestionId; method = 'POST'; draftData.question_id = editingQuestionId; }
+            else { url = '/api/create-question'; method = 'POST'; }
             
-            fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(draftData)
-            })
-            .then(function(response) { 
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json(); 
-            })
-            .then(function(result) {
-                isAutoSaving = false;
-                if (result.success) {
-                    if (result.id && !editingQuestionId) {
-                        editingQuestionId = result.id;
-                        document.getElementById('editingQuestionId').textContent = result.id;
-                        document.getElementById('editingIndicator').style.display = 'flex';
-                        document.getElementById('submitBtn').innerHTML = '<i class="fas fa-save"></i> Update & Submit';
-                    }
-                    updateAutoSaveStatus('saved', 'Draft saved ' + new Date().toLocaleTimeString());
-                    if (!isLoadingQuestion) loadExistingQuestions();
-                } else {
-                    updateAutoSaveStatus('error', 'Save failed: ' + (result.error || 'Unknown error'));
-                }
-            })
-            .catch(function(error) {
-                isAutoSaving = false;
-                updateAutoSaveStatus('error', 'Connection error');
-                console.error('Auto-save error:', error);
-            });
+            fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draftData) })
+                .then(function(response) { if (!response.ok) throw new Error('Network response was not ok'); return response.json(); })
+                .then(function(result) {
+                    isAutoSaving = false;
+                    if (result.success) {
+                        if (result.id && !editingQuestionId) {
+                            editingQuestionId = result.id;
+                            document.getElementById('editingQuestionId').textContent = result.id;
+                            document.getElementById('editingIndicator').style.display = 'flex';
+                            document.getElementById('submitBtn').innerHTML = '<i class="fas fa-save"></i> Update & Submit';
+                        }
+                        updateAutoSaveStatus('saved', 'Draft saved ' + new Date().toLocaleTimeString());
+                        if (!isLoadingQuestion) loadExistingQuestions();
+                    } else { updateAutoSaveStatus('error', 'Save failed: ' + (result.error || 'Unknown error')); }
+                })
+                .catch(function(error) { isAutoSaving = false; updateAutoSaveStatus('error', 'Connection error'); console.error('Auto-save error:', error); });
         }
 
         function setupAutoSave() {
@@ -1616,8 +1106,8 @@
             answerEditor.on('text-change', function() { triggerAutoSave(); });
             document.getElementById('marks').addEventListener('input', function() { triggerAutoSave(); });
             document.getElementById('duration_minutes').addEventListener('input', function() { triggerAutoSave(); });
-            document.getElementById('textbookPage').addEventListener('input', function() { updateTextbookDisplay(); triggerAutoSave(); });
-            document.getElementById('referencePage').addEventListener('input', function() { updateTextbookDisplay(); triggerAutoSave(); });
+            document.getElementById('textbookPage').addEventListener('input', function() { updateBookDisplay(); triggerAutoSave(); });
+            document.getElementById('referencePage').addEventListener('input', function() { updateBookDisplay(); triggerAutoSave(); });
         }
 
         // ========================================
@@ -1631,11 +1121,8 @@
                 if (parent && parent.closest) {
                     var qlEditor = parent.closest('.ql-editor');
                     if (qlEditor) {
-                        if (qlEditor.closest('#questionEditor') || qlEditor.closest('.ql-container')) {
-                            activeEditor = questionEditor;
-                        } else if (qlEditor.closest('#answerEditor') || qlEditor.closest('.ql-container')) {
-                            activeEditor = answerEditor;
-                        }
+                        if (qlEditor.closest('#questionEditor') || qlEditor.closest('.ql-container')) activeEditor = questionEditor;
+                        else if (qlEditor.closest('#answerEditor') || qlEditor.closest('.ql-container')) activeEditor = answerEditor;
                     }
                 }
             }
@@ -1643,7 +1130,7 @@
         });
 
         // ========================================
-        // DRAG FUNCTIONALITY
+        // DRAG
         // ========================================
         function initDrag() {
             var dragHandle = document.getElementById('dragHandle');
@@ -1670,20 +1157,15 @@
                 keyboard.style.top = y + 'px';
                 keyboard.style.transform = 'none';
             });
-            document.addEventListener('mouseup', function() {
-                if (isDragging) { isDragging = false; keyboard.style.cursor = ''; }
-            });
+            document.addEventListener('mouseup', function() { if (isDragging) { isDragging = false; keyboard.style.cursor = ''; } });
         }
 
         // ========================================
-        // FLOATING KEYBOARD FUNCTIONS
+        // FLOATING KEYBOARD
         // ========================================
         function toggleKeyboard(targetEditor) {
             var kb = document.getElementById('floatingKeyboard');
-            if (!kb) {
-                Swal.fire({ icon: 'error', title: 'Keyboard Error', text: 'Keyboard element not found.', confirmButtonColor: '#3498db' });
-                return;
-            }
+            if (!kb) { Swal.fire({ icon: 'error', title: 'Keyboard Error', text: 'Keyboard element not found.', confirmButtonColor: '#3498db' }); return; }
             if (targetEditor) { activeEditor = targetEditor; isKeyboardLocked = true; }
             var allBtns = document.querySelectorAll('.show-keyboard-btn, .show-keyboard-btn.answer-btn');
             if (kb.classList.contains('active')) {
@@ -1691,7 +1173,7 @@
                 kb.style.display = 'none';
                 kb.style.visibility = 'hidden';
                 isKeyboardLocked = false;
-                allBtns.forEach(function(b) { b.classList.remove('active'); b.innerHTML = '<i class="fas fa-keyboard"></i> Show Keyboard'; });
+                allBtns.forEach(function(b) { b.classList.remove('active'); b.innerHTML = '<i class="fas fa-keyboard"></i> Keyboard'; });
                 return;
             }
             kb.classList.add('active');
@@ -1705,10 +1187,10 @@
                 b.classList.remove('active');
                 if (b.id === 'questionKeyboardBtn' && targetEditor === questionEditor) {
                     b.classList.add('active');
-                    b.innerHTML = '<i class="fas fa-times"></i> Hide Keyboard';
+                    b.innerHTML = '<i class="fas fa-times"></i> Keyboard';
                 } else if (b.id === 'answerKeyboardBtn' && targetEditor === answerEditor) {
                     b.classList.add('active');
-                    b.innerHTML = '<i class="fas fa-times"></i> Hide Keyboard';
+                    b.innerHTML = '<i class="fas fa-times"></i> Keyboard';
                 }
             });
             if (!activeEditor) activeEditor = questionEditor;
@@ -1720,16 +1202,13 @@
             var kb = document.getElementById('floatingKeyboard');
             var allBtns = document.querySelectorAll('.show-keyboard-btn, .show-keyboard-btn.answer-btn');
             if (kb) { kb.classList.remove('active'); kb.style.display = 'none'; kb.style.visibility = 'hidden'; }
-            allBtns.forEach(function(b) { b.classList.remove('active'); b.innerHTML = '<i class="fas fa-keyboard"></i> Show Keyboard'; });
+            allBtns.forEach(function(b) { b.classList.remove('active'); b.innerHTML = '<i class="fas fa-keyboard"></i> Keyboard'; });
             isKeyboardLocked = false;
         }
 
         function switchKB(lang) {
             currentKB = lang;
-            document.querySelectorAll('.kb-lang').forEach(function(btn) {
-                btn.classList.remove('active');
-                if (btn.dataset.lang === lang) btn.classList.add('active');
-            });
+            document.querySelectorAll('.kb-lang').forEach(function(btn) { btn.classList.remove('active'); if (btn.dataset.lang === lang) btn.classList.add('active'); });
             var layout = kbLayouts[lang];
             document.getElementById('kbTitle').textContent = layout ? layout.name + ' Keyboard' : 'Keyboard';
             renderKeyboard(lang);
@@ -1754,16 +1233,10 @@
                     else if (key === 'Enter') { cls += ' shift'; display = '↵'; isSpecial = true; }
                     if (lang === 'mni' && !isSpecial) cls += ' meitei-key';
                     if (lang === 'math' && !isSpecial) {
-                        if (['α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η', 'θ', 'ι', 'κ', 'λ', 'μ', 'ν', 'ξ', 'ο', 'π', 'ρ', 'σ', 'τ', 'υ', 'φ', 'χ', 'ψ', 'ω',
-                             'Α', 'Β', 'Γ', 'Δ', 'Ε', 'Ζ', 'Η', 'Θ', 'Ι', 'Κ', 'Λ', 'Μ', 'Ν', 'Ξ', 'Ο', 'Π', 'Ρ', 'Σ', 'Τ', 'Υ', 'Φ', 'Χ', 'Ψ', 'Ω'].includes(key)) {
-                            cls += ' math-key greek';
-                        } else if (['+', '−', '×', '÷', '±', '∓', '∗', '⋅', '⊗', '⊕', '⊙', '⊖', '⊘', '⊚'].includes(key)) {
-                            cls += ' math-key operator';
-                        } else if (['∫', '∬', '∭', '∮', '∑', '∏'].includes(key)) {
-                            cls += ' math-key integral';
-                        } else {
-                            cls += ' math-key';
-                        }
+                        if (['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','φ','χ','ψ','ω','Α','Β','Γ','Δ','Ε','Ζ','Η','Θ','Ι','Κ','Λ','Μ','Ν','Ξ','Ο','Π','Ρ','Σ','Τ','Υ','Φ','Χ','Ψ','Ω'].includes(key)) cls += ' math-key greek';
+                        else if (['+','−','×','÷','±','∓','∗','⋅','⊗','⊕','⊙','⊖','⊘','⊚'].includes(key)) cls += ' math-key operator';
+                        else if (['∫','∬','∭','∮','∑','∏'].includes(key)) cls += ' math-key integral';
+                        else cls += ' math-key';
                     }
                     var onclick = '';
                     if (key === 'Shift') onclick = 'onclick="toggleShift()"';
@@ -1783,23 +1256,13 @@
             if (!activeEditor) return;
             if (char === '\\n') char = '\n';
             if (isShift && currentKB === 'en') { char = char.toUpperCase(); isShift = false; renderKeyboard(currentKB); }
-            try {
-                var range = activeEditor.getSelection(true);
-                activeEditor.insertText(range.index, char);
-                activeEditor.setSelection(range.index + char.length);
-                triggerAutoSave();
-            } catch(e) {
-                var length = activeEditor.getLength();
-                activeEditor.insertText(length - 1, char);
-                activeEditor.setSelection(length);
-            }
+            try { var range = activeEditor.getSelection(true); activeEditor.insertText(range.index, char); activeEditor.setSelection(range.index + char.length); triggerAutoSave(); }
+            catch(e) { var length = activeEditor.getLength(); activeEditor.insertText(length - 1, char); activeEditor.setSelection(length); }
         }
         function kbBackspace() {
             if (!activeEditor) return;
-            try {
-                var range = activeEditor.getSelection(true);
-                if (range.index > 0) { activeEditor.deleteText(range.index - 1, 1); activeEditor.setSelection(range.index - 1); triggerAutoSave(); }
-            } catch(e) {}
+            try { var range = activeEditor.getSelection(true); if (range.index > 0) { activeEditor.deleteText(range.index - 1, 1); activeEditor.setSelection(range.index - 1); triggerAutoSave(); } }
+            catch(e) {}
         }
 
         // ========================================
@@ -1823,7 +1286,10 @@
             var uploadArea = document.getElementById(uploadAreaId);
             var input = document.getElementById(inputId);
             if (!uploadArea || !input) return;
-            uploadArea.addEventListener('click', function(e) { e.stopPropagation(); input.click(); });
+            var box = uploadArea.querySelector('.upload-box');
+            if (box) {
+                box.addEventListener('click', function(e) { e.stopPropagation(); input.click(); });
+            }
             uploadArea.addEventListener('dragover', function(e) { e.preventDefault(); uploadArea.classList.add('drag-over'); });
             uploadArea.addEventListener('dragleave', function() { uploadArea.classList.remove('drag-over'); });
             uploadArea.addEventListener('drop', function(e) {
@@ -1841,29 +1307,18 @@
 
         function handleImageFiles(files, type) {
             var imageFiles = files.filter(function(file) { return file.type.startsWith('image/'); });
-            if (imageFiles.length === 0) {
-                Swal.fire({ icon: 'warning', title: 'No Images', text: 'Please select valid image files', confirmButtonColor: '#3498db' });
-                return;
-            }
+            if (imageFiles.length === 0) { Swal.fire({ icon: 'warning', title: 'No Images', text: 'Please select valid image files', confirmButtonColor: '#3498db' }); return; }
             var maxImages = 5;
             var currentArray = type === 'question' ? questionImages : answerImages;
             var totalCount = currentArray.length + imageFiles.length;
-            if (totalCount > maxImages) {
-                Swal.fire({ icon: 'warning', title: 'Too Many Images', text: 'Maximum ' + maxImages + ' images allowed. You already have ' + currentArray.length + '.', confirmButtonColor: '#3498db' });
-                return;
-            }
+            if (totalCount > maxImages) { Swal.fire({ icon: 'warning', title: 'Too Many Images', text: 'Maximum ' + maxImages + ' images allowed. You already have ' + currentArray.length + '.', confirmButtonColor: '#3498db' }); return; }
             for (var i = 0; i < imageFiles.length; i++) {
-                if (imageFiles[i].size > 5 * 1024 * 1024) {
-                    Swal.fire({ icon: 'warning', title: 'File Too Large', text: imageFiles[i].name + ' exceeds 5MB limit.', confirmButtonColor: '#3498db' });
-                    return;
-                }
+                if (imageFiles[i].size > 5 * 1024 * 1024) { Swal.fire({ icon: 'warning', title: 'File Too Large', text: imageFiles[i].name + ' exceeds 5MB limit.', confirmButtonColor: '#3498db' }); return; }
             }
             var readerPromises = imageFiles.map(function(file) {
                 return new Promise(function(resolve) {
                     var reader = new FileReader();
-                    reader.onload = function(e) {
-                        resolve({ file: file, preview: URL.createObjectURL(file), dataUrl: e.target.result, isExisting: false });
-                    };
+                    reader.onload = function(e) { resolve({ file: file, preview: URL.createObjectURL(file), dataUrl: e.target.result, isExisting: false }); };
                     reader.readAsDataURL(file);
                 });
             });
@@ -1878,9 +1333,7 @@
 
         function removeImage(type, index) {
             var targetArray = type === 'question' ? questionImages : answerImages;
-            if (targetArray[index] && targetArray[index].preview && targetArray[index].preview.startsWith('blob:')) {
-                URL.revokeObjectURL(targetArray[index].preview);
-            }
+            if (targetArray[index] && targetArray[index].preview && targetArray[index].preview.startsWith('blob:')) { URL.revokeObjectURL(targetArray[index].preview); }
             targetArray.splice(index, 1);
             renderImagePreviews(type);
             updateImageCount(type);
@@ -1896,12 +1349,7 @@
             targetArray.forEach(function(img, index) {
                 var previewDiv = document.createElement('div');
                 previewDiv.className = 'image-preview';
-                previewDiv.innerHTML = `
-                    <img src="${img.preview}" alt="${type} image ${index + 1}">
-                    <button class="remove-btn" onclick="removeImage('${type}', ${index})">
-                        <i class="fas fa-times"></i>
-                    </button>
-                `;
+                previewDiv.innerHTML = '<img src="' + img.preview + '" alt="' + type + ' image ' + (index+1) + '"><button class="remove-btn" onclick="removeImage(\'' + type + '\', ' + index + ')"><i class="fas fa-times"></i></button>';
                 container.appendChild(previewDiv);
             });
         }
@@ -1910,21 +1358,15 @@
             var countId = type === 'question' ? 'questionImageCount' : 'answerImageCount';
             var targetArray = type === 'question' ? questionImages : answerImages;
             var element = document.getElementById(countId);
-            if (element) {
-                element.textContent = targetArray.length + ' image' + (targetArray.length !== 1 ? 's' : '');
-            }
+            if (element) { element.textContent = targetArray.length; }
         }
 
         // ========================================
-        // LOAD QUESTION FOR EDITING
+        // LOAD / EDIT / DELETE / SUBMIT
         // ========================================
         function loadQuestionForEdit(questionId) {
             var q = questionsData.find(function(item) { return item.id == questionId; });
-            if (!q) {
-                Swal.fire({ icon: 'error', title: 'Question Not Found', text: 'The question could not be found.', confirmButtonColor: '#3498db' });
-                loadExistingQuestions();
-                return;
-            }
+            if (!q) { Swal.fire({ icon: 'error', title: 'Question Not Found', text: 'The question could not be found.', confirmButtonColor: '#3498db' }); loadExistingQuestions(); return; }
             isLoadingQuestion = true;
             if (autoSaveTimer) clearTimeout(autoSaveTimer);
             editingQuestionId = questionId;
@@ -1932,82 +1374,62 @@
             document.getElementById('editingIndicator').style.display = 'flex';
             document.getElementById('submitBtn').innerHTML = '<i class="fas fa-save"></i> Update & Submit';
             
-            questionImages = [];
-            answerImages = [];
-            
+            questionImages = []; answerImages = [];
             questionEditor.root.innerHTML = q.question_text || '<p><br></p>';
             answerEditor.root.innerHTML = q.answer || '<p><br></p>';
             document.getElementById('marks').value = q.marks || 1;
             document.getElementById('duration_minutes').value = q.duration_minutes || 5;
             
-            // Restore textbook
             if (q.textbook_id) {
                 document.getElementById('textbookSelect').value = q.textbook_id;
-                var tb = allTextbooks.find(function(t) { return t.id == q.textbook_id; });
-                if (tb) {
-                    document.getElementById('textbookPublisher').value = tb.publisher || '';
-                }
+                document.getElementById('textbookPage').value = q.textbook_page || '';
             } else if (q.textbook_name) {
-                var tb = allTextbooks.find(function(t) { return t.textbook_name === q.textbook_name; });
-                if (tb) {
-                    document.getElementById('textbookSelect').value = tb.id;
-                    document.getElementById('textbookPublisher').value = tb.publisher || '';
-                }
-            }
-            document.getElementById('textbookPage').value = q.textbook_page || '';
-            
-            // Restore reference book
-            if (q.reference_book) {
-                var select = document.getElementById('referenceBookSelect');
-                var options = select.options;
-                var found = false;
-                for (var i = 0; i < options.length; i++) {
-                    if (options[i].value === q.reference_book) {
-                        select.value = q.reference_book;
-                        found = true;
+                var tSelect2 = document.getElementById('textbookSelect');
+                for (var i=0; i<tSelect2.options.length; i++) {
+                    if (tSelect2.options[i].text.indexOf(q.textbook_name) !== -1) {
+                        tSelect2.value = tSelect2.options[i].value;
                         break;
                     }
                 }
-                if (!found && q.reference_book) {
+                document.getElementById('textbookPage').value = q.textbook_page || '';
+            }
+            if (q.reference_book) {
+                var rSelect = document.getElementById('referenceSelect');
+                var found = false;
+                if (q.reference_id) {
+                    rSelect.value = q.reference_id;
+                    found = true;
+                } else {
+                    for (var j=0; j<rSelect.options.length; j++) {
+                        if (rSelect.options[j].text.indexOf(q.reference_book) !== -1) {
+                            rSelect.value = rSelect.options[j].value;
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                if (!found) {
                     var opt = document.createElement('option');
                     opt.value = q.reference_book;
                     opt.textContent = q.reference_book + ' (custom)';
-                    select.appendChild(opt);
-                    select.value = q.reference_book;
+                    rSelect.appendChild(opt);
+                    rSelect.value = q.reference_book;
                 }
+                document.getElementById('referencePage').value = q.reference_page || '';
             }
-            document.getElementById('referencePage').value = q.reference_page || '';
             
-            // Restore images
             var images = [];
             try { images = q.images ? JSON.parse(q.images) : []; } catch(e) { images = []; }
-            
-            images.forEach(function(imgUrl) {
-                questionImages.push({ file: null, preview: imgUrl, dataUrl: imgUrl, isExisting: true });
-            });
-            renderImagePreviews('question');
-            updateImageCount('question');
-            renderImagePreviews('answer');
-            updateImageCount('answer');
+            images.forEach(function(imgUrl) { questionImages.push({ file: null, preview: imgUrl, dataUrl: imgUrl, isExisting: true }); });
+            renderImagePreviews('question'); updateImageCount('question');
+            renderImagePreviews('answer'); updateImageCount('answer');
             
             if (q.language && kbLayouts[q.language]) switchKB(q.language);
-            
-            document.querySelectorAll('.question-item').forEach(function(el) {
-                el.classList.remove('editing');
-                if (el.dataset.questionId == questionId) el.classList.add('editing');
-            });
-            
-            updateTextbookDisplay();
+            document.querySelectorAll('.question-item').forEach(function(el) { el.classList.remove('editing'); if (el.dataset.questionId == questionId) el.classList.add('editing'); });
+            updateBookDisplay();
             isLoadingQuestion = false;
             updateAutoSaveStatus('saved', 'Loaded for editing');
-            
-            Swal.fire({
-                icon: 'success',
-                title: 'Loaded!',
-                text: 'Question loaded for editing. Make your changes and click "Update & Submit"',
-                timer: 1500,
-                showConfirmButton: false
-            });
+            Swal.fire({ icon: 'success', title: 'Loaded!', text: 'Question loaded for editing. Make your changes and click "Update & Submit"', timer: 1500, showConfirmButton: false });
         }
 
         function cancelEdit() {
@@ -2019,152 +1441,60 @@
             Swal.fire({ icon: 'info', title: 'Edit Cancelled', text: 'You can start a new question', timer: 1500, showConfirmButton: false });
         }
 
-        // ========================================
-        // DELETE QUESTION
-        // ========================================
         function deleteQuestion(questionId) {
-            var q = questionsData.find(function(item) { return item.id == questionId; });
-            if (!q) {
-                Swal.fire({ icon: 'error', title: 'Question Not Found', text: 'The question could not be found.', confirmButtonColor: '#3498db' });
-                loadExistingQuestions();
-                return;
-            }
-            
-            Swal.fire({
-                title: 'Delete Question?',
-                text: 'This action cannot be undone!',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#e74c3c',
-                cancelButtonColor: '#7f8c8d',
-                confirmButtonText: 'Delete'
-            }).then(function(result) {
-                if (result.isConfirmed) {
-                    Swal.fire({ title: 'Deleting...', text: 'Please wait', allowOutsideClick: false, didOpen: function() { Swal.showLoading(); } });
-                    fetch('/api/delete-question/' + questionId, { method: 'DELETE' })
+            Swal.fire({ title: 'Delete Question?', text: 'This action cannot be undone!', icon: 'warning', showCancelButton: true, confirmButtonColor: '#e74c3c', cancelButtonColor: '#7f8c8d', confirmButtonText: 'Delete' })
+                .then(function(result) {
+                    if (result.isConfirmed) {
+                        Swal.fire({ title: 'Deleting...', text: 'Please wait', allowOutsideClick: false, didOpen: function() { Swal.showLoading(); } });
+                        fetch('/api/delete-question/' + questionId, { method: 'DELETE' })
+                            .then(function(response) { return response.json(); })
+                            .then(function(data) {
+                                Swal.close();
+                                if (data.success) {
+                                    Swal.fire({ icon: 'success', title: 'Deleted!', text: 'Question deleted successfully', timer: 1500, showConfirmButton: false });
+                                    questionsData = questionsData.filter(function(item) { return item.id != questionId; });
+                                    loadExistingQuestions();
+                                    if (editingQuestionId === questionId) cancelEdit();
+                                } else { Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'Failed to delete', confirmButtonColor: '#3498db' }); }
+                            })
+                            .catch(function(error) { Swal.close(); Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to delete question', confirmButtonColor: '#3498db' }); });
+                    }
+                });
+        }
+
+        function submitSingleQuestion(questionId) {
+            Swal.fire({ title: 'Submit for Review?', text: 'This will send your question to the master reviewer.', icon: 'question', showCancelButton: true, confirmButtonColor: '#27ae60', cancelButtonColor: '#7f8c8d', confirmButtonText: 'Submit!', cancelButtonText: 'Cancel' })
+                .then(function(result) {
+                    if (!result.isConfirmed) return;
+                    Swal.fire({ title: 'Submitting...', text: 'Please wait', allowOutsideClick: false, didOpen: function() { Swal.showLoading(); } });
+                    var q = questionsData.find(function(item) { return item.id == questionId; });
+                    if (!q) { Swal.close(); Swal.fire({ icon: 'error', title: 'Error', text: 'Question not found!', confirmButtonColor: '#3498db' }); return; }
+                    var updateData = {
+                        question_text: q.question_text, answer: q.answer, marks: q.marks || 1, duration_minutes: q.duration_minutes || 5,
+                        images: q.images || '[]', comp_id: q.comp_id, grade_id: q.grade_id, subject_id: q.subject_id,
+                        chapter_id: q.chapter_id, cg_id: q.cg_id, domain_id: q.domain_id, knowledge_level_id: q.knowledge_level_id,
+                        question_type_id: q.question_type_id, difficulty_id: q.difficulty_id, competency_code: q.competency_code,
+                        grade_name: q.grade_name, subject_name: q.subject_name, chapter_name: q.chapter_name, chapter_code: q.chapter_code,
+                        cg_code: q.cg_code, domain_name: q.domain_name, knowledge_level_name: q.knowledge_level_name,
+                        question_type_name: q.question_type_name, difficulty_name: q.difficulty_name, language: q.language || 'en',
+                        textbook_id: q.textbook_id || null, textbook_name: q.textbook_name || null, textbook_publisher: q.textbook_publisher || null,
+                        textbook_page: q.textbook_page || null, reference_book: q.reference_book || null, reference_publisher: q.reference_publisher || null,
+                        reference_page: q.reference_page || null, status: 'under_review', question_id: questionId
+                    };
+                    fetch('/api/update-question/' + questionId, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updateData) })
                         .then(function(response) { return response.json(); })
                         .then(function(data) {
                             Swal.close();
                             if (data.success) {
-                                Swal.fire({ icon: 'success', title: 'Deleted!', text: 'Question deleted successfully', timer: 1500, showConfirmButton: false });
-                                questionsData = questionsData.filter(function(item) { return item.id != questionId; });
+                                Swal.fire({ icon: 'success', title: 'Submitted!', text: 'Your question has been sent to the master reviewer.', timer: 3000, showConfirmButton: false });
                                 loadExistingQuestions();
                                 if (editingQuestionId === questionId) cancelEdit();
-                            } else {
-                                Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'Failed to delete', confirmButtonColor: '#3498db' });
-                            }
+                            } else { Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'Failed to submit', confirmButtonColor: '#3498db' }); }
                         })
-                        .catch(function(error) {
-                            Swal.close();
-                            Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to delete question', confirmButtonColor: '#3498db' });
-                        });
-                }
-            });
+                        .catch(function(error) { Swal.close(); Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to submit question', confirmButtonColor: '#3498db' }); });
+                });
         }
 
-        // ========================================
-        // SUBMIT SINGLE QUESTION FROM LIST
-        // ========================================
-        function submitSingleQuestion(questionId) {
-            Swal.fire({
-                title: 'Submit for Review?',
-                text: 'This will send your question to the master reviewer. You won\'t be able to edit it after submission.',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#27ae60',
-                cancelButtonColor: '#7f8c8d',
-                confirmButtonText: 'Submit!',
-                cancelButtonText: 'Cancel'
-            }).then(function(result) {
-                if (result.isConfirmed) {
-                    Swal.fire({ title: 'Submitting...', text: 'Please wait', allowOutsideClick: false, didOpen: function() { Swal.showLoading(); } });
-                    
-                    var q = questionsData.find(function(item) { return item.id == questionId; });
-                    if (!q) {
-                        Swal.close();
-                        Swal.fire({ icon: 'error', title: 'Error', text: 'Question not found!', confirmButtonColor: '#3498db' });
-                        return;
-                    }
-                    
-                    var updateData = {
-                        question_text: q.question_text,
-                        answer: q.answer,
-                        marks: q.marks || 1,
-                        duration_minutes: q.duration_minutes || 5,
-                        images: q.images || '[]',
-                        comp_id: q.comp_id,
-                        grade_id: q.grade_id,
-                        subject_id: q.subject_id,
-                        chapter_id: q.chapter_id,
-                        cg_id: q.cg_id,
-                        domain_id: q.domain_id,
-                        knowledge_level_id: q.knowledge_level_id,
-                        question_type_id: q.question_type_id,
-                        difficulty_id: q.difficulty_id,
-                        competency_code: q.competency_code,
-                        grade_name: q.grade_name,
-                        subject_name: q.subject_name,
-                        chapter_name: q.chapter_name,
-                        chapter_code: q.chapter_code,
-                        cg_code: q.cg_code,
-                        domain_name: q.domain_name,
-                        knowledge_level_name: q.knowledge_level_name,
-                        question_type_name: q.question_type_name,
-                        difficulty_name: q.difficulty_name,
-                        language: q.language || 'en',
-                        textbook_id: q.textbook_id || null,
-                        textbook_name: q.textbook_name || null,
-                        textbook_publisher: q.textbook_publisher || null,
-                        textbook_page: q.textbook_page || null,
-                        reference_book: q.reference_book || null,
-                        reference_page: q.reference_page || null,
-                        status: 'under_review',
-                        question_id: questionId
-                    };
-                    
-                    fetch('/api/update-question/' + questionId, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(updateData)
-                    })
-                    .then(function(response) { return response.json(); })
-                    .then(function(data) {
-                        Swal.close();
-                        if (data.success) {
-                            Swal.fire({ 
-                                icon: 'success', 
-                                title: 'Submitted!', 
-                                text: 'Your question has been sent to the master reviewer.',
-                                timer: 3000,
-                                showConfirmButton: false
-                            });
-                            loadExistingQuestions();
-                            if (editingQuestionId === questionId) cancelEdit();
-                        } else {
-                            Swal.fire({ 
-                                icon: 'error', 
-                                title: 'Error', 
-                                text: data.error || 'Failed to submit', 
-                                confirmButtonColor: '#3498db' 
-                            });
-                        }
-                    })
-                    .catch(function(error) {
-                        Swal.close();
-                        Swal.fire({ 
-                            icon: 'error', 
-                            title: 'Error', 
-                            text: 'Failed to submit question', 
-                            confirmButtonColor: '#3498db' 
-                        });
-                    });
-                }
-            });
-        }
-
-        // ========================================
-        // SUBMIT QUESTION - MAIN SUBMIT BUTTON
-        // ========================================
         function submitQuestion() {
             var questionHtml = questionEditor.root.innerHTML;
             var answerHtml = answerEditor.root.innerHTML;
@@ -2173,211 +1503,108 @@
             var language = currentKB;
             
             var textbookId = document.getElementById('textbookSelect').value;
+            var referenceId = document.getElementById('referenceSelect').value;
             var textbookPage = document.getElementById('textbookPage').value.trim();
-            var textbookPublisher = document.getElementById('textbookPublisher').value.trim();
-            var referenceBook = document.getElementById('referenceBookSelect').value;
             var referencePage = document.getElementById('referencePage').value.trim();
             
-            var textbookName = '';
-            if (textbookId) {
-                var tb = allTextbooks.find(function(t) { return t.id == textbookId; });
-                if (tb) textbookName = tb.textbook_name;
-            }
+            var textbookName = '', referenceBook = '';
+            if (textbookId) { var tb = allTextbooks.find(function(t) { return t.id == textbookId; }); if (tb) textbookName = tb.textbook_name; }
+            if (referenceId) { var rb = allTextbooks.find(function(t) { return t.id == referenceId; }); if (rb) referenceBook = rb.textbook_name; }
             
-            var hasQuestion = hasActualContent(questionHtml);
-            var hasAnswer = hasActualContent(answerHtml);
-            
-            if (!hasQuestion) {
-                Swal.fire({ icon: 'warning', title: 'Missing Question', text: 'Please enter a question with text or images!', confirmButtonColor: '#3498db' });
-                questionEditor.focus();
-                return;
-            }
-            
-            if (!hasAnswer) {
-                Swal.fire({ icon: 'warning', title: 'Missing Answer', text: 'Please enter an answer with text or images!', confirmButtonColor: '#3498db' });
-                answerEditor.focus();
-                return;
-            }
-            
-            if (!marks || isNaN(marks) || marks < 0 || marks > 100) {
-                Swal.fire({ icon: 'warning', title: 'Invalid Marks', text: 'Please enter valid marks between 0 and 100!', confirmButtonColor: '#3498db' });
-                document.getElementById('marks').focus();
-                return;
-            }
-            
-            var durationInt = parseInt(durationMinutes);
-            if (isNaN(durationInt) || durationInt < 0 || durationInt > 180) {
-                Swal.fire({ icon: 'warning', title: 'Invalid Duration', text: 'Please enter valid duration between 0 and 180 minutes!', confirmButtonColor: '#3498db' });
-                document.getElementById('duration_minutes').focus();
-                return;
-            }
+            if (!hasActualContent(questionHtml)) { Swal.fire({ icon: 'warning', title: 'Missing Question', text: 'Please enter a question with text or images!', confirmButtonColor: '#3498db' }); questionEditor.focus(); return; }
+            if (!hasActualContent(answerHtml)) { Swal.fire({ icon: 'warning', title: 'Missing Answer', text: 'Please enter an answer with text or images!', confirmButtonColor: '#3498db' }); answerEditor.focus(); return; }
+            if (!marks || isNaN(marks) || marks < 0 || marks > 100) { Swal.fire({ icon: 'warning', title: 'Invalid Marks', text: 'Please enter valid marks between 0 and 100!', confirmButtonColor: '#3498db' }); document.getElementById('marks').focus(); return; }
+            var durationInt = parseInt(durationMinutes); if (isNaN(durationInt) || durationInt < 0 || durationInt > 180) { Swal.fire({ icon: 'warning', title: 'Invalid Duration', text: 'Please enter valid duration between 0 and 180 minutes!', confirmButtonColor: '#3498db' }); document.getElementById('duration_minutes').focus(); return; }
             
             var compId = localStorage.getItem('selectedCompId');
-            if (!compId || compId === 'null') {
-                Swal.fire({ icon: 'error', title: 'No Competency Selected', text: 'Please go back and select a competency first.', confirmButtonColor: '#3498db' })
-                .then(function() { window.location.href = '/complete-selection'; });
-                return;
-            }
+            if (!compId || compId === 'null') { Swal.fire({ icon: 'error', title: 'No Competency Selected', text: 'Please go back and select a competency first.', confirmButtonColor: '#3498db' }).then(function() { window.location.href = '/complete-selection'; }); return; }
             
-            Swal.fire({
-                title: 'Submit for Review?',
-                html: 'This will send your question to the master reviewer.<br><strong>You won\'t be able to edit it after submission.</strong>',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#27ae60',
-                cancelButtonColor: '#7f8c8d',
-                confirmButtonText: 'Submit',
-                cancelButtonText: 'Cancel'
-            }).then(function(result) {
-                if (!result.isConfirmed) return;
-                
-                Swal.fire({ title: 'Submitting...', text: 'Please wait', allowOutsideClick: false, showConfirmButton: false, didOpen: function() { Swal.showLoading(); } });
-                
-                var questionImageUrls = [];
-                var answerImageUrls = [];
-                
-                questionImages.forEach(function(img) {
-                    if (img.isExisting && img.dataUrl) questionImageUrls.push(img.dataUrl);
-                });
-                answerImages.forEach(function(img) {
-                    if (img.isExisting && img.dataUrl) answerImageUrls.push(img.dataUrl);
-                });
-                
-                var newQuestionImages = questionImages.filter(function(img) { return !img.isExisting && img.file; });
-                var newAnswerImages = answerImages.filter(function(img) { return !img.isExisting && img.file; });
-                
-                function proceedWithSubmission(questionUrls, answerUrls) {
-                    var allImages = questionUrls.concat(answerUrls);
-                    var chapterId = localStorage.getItem('selectedChapterId');
-                    var chapterName = localStorage.getItem('selectedChapterName');
-                    var chapterCode = localStorage.getItem('selectedChapterCode');
+            Swal.fire({ title: 'Submit for Review?', html: 'This will send your question to the master reviewer.<br><strong>You won\'t be able to edit it after submission.</strong>', icon: 'question', showCancelButton: true, confirmButtonColor: '#27ae60', cancelButtonColor: '#7f8c8d', confirmButtonText: 'Submit', cancelButtonText: 'Cancel' })
+                .then(function(result) {
+                    if (!result.isConfirmed) return;
+                    Swal.fire({ title: 'Submitting...', text: 'Please wait', allowOutsideClick: false, showConfirmButton: false, didOpen: function() { Swal.showLoading(); } });
                     
-                    var questionData = {
-                        question_text: questionHtml,
-                        answer: answerHtml,
-                        marks: parseInt(marks),
-                        duration_minutes: parseInt(durationMinutes),
-                        images: JSON.stringify(allImages),
-                        comp_id: localStorage.getItem('selectedCompId'),
-                        grade_id: localStorage.getItem('selectedGradeId'),
-                        subject_id: localStorage.getItem('selectedSubjectId'),
-                        chapter_id: chapterId && chapterId !== 'null' ? chapterId : null,
-                        cg_id: localStorage.getItem('selectedCGId'),
-                        domain_id: localStorage.getItem('selectedDomainId'),
-                        knowledge_level_id: localStorage.getItem('selectedKnowledgeLevelId'),
-                        question_type_id: localStorage.getItem('selectedQuestionTypeId'),
-                        difficulty_id: localStorage.getItem('selectedDifficultyId'),
-                        competency_code: localStorage.getItem('selectedCompCode'),
-                        grade_name: localStorage.getItem('selectedGradeName'),
-                        subject_name: localStorage.getItem('selectedSubjectName'),
-                        chapter_name: chapterName && chapterName !== 'null' ? chapterName : null,
-                        chapter_code: chapterCode && chapterCode !== 'null' ? chapterCode : null,
-                        cg_code: localStorage.getItem('selectedCGCode'),
-                        domain_name: localStorage.getItem('selectedDomainName'),
-                        knowledge_level_name: localStorage.getItem('selectedKnowledgeLevelName'),
-                        question_type_name: localStorage.getItem('selectedQuestionTypeName'),
-                        difficulty_name: localStorage.getItem('selectedDifficultyName'),
-                        language: language,
-                        textbook_id: textbookId || null,
-                        textbook_name: textbookName || null,
-                        textbook_publisher: textbookPublisher || null,
-                        textbook_page: textbookPage || null,
-                        reference_book: referenceBook || null,
-                        reference_page: referencePage || null,
-                        status: 'under_review'
-                    };
+                    var questionImageUrls = [], answerImageUrls = [];
+                    questionImages.forEach(function(img) { if (img.isExisting && img.dataUrl) questionImageUrls.push(img.dataUrl); });
+                    answerImages.forEach(function(img) { if (img.isExisting && img.dataUrl) answerImageUrls.push(img.dataUrl); });
+                    var newQuestionImages = questionImages.filter(function(img) { return !img.isExisting && img.file; });
+                    var newAnswerImages = answerImages.filter(function(img) { return !img.isExisting && img.file; });
                     
-                    var url, method;
-                    if (editingQuestionId) {
-                        url = '/api/update-question/' + editingQuestionId;
-                        method = 'POST';
-                        questionData.question_id = editingQuestionId;
-                    } else {
-                        url = '/api/create-question';
-                        method = 'POST';
+                    function proceedWithSubmission(questionUrls, answerUrls) {
+                        var allImages = questionUrls.concat(answerUrls);
+                        var chapterId = localStorage.getItem('selectedChapterId');
+                        var chapterName = localStorage.getItem('selectedChapterName');
+                        var chapterCode = localStorage.getItem('selectedChapterCode');
+                        
+                        var questionData = {
+                            question_text: questionHtml, answer: answerHtml, marks: parseInt(marks), duration_minutes: parseInt(durationMinutes),
+                            images: JSON.stringify(allImages), comp_id: localStorage.getItem('selectedCompId'),
+                            grade_id: localStorage.getItem('selectedGradeId'), subject_id: localStorage.getItem('selectedSubjectId'),
+                            chapter_id: chapterId && chapterId !== 'null' ? chapterId : null,
+                            cg_id: localStorage.getItem('selectedCGId'), domain_id: localStorage.getItem('selectedDomainId'),
+                            knowledge_level_id: localStorage.getItem('selectedKnowledgeLevelId'), question_type_id: localStorage.getItem('selectedQuestionTypeId'),
+                            difficulty_id: localStorage.getItem('selectedDifficultyId'), competency_code: localStorage.getItem('selectedCompCode'),
+                            grade_name: localStorage.getItem('selectedGradeName'), subject_name: localStorage.getItem('selectedSubjectName'),
+                            chapter_name: chapterName && chapterName !== 'null' ? chapterName : null,
+                            chapter_code: chapterCode && chapterCode !== 'null' ? chapterCode : null,
+                            cg_code: localStorage.getItem('selectedCGCode'), domain_name: localStorage.getItem('selectedDomainName'),
+                            knowledge_level_name: localStorage.getItem('selectedKnowledgeLevelName'), question_type_name: localStorage.getItem('selectedQuestionTypeName'),
+                            difficulty_name: localStorage.getItem('selectedDifficultyName'), language: language,
+                            textbook_id: textbookId || null, textbook_name: textbookName || null, textbook_publisher: '',
+                            textbook_page: textbookPage || null, reference_book: referenceBook || null, reference_publisher: '',
+                            reference_page: referencePage || null, status: 'under_review'
+                        };
+                        
+                        var url, method;
+                        if (editingQuestionId) { url = '/api/update-question/' + editingQuestionId; method = 'POST'; questionData.question_id = editingQuestionId; }
+                        else { url = '/api/create-question'; method = 'POST'; }
+                        
+                        fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(questionData) })
+                            .then(function(response) { return response.json(); })
+                            .then(function(result) {
+                                Swal.close();
+                                if (result.success) {
+                                    var successMsg = document.getElementById('successMessage');
+                                    successMsg.style.display = 'block';
+                                    var actionText = editingQuestionId ? 'updated and submitted for review!' : 'submitted for review!';
+                                    successMsg.innerHTML = '<i class="fas fa-check-circle"></i> <strong>Question ' + actionText + '</strong>';
+                                    loadExistingQuestions();
+                                    setTimeout(function() { successMsg.style.display = 'none'; }, 4000);
+                                    resetForm();
+                                    editingQuestionId = null;
+                                    document.getElementById('editingIndicator').style.display = 'none';
+                                    document.getElementById('submitBtn').innerHTML = '<i class="fas fa-paper-plane"></i> Submit for Review';
+                                    updateAutoSaveStatus('saved', 'Submitted successfully!');
+                                    Swal.fire({ icon: 'success', title: 'Submitted!', text: 'Your question has been sent to the master reviewer.', timer: 3000, showConfirmButton: false });
+                                } else { Swal.fire({ icon: 'error', title: 'Error', text: result.error || 'Unknown error occurred', confirmButtonColor: '#3498db' }); }
+                            })
+                            .catch(function(error) { console.error('Error:', error); Swal.close(); Swal.fire({ icon: 'error', title: 'Connection Error', text: 'Failed to submit question. Please check your connection.', confirmButtonColor: '#3498db' }); });
                     }
                     
-                    fetch(url, {
-                        method: method,
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(questionData)
-                    })
-                    .then(function(response) { return response.json(); })
-                    .then(function(result) {
-                        Swal.close();
-                        if (result.success) {
-                            var successMsg = document.getElementById('successMessage');
-                            successMsg.style.display = 'block';
-                            var actionText = editingQuestionId ? 'updated and submitted for review!' : 'submitted for review!';
-                            successMsg.innerHTML = '<i class="fas fa-check-circle"></i> <strong>Question ' + actionText + '</strong>';
-                            loadExistingQuestions();
-                            setTimeout(function() { successMsg.style.display = 'none'; }, 4000);
-                            resetForm();
-                            editingQuestionId = null;
-                            document.getElementById('editingIndicator').style.display = 'none';
-                            document.getElementById('submitBtn').innerHTML = '<i class="fas fa-paper-plane"></i> Submit for Review';
-                            updateAutoSaveStatus('saved', 'Submitted successfully!');
-                            
-                            Swal.fire({ icon: 'success', title: 'Submitted!', text: 'Your question has been sent to the master reviewer.', timer: 3000, showConfirmButton: false });
-                        } else {
-                            Swal.fire({ icon: 'error', title: 'Error', text: result.error || 'Unknown error occurred', confirmButtonColor: '#3498db' });
-                        }
-                    })
-                    .catch(function(error) {
-                        console.error('Error:', error);
-                        Swal.close();
-                        Swal.fire({ icon: 'error', title: 'Connection Error', text: 'Failed to submit question. Please check your connection.', confirmButtonColor: '#3498db' });
-                    });
-                }
-                
-                var uploadPromises = [];
-                
-                if (newQuestionImages.length > 0) {
-                    var formData = new FormData();
-                    newQuestionImages.forEach(function(img) { if (img.file) formData.append('images', img.file); });
-                    uploadPromises.push(
-                        fetch('/api/upload-question-images', { method: 'POST', body: formData })
-                        .then(function(response) { return response.json(); })
-                        .then(function(result) { return (result.success && result.image_urls) ? result.image_urls : []; })
-                        .catch(function() { return []; })
-                    );
-                } else {
-                    uploadPromises.push(Promise.resolve([]));
-                }
-                
-                if (newAnswerImages.length > 0) {
-                    var formData2 = new FormData();
-                    newAnswerImages.forEach(function(img) { if (img.file) formData2.append('images', img.file); });
-                    uploadPromises.push(
-                        fetch('/api/upload-answer-images', { method: 'POST', body: formData2 })
-                        .then(function(response) { return response.json(); })
-                        .then(function(result) { return (result.success && result.image_urls) ? result.image_urls : []; })
-                        .catch(function() { return []; })
-                    );
-                } else {
-                    uploadPromises.push(Promise.resolve([]));
-                }
-                
-                Promise.all(uploadPromises)
-                    .then(function(results) {
-                        var newQuestionUrls = results[0] || [];
-                        var newAnswerUrls = results[1] || [];
-                        var allQuestionUrls = questionImageUrls.concat(newQuestionUrls);
-                        var allAnswerUrls = answerImageUrls.concat(newAnswerUrls);
-                        proceedWithSubmission(allQuestionUrls, allAnswerUrls);
-                    })
-                    .catch(function(error) {
-                        console.error('Upload error:', error);
-                        Swal.close();
-                        Swal.fire({ icon: 'warning', title: 'Upload Issue', text: 'There was an issue uploading images. Proceeding without them.', confirmButtonColor: '#3498db' });
-                        proceedWithSubmission(questionImageUrls, answerImageUrls);
-                    });
-            });
+                    var uploadPromises = [];
+                    if (newQuestionImages.length > 0) {
+                        var formData = new FormData();
+                        newQuestionImages.forEach(function(img) { if (img.file) formData.append('images', img.file); });
+                        uploadPromises.push(fetch('/api/upload-question-images', { method: 'POST', body: formData }).then(function(response) { return response.json(); }).then(function(result) { return (result.success && result.image_urls) ? result.image_urls : []; }).catch(function() { return []; }));
+                    } else { uploadPromises.push(Promise.resolve([])); }
+                    if (newAnswerImages.length > 0) {
+                        var formData2 = new FormData();
+                        newAnswerImages.forEach(function(img) { if (img.file) formData2.append('images', img.file); });
+                        uploadPromises.push(fetch('/api/upload-answer-images', { method: 'POST', body: formData2 }).then(function(response) { return response.json(); }).then(function(result) { return (result.success && result.image_urls) ? result.image_urls : []; }).catch(function() { return []; }));
+                    } else { uploadPromises.push(Promise.resolve([])); }
+                    
+                    Promise.all(uploadPromises)
+                        .then(function(results) {
+                            var newQuestionUrls = results[0] || [];
+                            var newAnswerUrls = results[1] || [];
+                            var allQuestionUrls = questionImageUrls.concat(newQuestionUrls);
+                            var allAnswerUrls = answerImageUrls.concat(newAnswerUrls);
+                            proceedWithSubmission(allQuestionUrls, allAnswerUrls);
+                        })
+                        .catch(function(error) { console.error('Upload error:', error); Swal.close(); Swal.fire({ icon: 'warning', title: 'Upload Issue', text: 'There was an issue uploading images. Proceeding without them.', confirmButtonColor: '#3498db' }); proceedWithSubmission(questionImageUrls, answerImageUrls); });
+                });
         }
 
-        // ========================================
-        // RESET FORM
-        // ========================================
         function resetForm() {
             isLoadingQuestion = true;
             questionEditor.root.innerHTML = '<p><br></p>';
@@ -2385,20 +1612,16 @@
             document.getElementById('marks').value = 1;
             document.getElementById('duration_minutes').value = 5;
             document.getElementById('textbookSelect').value = '';
-            document.getElementById('textbookPublisher').value = '';
+            document.getElementById('referenceSelect').value = '';
             document.getElementById('textbookPage').value = '';
-            document.getElementById('referenceBookSelect').value = '';
             document.getElementById('referencePage').value = '';
-            document.getElementById('textbookRefDisplay').style.display = 'none';
+            document.getElementById('textbookRefDisplay').style.display = 'block';
+            document.getElementById('displayTextbookInfo').textContent = 'No textbook / reference selected';
             
             questionImages.forEach(function(img) { if (img.preview && img.preview.startsWith('blob:')) URL.revokeObjectURL(img.preview); });
-            questionImages = [];
-            renderImagePreviews('question');
-            updateImageCount('question');
+            questionImages = []; renderImagePreviews('question'); updateImageCount('question');
             answerImages.forEach(function(img) { if (img.preview && img.preview.startsWith('blob:')) URL.revokeObjectURL(img.preview); });
-            answerImages = [];
-            renderImagePreviews('answer');
-            updateImageCount('answer');
+            answerImages = []; renderImagePreviews('answer'); updateImageCount('answer');
             editingQuestionId = null;
             document.getElementById('editingIndicator').style.display = 'none';
             document.getElementById('submitBtn').innerHTML = '<i class="fas fa-paper-plane"></i> Submit for Review';
@@ -2408,220 +1631,57 @@
             questionEditor.focus();
         }
 
-        // ========================================
-        // VIEW QUESTION
-        // ========================================
         function viewQuestion(questionId) {
             var q = questionsData.find(function(item) { return item.id == questionId; });
-            if (!q) {
-                Swal.fire({ icon: 'error', title: 'Question Not Found', text: 'The question could not be found.', confirmButtonColor: '#3498db' });
-                loadExistingQuestions();
-                return;
-            }
-            var images = [];
-            try { images = q.images ? JSON.parse(q.images) : []; } catch(e) { images = []; }
+            if (!q) { Swal.fire({ icon: 'error', title: 'Question Not Found', text: 'The question could not be found.', confirmButtonColor: '#3498db' }); loadExistingQuestions(); return; }
+            var images = []; try { images = q.images ? JSON.parse(q.images) : []; } catch(e) { images = []; }
             var imagesHtml = '';
             if (images.length > 0) {
                 imagesHtml = '<div style="display:flex;flex-wrap:wrap;gap:10px;margin:10px 0;">';
-                images.forEach(function(imgUrl) {
-                    imagesHtml += `
-                        <div style="width:80px;height:80px;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,0.1);cursor:pointer;" onclick="showImageModal('${imgUrl}')">
-                            <img src="${imgUrl}" style="width:100%;height:100%;object-fit:cover;">
-                        </div>
-                    `;
-                });
+                images.forEach(function(imgUrl) { imagesHtml += '<div style="width:80px;height:80px;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,0.1);cursor:pointer;" onclick="showImageModal(\'' + imgUrl + '\')"><img src="' + imgUrl + '" style="width:100%;height:100%;object-fit:cover;"></div>'; });
                 imagesHtml += '</div>';
             }
-            var statusMap = {
-                'draft': { label: 'DRAFT', color: '#bdc3c7' },
-                'under_review': { label: 'UNDER REVIEW', color: '#f39c12' },
-                'master_reviewed': { label: 'MASTER REVIEWED', color: '#3498db' },
-                'reviewed_completed': { label: 'REVIEWED', color: '#9b59b6' },
-                'approved': { label: 'APPROVED', color: '#2ecc71' },
-                'rejected': { label: 'REJECTED', color: '#e74c3c' }
-            };
+            var statusMap = { 'draft': { label: 'DRAFT', color: '#bdc3c7' }, 'under_review': { label: 'UNDER REVIEW', color: '#f39c12' }, 'master_reviewed': { label: 'MASTER REVIEWED', color: '#3498db' }, 'reviewed_completed': { label: 'REVIEWED', color: '#9b59b6' }, 'approved': { label: 'APPROVED', color: '#2ecc71' }, 'rejected': { label: 'REJECTED', color: '#e74c3c' } };
             var statusInfo = statusMap[q.status] || statusMap['draft'];
-            
             var textbookInfo = '';
-            if (q.textbook_name) {
-                textbookInfo += `<p><strong>Textbook:</strong> ${q.textbook_name}`;
-                if (q.textbook_publisher) textbookInfo += ` (${q.textbook_publisher})`;
-                if (q.textbook_page) textbookInfo += ` (p. ${q.textbook_page})`;
-                textbookInfo += '</p>';
-            }
-            if (q.reference_book) {
-                textbookInfo += `<p><strong>Reference Book:</strong> ${q.reference_book}`;
-                if (q.reference_page) textbookInfo += ` (p. ${q.reference_page})`;
-                textbookInfo += '</p>';
-            }
-            
-            Swal.fire({
-                title: 'Question Details',
-                html: `
-                    <div style="text-align:left;color:#333;max-height:500px;overflow-y:auto;">
-                        <p><strong>Question:</strong></p>
-                        <div style="background:#f5f5f5;padding:10px;border-radius:6px;margin:5px 0;">${q.question_text}</div>
-                        ${imagesHtml}
-                        <p><strong>Answer:</strong></p>
-                        <div style="background:#f5f5f5;padding:10px;border-radius:6px;margin:5px 0;">${q.answer}</div>
-                        ${textbookInfo}
-                        <p><strong>Marks:</strong> ${q.marks || 'N/A'}</p>
-                        <p><strong>Time:</strong> ${q.duration_minutes || 'N/A'} min</p>
-                        <p><strong>Language:</strong> ${(q.language || 'en').toUpperCase()}</p>
-                        <p><strong>Status:</strong> <span style="color:${statusInfo.color};font-weight:bold;">${statusInfo.label}</span></p>
-                        <p><strong>Created By:</strong> ${q.created_by || 'Unknown'}</p>
-                        <p><strong>Created At:</strong> ${new Date(q.created_at).toLocaleString() || 'N/A'}</p>
-                    </div>
-                `,
-                confirmButtonColor: '#3498db',
-                width: '600px'
-            });
+            if (q.textbook_name) { textbookInfo += '<p><strong>Textbook:</strong> ' + q.textbook_name + (q.textbook_publisher ? ' (' + q.textbook_publisher + ')' : '') + (q.textbook_page ? ' (p. ' + q.textbook_page + ')' : '') + '</p>'; }
+            if (q.reference_book) { textbookInfo += '<p><strong>Reference:</strong> ' + q.reference_book + (q.reference_publisher ? ' (' + q.reference_publisher + ')' : '') + (q.reference_page ? ' (p. ' + q.reference_page + ')' : '') + '</p>'; }
+            Swal.fire({ title: 'Question Details', html: '<div style="text-align:left;color:#333;max-height:500px;overflow-y:auto;"><p><strong>Question:</strong></p><div style="background:#f5f5f5;padding:10px;border-radius:6px;margin:5px 0;">' + q.question_text + '</div>' + imagesHtml + '<p><strong>Answer:</strong></p><div style="background:#f5f5f5;padding:10px;border-radius:6px;margin:5px 0;">' + q.answer + '</div>' + textbookInfo + '<p><strong>Marks:</strong> ' + (q.marks || 'N/A') + '</p><p><strong>Time:</strong> ' + (q.duration_minutes || 'N/A') + ' min</p><p><strong>Language:</strong> ' + (q.language || 'en').toUpperCase() + '</p><p><strong>Status:</strong> <span style="color:' + statusInfo.color + ';font-weight:bold;">' + statusInfo.label + '</span></p><p><strong>Created By:</strong> ' + (q.created_by || 'Unknown') + '</p><p><strong>Created At:</strong> ' + (q.created_at ? new Date(q.created_at).toLocaleString() : 'N/A') + '</p></div>', confirmButtonColor: '#3498db', width: '600px' });
         }
 
-        // ========================================
-        // DEBUG FUNCTIONS
-        // ========================================
-        function forceShowQuestions() {
-            document.getElementById('questionsList').style.display = 'block';
-            Swal.fire({ icon: 'info', title: 'Debug', text: 'Questions list forced to show!', timer: 1500, showConfirmButton: false });
-        }
-
-        function forceShowButtons() {
-            forceShowAllButtons = true;
-            loadExistingQuestions();
-            Swal.fire({ icon: 'info', title: 'Debug', text: 'All buttons forced to show!', timer: 1500, showConfirmButton: false });
-        }
-
-        function debugReload() {
-            loadExistingQuestions();
-            Swal.fire({ icon: 'info', title: 'Debug', text: 'Reloaded questions!', timer: 1500, showConfirmButton: false });
-        }
-
-        // ========================================
-        // DISPLAY QUESTIONS
-        // ========================================
         function displayQuestions(questions) {
             var container = document.getElementById('questionsContainer');
             container.innerHTML = '';
-            
-            if (!questions || questions.length === 0) {
-                container.innerHTML = '<div class="empty-state"><i class="fas fa-question-circle"></i><p>No questions found for this competency yet.</p></div>';
-                return;
-            }
-            
-            questions.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
+            if (!questions || questions.length === 0) { container.innerHTML = '<div class="empty-state"><i class="fas fa-question-circle"></i><p>No questions found for this competency yet.</p></div>'; return; }
+            questions.sort(function(a,b) { return new Date(b.created_at) - new Date(a.created_at); });
             var seenIds = new Set();
-            
             questions.forEach(function(q, index) {
-                if (seenIds.has(q.id)) return;
-                seenIds.add(q.id);
-                
-                var div = document.createElement('div');
-                div.className = 'question-item';
-                div.dataset.questionId = q.id;
-                
-                var answer = q.answer || q.correct_option || '';
-                var marks = q.marks || '0';
-                var duration = q.duration_minutes || 0;
-                var chapter = q.chapter_name || 'No chapter';
-                var questionText = q.question_text || 'No question text';
-                var language = q.language || 'en';
-                var status = q.status || 'draft';
-                var textbookName = q.textbook_name || '';
-                var textbookPublisher = q.textbook_publisher || '';
-                var textbookPage = q.textbook_page || '';
-                var referenceBook = q.reference_book || '';
-                var referencePage = q.reference_page || '';
-                
-                var images = [];
-                try { images = q.images ? JSON.parse(q.images) : []; } catch(e) { images = []; }
-                
-                var statusMap = {
-                    'draft': { class: 'draft', icon: 'fa-pen', label: 'DRAFT' },
-                    'under_review': { class: 'under_review', icon: 'fa-clock', label: 'UNDER REVIEW' },
-                    'master_reviewed': { class: 'master_reviewed', icon: 'fa-check-circle', label: 'MASTER REVIEWED' },
-                    'reviewed_completed': { class: 'reviewed_completed', icon: 'fa-check-double', label: 'REVIEWED' },
-                    'approved': { class: 'approved', icon: 'fa-check', label: 'APPROVED' },
-                    'rejected': { class: 'rejected', icon: 'fa-times', label: 'REJECTED' }
-                };
-                
-                var statusInfo = statusMap[status] || statusMap['draft'];
-                var statusClass = statusInfo.class;
-                var statusIcon = statusInfo.icon;
-                var statusLabel = statusInfo.label;
-                
-                var imagesHtml = '';
-                if (images.length > 0) {
-                    imagesHtml = '<div class="question-images-display">';
-                    images.forEach(function(imgUrl) {
-                        imagesHtml += `
-                            <div class="thumb" onclick="showImageModal('${imgUrl}')">
-                                <img src="${imgUrl}" alt="Question image">
-                            </div>
-                        `;
-                    });
-                    imagesHtml += '</div>';
-                }
-                
+                if (seenIds.has(q.id)) return; seenIds.add(q.id);
+                var div = document.createElement('div'); div.className = 'question-item'; div.dataset.questionId = q.id;
+                var answer = q.answer || q.correct_option || ''; var marks = q.marks || '0'; var duration = q.duration_minutes || 0;
+                var chapter = q.chapter_name || 'No chapter'; var questionText = q.question_text || 'No question text';
+                var language = q.language || 'en'; var status = q.status || 'draft';
+                var textbookName = q.textbook_name || ''; var textbookPage = q.textbook_page || '';
+                var referenceBook = q.reference_book || ''; var referencePage = q.reference_page || '';
+                var images = []; try { images = q.images ? JSON.parse(q.images) : []; } catch(e) { images = []; }
+                var statusMap = { 'draft': { class: 'draft', icon: 'fa-pen', label: 'DRAFT' }, 'under_review': { class: 'under_review', icon: 'fa-clock', label: 'UNDER REVIEW' }, 'master_reviewed': { class: 'master_reviewed', icon: 'fa-check-circle', label: 'MASTER REVIEWED' }, 'reviewed_completed': { class: 'reviewed_completed', icon: 'fa-check-double', label: 'REVIEWED' }, 'approved': { class: 'approved', icon: 'fa-check', label: 'APPROVED' }, 'rejected': { class: 'rejected', icon: 'fa-times', label: 'REJECTED' } };
+                var statusInfo = statusMap[status] || statusMap['draft']; var statusClass = statusInfo.class; var statusIcon = statusInfo.icon; var statusLabel = statusInfo.label;
+                var imagesHtml = ''; if (images.length > 0) { imagesHtml = '<div class="question-images-display">'; images.forEach(function(imgUrl) { imagesHtml += '<div class="thumb" onclick="showImageModal(\'' + imgUrl + '\')"><img src="' + imgUrl + '" alt="Question image"></div>'; }); imagesHtml += '</div>'; }
                 var showEditDelete = status === 'draft' || status === 'rejected' || forceShowAllButtons;
                 var showSubmit = status === 'draft' || status === 'rejected';
                 var showView = true;
-                
                 var textbookBadge = '';
-                if (textbookName) {
-                    var label = textbookName;
-                    if (textbookPublisher) label += ' (' + textbookPublisher + ')';
-                    if (textbookPage) label += ' p.' + textbookPage;
-                    textbookBadge = `<span class="badge textbook-badge"><i class="fas fa-book-open"></i> ${label.substring(0, 30)}${label.length > 30 ? '...' : ''}</span>`;
-                }
-                if (referenceBook) {
-                    var refLabel = referenceBook;
-                    if (referencePage) refLabel += ' p.' + referencePage;
-                    textbookBadge += `<span class="badge reference-badge"><i class="fas fa-book"></i> ${refLabel.substring(0, 30)}${refLabel.length > 30 ? '...' : ''}</span>`;
-                }
-                
-                div.innerHTML = `
-                    <div class="question-header">
-                        <span class="question-number">Q${index + 1}</span>
-                        <div class="question-badges">
-                            <span class="badge marks-badge"><i class="fas fa-star"></i> ${marks}</span>
-                            ${duration > 0 ? '<span class="badge time-badge"><i class="fas fa-clock"></i> ' + duration + ' min</span>' : ''}
-                            ${chapter !== 'No chapter' ? '<span class="badge chapter-badge"><i class="fas fa-book"></i> ' + chapter.substring(0, 20) + (chapter.length > 20 ? '...' : '') + '</span>' : ''}
-                            ${textbookBadge}
-                            ${language ? '<span class="badge language-badge"><i class="fas fa-language"></i> ' + language.toUpperCase() + '</span>' : ''}
-                            <span class="badge status-badge ${statusClass}"><i class="fas ${statusIcon}"></i> ${statusLabel}</span>
-                            ${forceShowAllButtons ? '<span class="badge" style="background:rgba(231,76,60,0.2);color:#e74c3c;"><i class="fas fa-bug"></i> Debug Mode</span>' : ''}
-                        </div>
-                    </div>
-                    <div class="question-text">${questionText.substring(0, 300)}${questionText.length > 300 ? '...' : ''}</div>
-                    ${imagesHtml}
-                    <div class="answer-display"><strong>Answer:</strong> ${answer.substring(0, 150)}${answer.length > 150 ? '...' : ''}</div>
-                    <div class="criteria-info">
-                        <span><i class="fas fa-user"></i> ${q.created_by || 'Unknown'}</span>
-                        <span><i class="fas fa-calendar"></i> ${new Date(q.created_at).toLocaleDateString() || 'Unknown'}</span>
-                        ${q.difficulty_name ? '<span><i class="fas fa-chart-line"></i> ' + q.difficulty_name + '</span>' : ''}
-                        ${q.question_type_name ? '<span><i class="fas fa-question-circle"></i> ' + q.question_type_name + '</span>' : ''}
-                    </div>
-                    <div class="question-actions">
-                        ${showEditDelete ? `<button class="action-icon edit-btn" onclick="loadQuestionForEdit(${q.id})"><i class="fas fa-edit"></i> Edit</button>` : ''}
-                        ${showEditDelete ? `<button class="action-icon delete-btn" onclick="deleteQuestion(${q.id})"><i class="fas fa-trash"></i> Delete</button>` : ''}
-                        ${showSubmit ? `<button class="action-icon submit-review-btn" onclick="submitSingleQuestion(${q.id})"><i class="fas fa-paper-plane"></i> Submit for Review</button>` : ''}
-                        ${showView ? `<button class="action-icon view-btn" onclick="viewQuestion(${q.id})"><i class="fas fa-eye"></i> View</button>` : ''}
-                    </div>
-                `;
+                if (textbookName) { var label = textbookName; if (textbookPage) label += ' p.' + textbookPage; textbookBadge = '<span class="badge textbook-badge"><i class="fas fa-book-open"></i> ' + label.substring(0,30) + (label.length > 30 ? '...' : '') + '</span>'; }
+                if (referenceBook) { var refLabel = referenceBook; if (referencePage) refLabel += ' p.' + referencePage; textbookBadge += '<span class="badge reference-badge"><i class="fas fa-book"></i> ' + refLabel.substring(0,30) + (refLabel.length > 30 ? '...' : '') + '</span>'; }
+                div.innerHTML = '<div class="question-header"><span class="question-number">Q' + (index+1) + '</span><div class="question-badges"><span class="badge marks-badge"><i class="fas fa-star"></i> ' + marks + '</span>' + (duration > 0 ? '<span class="badge time-badge"><i class="fas fa-clock"></i> ' + duration + ' min</span>' : '') + (chapter !== 'No chapter' ? '<span class="badge chapter-badge"><i class="fas fa-book"></i> ' + chapter.substring(0,20) + (chapter.length > 20 ? '...' : '') + '</span>' : '') + textbookBadge + (language ? '<span class="badge language-badge"><i class="fas fa-language"></i> ' + language.toUpperCase() + '</span>' : '') + '<span class="badge status-badge ' + statusClass + '"><i class="fas ' + statusIcon + '"></i> ' + statusLabel + '</span>' + (forceShowAllButtons ? '<span class="badge" style="background:rgba(231,76,60,0.2);color:#e74c3c;"><i class="fas fa-bug"></i> Debug Mode</span>' : '') + '</div></div><div class="question-text">' + questionText.substring(0,300) + (questionText.length > 300 ? '...' : '') + '</div>' + imagesHtml + '<div class="answer-display"><strong>Answer:</strong> ' + answer.substring(0,150) + (answer.length > 150 ? '...' : '') + '</div><div class="criteria-info"><span><i class="fas fa-user"></i> ' + (q.created_by || 'Unknown') + '</span><span><i class="fas fa-calendar"></i> ' + (q.created_at ? new Date(q.created_at).toLocaleDateString() : 'Unknown') + '</span>' + (q.difficulty_name ? '<span><i class="fas fa-chart-line"></i> ' + q.difficulty_name + '</span>' : '') + (q.question_type_name ? '<span><i class="fas fa-question-circle"></i> ' + q.question_type_name + '</span>' : '') + '</div><div class="question-actions">' + (showEditDelete ? '<button class="action-icon edit-btn" onclick="loadQuestionForEdit(' + q.id + ')"><i class="fas fa-edit"></i> Edit</button>' : '') + (showEditDelete ? '<button class="action-icon delete-btn" onclick="deleteQuestion(' + q.id + ')"><i class="fas fa-trash"></i> Delete</button>' : '') + (showSubmit ? '<button class="action-icon submit-review-btn" onclick="submitSingleQuestion(' + q.id + ')"><i class="fas fa-paper-plane"></i> Submit for Review</button>' : '') + (showView ? '<button class="action-icon view-btn" onclick="viewQuestion(' + q.id + ')"><i class="fas fa-eye"></i> View</button>' : '') + '</div>';
                 container.appendChild(div);
             });
         }
 
         function loadExistingQuestions() {
             if (isLoadingQuestion) return;
-            
             var compId = localStorage.getItem('selectedCompId');
-            if (!compId || compId === 'null') {
-                document.getElementById('questionsList').style.display = 'none';
-                return;
-            }
-            
+            if (!compId || compId === 'null') { document.getElementById('questionsList').style.display = 'none'; return; }
             fetch('/api/page2-questions?comp_id=' + compId)
                 .then(function(response) { return response.json(); })
                 .then(function(data) {
@@ -2636,25 +1696,14 @@
                         document.getElementById('questionsContainer').innerHTML = '<div class="empty-state"><i class="fas fa-plus-circle"></i><p>No questions found. Create your first question above!</p></div>';
                     }
                 })
-                .catch(function(error) { 
-                    console.error('Error loading questions:', error);
-                    document.getElementById('questionsList').style.display = 'none';
-                });
+                .catch(function(error) { console.error('Error loading questions:', error); document.getElementById('questionsList').style.display = 'none'; });
         }
 
         // ========================================
         // IMAGE MODAL
         // ========================================
-        function showImageModal(imageUrl) {
-            var modal = document.getElementById('imageModal');
-            var modalImg = document.getElementById('modalImage');
-            modal.style.display = 'block';
-            modalImg.src = imageUrl;
-        }
-
-        function closeImageModal() {
-            document.getElementById('imageModal').style.display = 'none';
-        }
+        function showImageModal(imageUrl) { var modal = document.getElementById('imageModal'); var modalImg = document.getElementById('modalImage'); modal.style.display = 'block'; modalImg.src = imageUrl; }
+        function closeImageModal() { document.getElementById('imageModal').style.display = 'none'; }
 
         // ========================================
         // RENDER COMPACT GRID
@@ -2665,24 +1714,15 @@
             var items = [
                 { label: 'Grade', value: localStorage.getItem('selectedGradeName') },
                 { label: 'Subject', value: localStorage.getItem('selectedSubjectName') },
+                { label: 'Curricular Goal', value: localStorage.getItem('selectedCGCode') },
+                { label: 'Competencies', value: localStorage.getItem('selectedCompCode') },
                 { label: 'Chapter', value: localStorage.getItem('selectedChapterName') },
-                { label: 'CG', value: localStorage.getItem('selectedCGCode') },
-                { label: 'Sub-CG', value: localStorage.getItem('selectedCompCode') },
                 { label: 'Domain', value: localStorage.getItem('selectedDomainName') },
                 { label: 'Sub-Domain', value: localStorage.getItem('selectedKnowledgeLevelName') },
                 { label: 'Q-Type', value: localStorage.getItem('selectedQuestionTypeName') },
                 { label: 'Difficulty', value: localStorage.getItem('selectedDifficultyName') }
             ];
-            items.forEach(function(item) {
-                if (item.value && item.value !== 'null') {
-                    compactHTML += `
-                        <div class="compact-item">
-                            <span class="compact-label">${item.label}:</span>
-                            <span class="compact-value">${item.value}</span>
-                        </div>
-                    `;
-                }
-            });
+            items.forEach(function(item) { if (item.value && item.value !== 'null') { compactHTML += '<div class="compact-item"><span class="compact-label">' + item.label + ':</span><span class="compact-value">' + item.value + '</span></div>'; } });
             grid.innerHTML = compactHTML || '<div class="compact-item"><span class="compact-label">No selection</span></div>';
         }
 
@@ -2690,46 +1730,11 @@
         // SETUP EVENT LISTENERS
         // ========================================
         function setupEventListeners() {
-            var questionBtn = document.getElementById('questionKeyboardBtn');
-            if (questionBtn) {
-                questionBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    toggleKeyboard(questionEditor);
-                });
-            }
-            var answerBtn = document.getElementById('answerKeyboardBtn');
-            if (answerBtn) {
-                answerBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    toggleKeyboard(answerEditor);
-                });
-            }
-            var closeBtn = document.getElementById('closeKeyboardBtn');
-            if (closeBtn) {
-                closeBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    hideFloatingKeyboard();
-                });
-            }
-            document.querySelectorAll('.kb-lang').forEach(function(btn) {
-                btn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    var lang = this.dataset.lang;
-                    switchKB(lang);
-                });
-            });
-            
-            var submitBtn = document.getElementById('submitBtn');
-            if (submitBtn) {
-                submitBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    submitQuestion();
-                });
-            }
+            document.getElementById('questionKeyboardBtn').addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); toggleKeyboard(questionEditor); });
+            document.getElementById('answerKeyboardBtn').addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); toggleKeyboard(answerEditor); });
+            document.getElementById('closeKeyboardBtn').addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); hideFloatingKeyboard(); });
+            document.querySelectorAll('.kb-lang').forEach(function(btn) { btn.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); switchKB(this.dataset.lang); }); });
+            document.getElementById('submitBtn').addEventListener('click', function(e) { e.preventDefault(); submitQuestion(); });
         }
 
         // ========================================
@@ -2738,32 +1743,22 @@
         document.addEventListener('DOMContentLoaded', function() {
             renderCompactGrid();
             initImageUploads();
-            loadTextbooksAndReferences();
+            setTimeout(function() { loadTextbooksAndReferences(); }, 500);
             loadExistingQuestions();
             questionEditor.focus();
             activeEditor = questionEditor;
-            var kb = document.getElementById('floatingKeyboard');
-            if (kb) { kb.style.display = 'none'; kb.classList.remove('active'); }
+            var kb = document.getElementById('floatingKeyboard'); if (kb) { kb.style.display = 'none'; kb.classList.remove('active'); }
             initDrag();
             setupEventListeners();
             setupAutoSave();
             updateAutoSaveStatus('saved', 'Ready');
-            updateTextbookDisplay();
+            updateBookDisplay();
         });
 
-        window.addEventListener('beforeunload', function(e) {
-            if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveDraft(); }
-        });
-
+        window.addEventListener('beforeunload', function(e) { if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveDraft(); } });
         document.addEventListener('keydown', function(event) {
-            if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-                event.preventDefault();
-                submitQuestion();
-            }
-            if (event.key === 'Escape') {
-                closeImageModal();
-                hideFloatingKeyboard();
-            }
+            if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); submitQuestion(); }
+            if (event.key === 'Escape') { closeImageModal(); hideFloatingKeyboard(); }
         });
     </script>
 </body>
