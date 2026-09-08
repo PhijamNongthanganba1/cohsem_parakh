@@ -1695,7 +1695,7 @@ def get_reviewers():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/approvers', methods(['GET'])
+@app.route('/api/approvers', methods=['GET'])
 def get_approvers():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
