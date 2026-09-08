@@ -1,0 +1,2868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COHSEM · Paper Builder (Two-Phase)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #0a1a3a, #1a3a6d, #0c2461, #1e3a5f, #0a1a3a);
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+        }
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            height: calc(100vh - 40px);
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50px;
+            padding: 12px 25px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .header-left h1 { color: white; font-size: 24px; display: flex; align-items: center; gap: 10px; }
+        .header-left h1 i { color: #e67e22; }
+        .header-right { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary { background: #3498db; color: white; }
+        .btn-primary:hover { background: #2980b9; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-success:hover { background: #229954; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-warning { background: #f39c12; color: white; }
+        .btn-warning:hover { background: #e67e22; }
+        .btn-info { background: #1abc9c; color: white; }
+        .btn-info:hover { background: #16a085; }
+        .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,0.3); color: white; }
+        .btn-outline:hover { background: rgba(255,255,255,0.1); border-color: #e67e22; }
+        .btn-sm { padding: 6px 15px; font-size: 12px; }
+        .btn-lg { padding: 12px 35px; font-size: 16px; border-radius: 35px; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .phase-tabs {
+            display: flex;
+            gap: 4px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 40px;
+            padding: 4px;
+        }
+        .phase-tab {
+            padding: 8px 22px;
+            border-radius: 30px;
+            border: none;
+            background: transparent;
+            color: rgba(255,255,255,0.6);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .phase-tab.active {
+            background: #e67e22;
+            color: white;
+            box-shadow: 0 4px 15px rgba(230,126,34,0.4);
+        }
+        .phase-tab:hover:not(.active) { color: white; background: rgba(255,255,255,0.05); }
+
+        .main-container {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+        .side-navigator {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 20px 18px;
+            width: 220px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+        }
+        .side-navigator.hidden { display: none; }
+        .nav-title {
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .nav-title i { color: #e67e22; }
+        .nav-step {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            border-left: 3px solid transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 4px;
+        }
+        .nav-step:hover { background: rgba(230,126,34,0.1); transform: translateX(5px); }
+        .nav-step.active { background: rgba(230,126,34,0.2); border-left-color: #e67e22; }
+        .nav-step.completed { background: rgba(39,174,96,0.1); border-left-color: #27ae60; }
+        .nav-step .step-num {
+            width: 26px; height: 26px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        .nav-step.active .step-num { background: #e67e22; }
+        .nav-step.completed .step-num { background: #27ae60; }
+        .nav-step .step-label { color: rgba(255,255,255,0.6); font-size: 9px; text-transform: uppercase; letter-spacing: 0.3px; }
+        .nav-step .step-value { color: white; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+        .nav-step .step-info { flex: 1; min-width: 0; }
+
+        .content-area {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 20px 25px;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .content-area::-webkit-scrollbar { width: 6px; }
+        .content-area::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
+        .content-area::-webkit-scrollbar-thumb { background: rgba(230,126,34,0.5); border-radius: 10px; }
+
+        .progress-container { margin-bottom: 18px; flex-shrink: 0; }
+        .progress-bar { height: 6px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #e67e22, #f39c12); width: 0%; transition: width 0.5s ease; }
+        .progress-text { text-align: center; color: rgba(255,255,255,0.6); font-size: 12px; margin-top: 5px; }
+
+        .stage-container { animation: fadeIn 0.4s ease; flex: 1; display: flex; flex-direction: column; min-height: 0; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .stage-content { flex: 1; overflow-y: auto; padding-right: 5px; }
+        .stage-content::-webkit-scrollbar { width: 4px; }
+        .stage-content::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
+        .stage-content::-webkit-scrollbar-thumb { background: rgba(230,126,34,0.4); border-radius: 10px; }
+
+        .stage-header { margin-bottom: 18px; flex-shrink: 0; }
+        .stage-header h2 { color: white; font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+        .stage-header p { color: rgba(255,255,255,0.6); font-size: 14px; }
+
+        .grid-2, .grid-3, .grid-4 { display: grid; gap: 15px; margin-bottom: 20px; }
+        .grid-2 { grid-template-columns: repeat(2, 1fr); }
+        .grid-3 { grid-template-columns: repeat(3, 1fr); }
+        .grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+        .card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 20px 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .card:hover { background: rgba(255,255,255,0.08); border-color: #e67e22; transform: translateY(-2px); }
+        .card.selected { background: rgba(230,126,34,0.2); border-color: #e67e22; }
+        .card.selected::before {
+            content: '✓';
+            position: absolute;
+            top: 8px; right: 8px;
+            width: 22px; height: 22px;
+            background: #e67e22;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .card-icon {
+            width: 44px; height: 44px;
+            background: linear-gradient(45deg, #e67e22, #f39c12);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            font-size: 20px;
+            color: white;
+        }
+        .card h3 { color: white; font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+        .card p { color: rgba(255,255,255,0.6); font-size: 12px; line-height: 1.4; }
+        .card .badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.1);
+            color: #e67e22;
+            padding: 3px 10px;
+            border-radius: 30px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .subject-info {
+            background: rgba(230,126,34,0.12);
+            border: 1px solid rgba(230,126,34,0.3);
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .subject-info h3 { color: white; font-size: 18px; }
+        .subject-info span { color: #e67e22; font-weight: 600; font-size: 14px; }
+
+        .cg-list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 6px;
+        }
+        .cg-list-item {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .cg-list-item:hover {
+            background: rgba(230,126,34,0.06);
+            border-color: rgba(230,126,34,0.3);
+        }
+        .cg-list-item.selected {
+            background: rgba(230,126,34,0.15);
+            border-color: #e67e22;
+            border-left: 5px solid #e67e22;
+        }
+        .cg-list-item .cg-check {
+            width: 18px; height: 18px;
+            accent-color: #e67e22;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .cg-list-item .cg-code {
+            color: #e67e22;
+            font-weight: 700;
+            font-size: 15px;
+            min-width: 90px;
+        }
+        .cg-list-item .cg-desc {
+            color: white;
+            font-size: 14px;
+            flex: 1;
+        }
+        .cg-list-item .cg-chapter {
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
+            background: rgba(255,255,255,0.06);
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+        .cg-list-item .cg-comp-count {
+            color: #2ecc71;
+            font-size: 12px;
+            background: rgba(46,204,113,0.12);
+            padding: 3px 12px;
+            border-radius: 30px;
+        }
+
+        .choose-all-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding: 10px 16px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.08);
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+        .choose-all-container label {
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+        .choose-all-container input[type="checkbox"] {
+            width: 16px; height: 16px;
+            cursor: pointer;
+            accent-color: #e67e22;
+        }
+        .choose-all-container .selected-count {
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
+        }
+        .choose-all-container .selected-count strong { color: #e67e22; }
+
+        .comp-list-container {
+            margin-top: 10px;
+            padding-left: 40px;
+            display: none;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            padding-top: 10px;
+        }
+        .comp-list-container.open { display: block; }
+        .comp-item {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .comp-item:hover {
+            background: rgba(230,126,34,0.08);
+            border-color: #e67e22;
+        }
+        .comp-item.selected-comp {
+            background: rgba(230,126,34,0.15);
+            border-color: #e67e22;
+            border-left: 3px solid #e67e22;
+        }
+        .comp-item .comp-check {
+            width: 16px; height: 16px;
+            accent-color: #e67e22;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .comp-item .comp-code {
+            color: #2ecc71;
+            font-weight: 600;
+            font-size: 13px;
+            min-width: 90px;
+        }
+        .comp-item .comp-desc {
+            color: rgba(255,255,255,0.75);
+            font-size: 13px;
+            flex: 1;
+        }
+        .comp-item .comp-meta {
+            color: rgba(255,255,255,0.3);
+            font-size: 11px;
+        }
+
+        .marks-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+        }
+        .marks-title { color: white; font-size: 16px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .marks-title i { color: #e67e22; }
+        .marks-input-group { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        .marks-label { width: 120px; color: white; font-size: 13px; }
+        .marks-input { width: 80px; padding: 8px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: white; text-align: center; font-size: 14px; }
+        .marks-input:focus { outline: none; border-color: #e67e22; }
+        .type-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        .type-item {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 12px 14px;
+        }
+        .type-header { display: flex; justify-content: space-between; margin-bottom: 8px; color: white; font-weight: 600; font-size: 13px; }
+        .type-inputs { display: flex; align-items: center; gap: 6px; }
+        .type-input { width: 50px; padding: 6px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; color: white; text-align: center; font-size: 12px; }
+        .type-multiply { color: #e67e22; font-size: 12px; }
+        .type-equal { color: #27ae60; font-weight: 600; font-size: 12px; }
+        .type-total { min-width: 40px; text-align: right; color: #27ae60; font-weight: 600; font-size: 13px; }
+        .questions-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 15px;
+            flex: 1;
+            min-height: 0;
+        }
+        .questions-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .card-header {
+            background: rgba(0,0,0,0.2);
+            padding: 10px 15px;
+            color: white;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+        .card-header span {
+            background: #e67e22;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+        }
+        .question-table-container {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+        .question-table-container::-webkit-scrollbar { width: 4px; }
+        .question-table-container::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
+        .question-table-container::-webkit-scrollbar-thumb { background: rgba(230,126,34,0.4); border-radius: 10px; }
+        table { width: 100%; border-collapse: collapse; }
+        th {
+            text-align: left;
+            padding: 10px 12px;
+            color: rgba(255,255,255,0.6);
+            font-weight: 600;
+            font-size: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.2);
+        }
+        td { padding: 10px 12px; color: white; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: top; font-size: 13px; }
+        tr:hover { background: rgba(255,255,255,0.05); cursor: pointer; }
+        .checkbox { width: 16px; height: 16px; cursor: pointer; accent-color: #e67e22; }
+        .remove-btn {
+            background: #e74c3c;
+            border: none;
+            color: white;
+            width: 24px; height: 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+        }
+        .remove-btn:hover { background: #c0392b; }
+        .question-image-thumb { width: 35px; height: 35px; border-radius: 4px; overflow: hidden; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); margin-top: 5px; }
+        .question-image-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .question-images-preview { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+        .has-image-icon { color: #3498db; margin-left: 4px; font-size: 11px; }
+
+        .empty-state { text-align: center; padding: 30px; color: rgba(255,255,255,0.4); font-size: 14px; }
+        .empty-state i { font-size: 36px; margin-bottom: 10px; opacity: 0.3; }
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            gap: 12px;
+            flex-shrink: 0;
+            background: rgba(10, 26, 58, 0.6);
+            border-radius: 12px;
+            padding: 12px 15px;
+            margin-top: 15px;
+        }
+        .nav-buttons .btn-group { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .nav-buttons .btn-group-left { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .nav-buttons .btn-group-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .generate-container { display: flex; justify-content: center; margin-top: 15px; flex-shrink: 0; padding: 10px 0; gap: 15px; flex-wrap: wrap; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-header {
+            padding: 18px 25px;
+            background: linear-gradient(135deg, #e67e22, #f39c12);
+            color: white;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 { display: flex; align-items: center; gap: 10px; font-size: 18px; }
+        .close-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
+        .modal-body { padding: 25px; }
+        .modal-footer { padding: 15px 25px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 10px; }
+        .paper-preview { background: #f8f9fa; padding: 25px; border-radius: 10px; max-height: 55vh; overflow-y: auto; }
+        .paper-header { text-align: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #e67e22; }
+        .paper-header h2 { color: #2c3e50; margin-bottom: 4px; font-size: 22px; }
+        .paper-header h3 { color: #e67e22; margin-bottom: 10px; font-size: 18px; }
+        .paper-meta { display: flex; justify-content: center; gap: 25px; color: #666; font-size: 13px; }
+        .question-item { margin-bottom: 20px; padding: 12px 15px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); page-break-inside: avoid; break-inside: avoid; }
+        .question-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; color: #2c3e50; line-height: 1.5; font-size: 14px; }
+        .question-marks { color: #27ae60; font-weight: 600; white-space: nowrap; font-size: 13px; }
+        .question-images-preview-modal { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; }
+        .preview-image { max-width: 150px; max-height: 120px; border-radius: 5px; border: 1px solid #ddd; }
+
+        .image-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 1100;
+            cursor: pointer;
+        }
+        .image-modal img {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90%; max-height: 90%;
+            object-fit: contain;
+        }
+        .image-modal-close {
+            position: absolute;
+            top: 20px; right: 35px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .auto-redirect-notice {
+            background: rgba(46,204,113,0.15);
+            color: #2ecc71;
+            padding: 8px 14px;
+            border-radius: 8px;
+            margin: 8px 0;
+            text-align: center;
+            border: 1px solid rgba(46,204,113,0.2);
+            display: none;
+            animation: pulse 1.5s infinite;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+        @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; } 100% { opacity: 0.8; } }
+        .loading { text-align: center; color: rgba(255,255,255,0.4); padding: 20px; font-size: 14px; }
+        .loading i { font-size: 24px; margin-bottom: 8px; display: block; }
+        .no-data { text-align: center; color: rgba(255,255,255,0.4); padding: 20px; font-style: italic; font-size: 13px; }
+
+        .sub-domain-group {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 8px;
+        }
+        .sub-domain-group .domain-label { color: #e67e22; font-weight: 600; font-size: 13px; margin-bottom: 6px; display: block; }
+        .sub-domain-group .sub-domain-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; padding-left: 12px; }
+        .sub-domain-group .sub-domain-row .sub-label { color: rgba(255,255,255,0.7); font-size: 12px; width: 140px; }
+        .sub-domain-group .sub-domain-row .sub-input { width: 60px; padding: 5px 8px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; color: white; text-align: center; font-size: 12px; }
+        .sub-domain-group .sub-domain-row .sub-input:focus { outline: none; border-color: #e67e22; }
+        .sub-domain-group .sub-domain-row .sub-percent { color: #27ae60; font-size: 12px; min-width: 40px; }
+        .sub-domain-total { color: #f39c12; font-size: 12px; text-align: right; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 4px; }
+
+        .bp-full-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 10px 0;
+        }
+        .bp-full-item {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .bp-full-item:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(230,126,34,0.3);
+        }
+        .bp-full-item .bp-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+            min-width: 0;
+        }
+        .bp-full-item .bp-name {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: default;
+        }
+        .bp-full-item .bp-details {
+            color: rgba(255,255,255,0.5);
+            font-size: 13px;
+        }
+        .bp-full-item .bp-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .bp-full-item .btn-bp {
+            padding: 10px 24px;
+            font-size: 14px;
+            border-radius: 30px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            cursor: pointer;
+        }
+        .bp-full-item .btn-bp-print {
+            background: linear-gradient(135deg, #1abc9c, #16a085);
+            color: white;
+        }
+        .bp-full-item .btn-bp-print:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(26, 188, 156, 0.4);
+            background: linear-gradient(135deg, #16a085, #0e7c6b);
+        }
+        .bp-full-item .btn-bp-delete {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+        .bp-full-item .btn-bp-delete:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+            background: linear-gradient(135deg, #c0392b, #a93226);
+        }
+        .bp-full-item .btn-bp i {
+            font-size: 16px;
+        }
+
+        .phase-content { display: none; flex: 1; flex-direction: column; min-height: 0; }
+        .phase-content.active { display: flex; }
+
+        .section-locked {
+            opacity: 0.4;
+            pointer-events: none;
+            user-select: none;
+            filter: grayscale(0.6);
+            position: relative;
+            transition: all 0.4s ease;
+        }
+        .section-locked::after {
+            content: "DEACTIVATED";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ff6b6b;
+            font-weight: 700;
+            font-size: 18px;
+            background: rgba(0,0,0,0.6);
+            padding: 8px 24px;
+            border-radius: 30px;
+            letter-spacing: 1px;
+            border: 2px solid #ff6b6b;
+            backdrop-filter: blur(3px);
+            z-index: 10;
+        }
+        .section-unlocked {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            user-select: auto !important;
+            filter: grayscale(0) !important;
+        }
+        .section-unlocked::after {
+            display: none !important;
+        }
+
+        .lock-label {
+            font-size: 12px;
+            margin-left: 8px;
+            font-weight: 600;
+        }
+        .lock-label.locked {
+            color: #ff6b6b;
+        }
+        .lock-label.unlocked {
+            color: #2ecc71;
+        }
+
+        .question-display-item {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 15px;
+            transition: all 0.2s ease;
+        }
+        .question-display-item:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(230,126,34,0.3);
+        }
+        .question-display-item .q-text {
+            color: white;
+            font-size: 14px;
+            flex: 1;
+            line-height: 1.5;
+        }
+        .question-display-item .q-marks {
+            color: #2ecc71;
+            font-weight: 600;
+            font-size: 14px;
+            white-space: nowrap;
+            min-width: 60px;
+            text-align: right;
+        }
+        .question-display-item .q-type {
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
+            background: rgba(255,255,255,0.06);
+            padding: 3px 12px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+        .question-display-item .q-images {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 6px;
+        }
+        .question-display-item .q-thumb {
+            width: 40px;
+            height: 40px;
+            border-radius: 4px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .question-display-item .q-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .question-display-item .q-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn-generate-blueprint {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            padding: 14px 40px;
+            font-size: 18px;
+            border-radius: 35px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 20px rgba(39, 174, 96, 0.4);
+        }
+        .btn-generate-blueprint:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(39, 174, 96, 0.6);
+            background: linear-gradient(135deg, #219a52, #27ae60);
+        }
+        .btn-generate-blueprint:active {
+            transform: translateY(0px);
+        }
+        .btn-generate-blueprint i {
+            font-size: 20px;
+        }
+
+        
+        .blueprint-summary {
+            background: rgba(255,255,255,0.05);
+            border-radius: 14px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .blueprint-summary .summary-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 15px;
+        }
+        .blueprint-summary .summary-header i {
+            color: #e67e22;
+            font-size: 28px;
+        }
+        .blueprint-summary .summary-header h3 {
+            color: white;
+            font-size: 20px;
+            margin: 0;
+        }
+        .blueprint-summary .summary-header p {
+            color: rgba(255,255,255,0.5);
+            font-size: 13px;
+            margin: 0;
+        }
+        .blueprint-summary .summary-header .status-badge {
+            margin-left: auto;
+            background: rgba(230,126,34,0.2);
+            color: #e67e22;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .blueprint-summary .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .blueprint-summary .summary-item {
+            background: rgba(255,255,255,0.04);
+            border-radius: 10px;
+            padding: 14px 16px;
+            border-left: 3px solid #e67e22;
+        }
+        .blueprint-summary .summary-item .label {
+            color: rgba(255,255,255,0.4);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .blueprint-summary .summary-item .value {
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+        .blueprint-summary .summary-section {
+            background: rgba(255,255,255,0.04);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 15px;
+        }
+        .blueprint-summary .summary-section .section-label {
+            color: rgba(255,255,255,0.4);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .blueprint-summary .summary-section .section-content {
+            color: rgba(255,255,255,0.8);
+            font-size: 13px;
+            margin-top: 4px;
+            line-height: 1.6;
+        }
+        .blueprint-summary .summary-section .section-content .highlight-cg {
+            color: #e67e22;
+            font-weight: 500;
+        }
+        .blueprint-summary .summary-section .section-content .highlight-comp {
+            color: #2ecc71;
+            font-weight: 500;
+        }
+        .blueprint-summary .summary-section .section-content .highlight-none {
+            color: rgba(255,255,255,0.3);
+        }
+        .blueprint-summary .question-types-breakdown,
+        .blueprint-summary .difficulty-breakdown,
+        .blueprint-summary .cognitive-breakdown {
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-top: 6px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .blueprint-summary .question-types-breakdown .breakdown-row,
+        .blueprint-summary .difficulty-breakdown .breakdown-row,
+        .blueprint-summary .cognitive-breakdown .breakdown-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            color: rgba(255,255,255,0.75);
+            font-size: 13px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .blueprint-summary .question-types-breakdown .breakdown-row:last-child,
+        .blueprint-summary .difficulty-breakdown .breakdown-row:last-child,
+        .blueprint-summary .cognitive-breakdown .breakdown-row:last-child {
+            border-bottom: none;
+        }
+        .blueprint-summary .question-types-breakdown .breakdown-row .qt-name {
+            color: rgba(255,255,255,0.6);
+        }
+        .blueprint-summary .question-types-breakdown .breakdown-row .qt-detail {
+            color: #f39c12;
+            font-weight: 500;
+            font-size: 12px;
+        }
+        .blueprint-summary .question-types-breakdown .breakdown-row .qt-detail strong {
+            color: #2ecc71;
+        }
+        .blueprint-summary .question-types-breakdown .breakdown-row .qt-mismatch {
+            color: #e74c3c;
+            font-size: 11px;
+            margin-left: 6px;
+        }
+        .blueprint-summary .question-types-breakdown .breakdown-total,
+        .blueprint-summary .difficulty-breakdown .breakdown-total,
+        .blueprint-summary .cognitive-breakdown .breakdown-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 8px;
+            margin-top: 6px;
+            border-top: 2px solid rgba(255,255,255,0.08);
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .blueprint-summary .question-types-breakdown .breakdown-total .total-questions {
+            color: #e67e22;
+        }
+        .blueprint-summary .question-types-breakdown .breakdown-total .total-marks {
+            color: #2ecc71;
+        }
+        .blueprint-summary .question-types-breakdown .mismatch-note {
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: rgba(243, 156, 18, 0.15);
+            border-radius: 6px;
+            border-left: 3px solid #f39c12;
+        }
+        .blueprint-summary .question-types-breakdown .mismatch-note span {
+            color: #f39c12;
+            font-size: 12px;
+        }
+
+        .generate-btn-wrapper {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 1024px) {
+            .side-navigator { width: 180px; }
+        }
+        @media (max-width: 768px) {
+            .main-container { flex-direction: column; }
+            .side-navigator { width: 100%; flex-direction: row; flex-wrap: wrap; padding: 12px 16px; max-height: 120px; overflow-y: auto; gap: 4px; }
+            .side-navigator .nav-title { width: 100%; margin-bottom: 6px; }
+            .side-navigator .nav-step { flex: 1; min-width: 80px; padding: 6px 10px; }
+            .side-navigator .nav-step .step-info .step-label { display: none; }
+            .side-navigator .nav-step .step-info .step-value { font-size: 10px; max-width: 60px; }
+            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+            .questions-section { grid-template-columns: 1fr; }
+            .nav-buttons { flex-direction: column; align-items: stretch; gap: 8px; }
+            .nav-buttons .btn-group { justify-content: center; }
+            .nav-buttons .btn-group-left, .nav-buttons .btn-group-right { justify-content: center; width: 100%; }
+            .btn-lg { padding: 10px 25px; font-size: 14px; }
+            .cg-list-item { flex-wrap: wrap; }
+            .comp-list-container { padding-left: 10px; }
+            .comp-item { flex-wrap: wrap; }
+            .header { flex-wrap: wrap; gap: 10px; }
+            .phase-tabs { width: 100%; justify-content: center; }
+            .header-right { width: 100%; justify-content: center; flex-wrap: wrap; }
+            .bp-full-item { flex-direction: column; align-items: stretch; }
+            .bp-full-item .bp-actions { justify-content: flex-start; }
+            .bp-full-item .btn-bp { padding: 8px 18px; font-size: 13px; }
+            .question-display-item { flex-direction: column; }
+            .question-display-item .q-header { width: 100%; }
+            .btn-generate-blueprint { padding: 12px 25px; font-size: 15px; }
+            .blueprint-summary .summary-grid { grid-template-columns: 1fr; }
+            .blueprint-summary .summary-totals { flex-direction: column; gap: 5px; align-items: flex-end; }
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <div class="header">
+        <div class="header-left"><h1><i class="fas fa-list-ul"></i> Paper Builder</h1></div>
+        <div class="header-right">
+            <div class="phase-tabs">
+                <button class="phase-tab active" data-phase="build" onclick="switchPhase('build')"><i class="fas fa-pencil-alt"></i> Create Blueprint</button>
+                <button class="phase-tab" data-phase="saved" onclick="switchPhase('saved')"><i class="fas fa-save"></i> Saved Blueprints</button>
+            </div>
+            <a href="/dashboard" class="btn btn-primary btn-sm"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="/logout" class="btn btn-danger btn-sm"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </div>
+    <div class="main-container">
+        <div class="side-navigator" id="buildNavigator">
+            <div class="nav-title"><i class="fas fa-tasks"></i> Build Steps</div>
+            <div class="nav-step active" data-step="1" onclick="navigateToStage(1)"><div class="step-num">1</div><div class="step-info"><div class="step-label">Step 1</div><div class="step-value" id="nav-grade">Select Grade</div></div></div>
+            <div class="nav-step" data-step="2" onclick="navigateToStage(2)"><div class="step-num">2</div><div class="step-info"><div class="step-label">Step 2</div><div class="step-value" id="nav-subject">Select Subject</div></div></div>
+            <div class="nav-step" data-step="3" onclick="navigateToStage(3)"><div class="step-num">3</div><div class="step-info"><div class="step-label">Step 3</div><div class="step-value" id="nav-cg">Select CGs</div></div></div>
+            <div class="nav-step" data-step="4" onclick="navigateToStage(4)"><div class="step-num">4</div><div class="step-info"><div class="step-label">Step 4</div><div class="step-value" id="nav-comp">Select Comps</div></div></div>
+            <div class="nav-step" data-step="5" onclick="navigateToStage(5)"><div class="step-num">5</div><div class="step-info"><div class="step-label">Step 5</div><div class="step-value" id="nav-config">Configure</div></div></div>
+            <div class="nav-step" data-step="6" onclick="navigateToStage(6)"><div class="step-num">6</div><div class="step-info"><div class="step-label">Step 6</div><div class="step-value" id="nav-questions">Review & Generate</div></div></div>
+        </div>
+
+        <div class="content-area">
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+                <div class="progress-text" id="progressText">Step 1 of 6</div>
+            </div>
+            <div class="auto-redirect-notice" id="autoRedirectNotice"><i class="fas fa-spinner fa-spin"></i> Auto-advancing...</div>
+
+            <div class="phase-content active" id="buildPhase">
+                
+                <div class="stage-container" id="stage1">
+                    <div class="stage-header"><h2>Select Grade</h2><p>Choose the grade level for your question paper</p></div>
+                    <div class="stage-content"><div class="grid-2" id="gradeGrid"><div class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading grades...</div></div></div>
+                </div>
+                <div class="stage-container" id="stage2" style="display:none;">
+                    <div class="stage-header"><h2>Select Subject</h2><p>Choose a subject for <span id="selectedGradeNameDisplay"></span></p></div>
+                    <div class="stage-content"><div class="grid-3" id="subjectGrid"></div></div>
+                    <div class="nav-buttons"><div class="btn-group btn-group-left"><button class="btn btn-warning" onclick="goToStage(1)"><i class="fas fa-arrow-left"></i> Back to Grades</button></div></div>
+                </div>
+                <div class="stage-container" id="stage3" style="display:none;">
+                    <div class="stage-header"><h2>Select Curricular Goals</h2><p>Choose CGs for <span id="selectedCGSubjectName"></span></p></div>
+                    <div class="subject-info"><h3 id="cgSubjectHeading"></h3><span id="cgCount"></span></div>
+                    <div class="choose-all-container">
+                        <label><input type="checkbox" id="selectAllCGs" onchange="toggleAllCGs()"> Select All CGs</label>
+                        <span class="selected-count">Selected: <strong id="cgSelectedCount">0</strong> / <span id="cgTotalCount">0</span></span>
+                    </div>
+                    <div class="stage-content"><div id="cgContainer" class="cg-list-container"></div></div>
+                    <div class="nav-buttons">
+                        <div class="btn-group btn-group-left"><button class="btn btn-warning" onclick="goToStage(2)"><i class="fas fa-arrow-left"></i> Back to Subjects</button></div>
+                        <div class="btn-group btn-group-right"><button class="btn btn-success btn-lg" onclick="confirmCGSelection()" id="nextAfterCGBtn" disabled>Next: Select Competencies <i class="fas fa-arrow-right"></i></button></div>
+                    </div>
+                </div>
+                <div class="stage-container" id="stage4" style="display:none;">
+                    <div class="stage-header"><h2>Select Competencies</h2><p>Choose competencies for <span id="selectedCompSubjectName"></span></p></div>
+                    <div class="subject-info"><h3 id="compSubjectHeading"></h3><span id="compCountDisplay"></span></div>
+                    <div class="choose-all-container">
+                        <label><input type="checkbox" id="selectAllComps" onchange="toggleAllComps()"> Select All Competencies</label>
+                        <span class="selected-count">Selected: <strong id="compSelectedCount">0</strong> / <span id="compTotalCount">0</span></span>
+                    </div>
+                    <div class="stage-content"><div id="compContainer"></div></div>
+                    <div class="nav-buttons">
+                        <div class="btn-group btn-group-left"><button class="btn btn-warning" onclick="goToStage(3)"><i class="fas fa-arrow-left"></i> Back to CGs</button></div>
+                        <div class="btn-group btn-group-right"><button class="btn btn-success btn-lg" onclick="confirmCompSelection()" id="nextAfterCompBtn" disabled>Next: Configure Paper <i class="fas fa-arrow-right"></i></button></div>
+                    </div>
+                </div>
+                <div class="stage-container" id="stage5" style="display:none;">
+                    <div class="stage-header">
+                        <h2>Configure Questions Blueprint</h2>
+                        <div style="display: flex; align-items: center; gap: 20px; margin-top: 8px; flex-wrap: wrap;">
+                            <span style="color: white; font-size: 18px;">Enter Total Marks :</span>
+                            <input type="number" id="manualTotalMarks" value="0" min="1" style="padding: 8px 16px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; color: white; font-size: 18px; width: 120px; text-align: center;">
+                            <span style="color: rgba(255,255,255,0.5); font-size: 14px;" id="totalMatchStatus"></span>
+                        </div>
+                    </div>
+                    <div class="stage-content">
+                        <div class="marks-card" id="questionTypesCard">
+                            <div class="marks-title"><i class="fas fa-list-ul"></i> Question Types & Marks</div>
+                            <div class="type-grid">
+                                <div class="type-item"><div class="type-header"><span>Objective</span></div><div class="type-inputs"><input type="number" class="type-input" id="objectiveCount" value="15" min="0" onchange="calculateQuestionMarks()"><span class="type-multiply">×</span><input type="number" class="type-input" id="objectiveMarks" value="1" min="0" onchange="calculateQuestionMarks()"><span class="type-equal">=</span><span class="type-total" id="objectiveTotal">15</span></div></div>
+                                <div class="type-item"><div class="type-header"><span>Very Short Answer</span></div><div class="type-inputs"><input type="number" class="type-input" id="veryShortCount" value="5" min="0" onchange="calculateQuestionMarks()"><span class="type-multiply">×</span><input type="number" class="type-input" id="veryShortMarks" value="3" min="0" onchange="calculateQuestionMarks()"><span class="type-equal">=</span><span class="type-total" id="veryShortTotal">15</span></div></div>
+                                <div class="type-item"><div class="type-header"><span>Short Answer</span></div><div class="type-inputs"><input type="number" class="type-input" id="shortCount" value="5" min="0" onchange="calculateQuestionMarks()"><span class="type-multiply">×</span><input type="number" class="type-input" id="shortMarks" value="3" min="0" onchange="calculateQuestionMarks()"><span class="type-equal">=</span><span class="type-total" id="shortTotal">15</span></div></div>
+                                <div class="type-item"><div class="type-header"><span>Long Answer</span></div><div class="type-inputs"><input type="number" class="type-input" id="longCount" value="5" min="0" onchange="calculateQuestionMarks()"><span class="type-multiply">×</span><input type="number" class="type-input" id="longMarks" value="7" min="0" onchange="calculateQuestionMarks()"><span class="type-equal">=</span><span class="type-total" id="longTotal">35</span></div></div>
+                            </div>
+                            <div style="display:flex; justify-content:flex-end; margin-top:15px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.1);">
+                                <span style="color:white; font-size:16px; margin-right:20px;">Questions Total :</span>
+                                <span style="color:#27ae60; font-size:22px; font-weight:600;" id="grandTotal">80</span>
+                            </div>
+                        </div>
+
+                        <div class="marks-card section-locked" id="difficultySection">
+                            <div class="marks-title">
+                                <i class="fas fa-chart-bar"></i> Difficulty Level Distribution (%)
+                                <span class="lock-label locked" id="difficultyLockLabel"></span>
+                            </div>
+                            <div class="marks-input-group"><span class="marks-label">Easy</span><input type="number" class="marks-input" id="easyPercent" value="22" min="0" max="100" onchange="calculateTotals()"><span style="color:#e67e22;">%</span></div>
+                            <div class="marks-input-group"><span class="marks-label">Medium</span><input type="number" class="marks-input" id="mediumPercent" value="50" min="0" max="100" onchange="calculateTotals()"><span style="color:#e67e22;">%</span></div>
+                            <div class="marks-input-group"><span class="marks-label">Hard</span><input type="number" class="marks-input" id="hardPercent" value="25" min="0" max="100" onchange="calculateTotals()"><span style="color:#e67e22;">%</span></div>
+                            <div style="display:flex; justify-content:flex-end; margin-top:8px;"><span style="color:white; margin-right:20px;">Total:</span><span style="color:#27ae60; font-weight:600;" id="difficultyTotal">97%</span></div>
+                        </div>
+                        <div class="marks-card section-locked" id="cognitiveSection">
+                            <div class="marks-title">
+                                <i class="fas fa-brain"></i> Cognitive Domain Distribution (%)
+                                <span class="lock-label locked" id="cognitiveLockLabel"></span>
+                            </div>
+                            <div id="cognitiveDomainsContainer"><div class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading cognitive domains...</div></div>
+                            <div style="display:flex; justify-content:flex-end; margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.08);">
+                                <span style="color:white; margin-right:20px;">Total:</span>
+                                <span style="color:#27ae60; font-weight:600;" id="cognitiveTotal">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="nav-buttons">
+                        <div class="btn-group btn-group-left"><button class="btn btn-warning" onclick="goToStage(4)"><i class="fas fa-arrow-left"></i> Back to Competencies</button></div>
+                        <div class="btn-group btn-group-right">
+                            <button class="btn-generate-blueprint" onclick="finishConfigurationAndSave()" id="finishConfigBtn">
+                                <i class="fas fa-save"></i> Save BluePrint
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="stage-container" id="stage6" style="display:none;">
+                    <div class="stage-header">
+                        <h2>Review & Generate Paper</h2>
+                    </div>
+                    <div class="stage-content" style="flex:1; overflow-y:auto;">
+                        <div id="loadedQuestionsContainer" style="margin-bottom:20px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+                                <span style="color:white; font-size:16px;">Total Questions: <strong id="loadedQuestionTotalCount" style="color:#e67e22;">0</strong></span>
+                                <span style="color:white; font-size:16px;">Total Marks: <strong id="loadedQuestionTotalMarks" style="color:#2ecc71;">0</strong></span>
+                            </div>
+                            <div id="questionsDisplayList">
+                                <div class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading blueprint...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="generate-btn-wrapper">
+                        <button class="btn btn-success btn-lg" onclick="generatePaper()" style="padding:15px 50px; font-size:18px;" id="generateBtn">
+                            <i class=""></i> Generate Paper
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="phase-content" id="savedPhase">
+                <div class="stage-header">
+                    <h2><i class="fas fa-save" style="color:#e67e22;"></i> Saved Blueprints</h2>
+                </div>
+                <div class="stage-content">
+                    <div id="savedFullList" class="bp-full-list">
+                        <div class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading saved blueprints...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="imageModal" class="image-modal" onclick="closeImageModal()"><span class="image-modal-close">&times;</span><img id="modalImage" alt="Full size image"></div>
+<div class="modal" id="paperPreviewModal">
+    <div class="modal-content">
+        <div class="modal-header"><h3><i class="fas fa-file-alt"></i> Question Paper Preview</h3><button class="close-btn" onclick="closeModal('paperPreviewModal')">&times;</button></div>
+        <div class="modal-body" id="paperPreviewBody"><div class="paper-preview" id="paperPreview"></div></div>
+        <div class="modal-footer">
+            <button class="btn btn-success" onclick="downloadPDF()"><i class="fas fa-download"></i> Download</button>
+            <button class="btn btn-danger" onclick="closeModal('paperPreviewModal')">Close</button>
+        </div>
+    </div>
+</div>
+<div class="modal" id="loadingModal"><div class="modal-content" style="max-width:400px; text-align:center;"><div class="modal-body"><i class="fas fa-spinner fa-pulse" style="font-size:40px; color:#e67e22; margin-bottom:15px;"></i><h3 style="color:#2c3e50; font-size:18px;">Processing...</h3><p style="color:#666; font-size:14px;">Please wait...</p></div></div></div>
+
+<script>
+    let currentStage = 1;
+    let gradesData = [];
+    let subjectsList = [];
+    let cgsList = [];
+    let selectedCGIds = [];
+    let competenciesList = [];
+    let selectedCompIds = [];
+    let approvedQuestions = [];
+    let selectedQuestions = [];
+    let generatedPDF = null;
+    let generatedPDFName = null;
+    let autoNavigateTimeout = null;
+    let blueprints = [];
+    let isLoadingBlueprint = false;
+    let currentBlueprintName = '';
+    let currentPhase = 'build';
+    let currentBlueprintId = null;
+
+    let cognitiveDomainsData = [];
+    let knowledgeLevelsData = [];
+    let subDomainPercentages = {};
+
+    let currentSelections = { grade: null, subject: null };
+    let isGeneratingFromStage6 = false;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        await loadGrades();
+        await loadNavigationData();
+        await loadCognitiveDomains();
+        await loadBlueprints();
+        updateNavigator();
+        updateProgress();
+        renderSavedFullList();
+        document.getElementById('manualTotalMarks').addEventListener('input', function() {
+            calculateQuestionMarks();
+        });
+        calculateQuestionMarks();
+    });
+
+    async function loadNavigationData() {
+        try {
+            const res = await fetch('/api/page1-data');
+            if (!res.ok) throw new Error('Failed to load data');
+            window.page1Data = await res.json();
+            console.log('Navigation data loaded');
+        } catch (e) { console.error('Error loading navigation data:', e); }
+    }
+
+    function switchPhase(phase) {
+        currentPhase = phase;
+        document.querySelectorAll('.phase-tab').forEach(tab => {
+            tab.classList.toggle('active', tab.dataset.phase === phase);
+        });
+        document.getElementById('buildPhase').classList.toggle('active', phase === 'build');
+        document.getElementById('savedPhase').classList.toggle('active', phase === 'saved');
+        document.getElementById('buildNavigator').classList.toggle('hidden', phase !== 'build');
+        document.getElementById('progressContainer').style.display = phase === 'build' ? 'block' : 'none';
+        if (phase === 'saved') { renderSavedFullList(); }
+    }
+
+    function renderSavedFullList() {
+        const container = document.getElementById('savedFullList');
+        if (!blueprints.length) {
+            container.innerHTML = `<div class="empty-state"><i class="fas fa-save"></i> No saved blueprints found.<br>Build and save a paper to see it here.</div>`;
+            return;
+        }
+        container.innerHTML = blueprints.map(bp => {
+            const gradeName = bp.grade_name || '';
+            const subjectName = bp.subject_name || '';
+            let displayDetails = '';
+            if (gradeName && subjectName) displayDetails = `${gradeName} · ${subjectName}`;
+            else if (gradeName) displayDetails = gradeName;
+            else if (subjectName) displayDetails = subjectName;
+            else displayDetails = 'No details';
+
+            return `
+            <div class="bp-full-item">
+                <div class="bp-info">
+                    <div class="bp-name">${bp.name || 'Unnamed Blueprint'}</div>
+                    <div class="bp-details">${displayDetails}</div>
+                </div>
+                <div class="bp-actions">
+                    <button class="btn-bp btn-bp-print" onclick="loadBlueprintAndShowStep6(${bp.id})"><i class=""></i> Print BluePrint</button>
+                    <button class="btn-bp btn-bp-delete" onclick="deleteBlueprint(${bp.id})"><i class="fas fa-trash"></i> Delete</button>
+                </div>
+            </div>
+        `}).join('');
+    }
+
+    function escapeHtml(t) { if (!t) return ''; const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+    function stripHtmlForPrint(html) { if (!html) return ''; const d = document.createElement('div'); d.innerHTML = html; return d.textContent || d.innerText || ''; }
+
+    function getSelectedCGNames() {
+        const page1Data = window.page1Data || {};
+        const allCGs = page1Data.cgs || [];
+        return allCGs
+            .filter(cg => selectedCGIds.includes(cg.id))
+            .map(cg => `<span class="highlight-cg">${cg.cg_code || 'CG-' + cg.id}</span> ${cg.cg_description ? '- ' + cg.cg_description.substring(0, 80) + (cg.cg_description.length > 80 ? '...' : '') : ''}`)
+            .join('<br>');
+    }
+
+    function getSelectedCompNames() {
+        const page1Data = window.page1Data || {};
+        const allComps = page1Data.competencies || [];
+        return allComps
+            .filter(c => selectedCompIds.includes(c.id))
+            .map(c => `<span class="highlight-comp">${c.comp_code || 'COMP-' + c.id}</span> ${c.comp_description ? '- ' + c.comp_description.substring(0, 80) + (c.comp_description.length > 80 ? '...' : '') : ''}`)
+            .join('<br>');
+    }
+
+    
+    function renderBlueprintSummary(bp) {
+        const container = document.getElementById('questionsDisplayList');
+        const totalCountSpan = document.getElementById('loadedQuestionTotalCount');
+        const totalMarksSpan = document.getElementById('loadedQuestionTotalMarks');
+
+        const config = bp.config || {};
+        const configuredTypes = {
+            objective: { count: parseInt(config.objective?.count) || 0, marks: parseInt(config.objective?.marks) || 0 },
+            veryShort: { count: parseInt(config.veryShort?.count) || 0, marks: parseInt(config.veryShort?.marks) || 0 },
+            short: { count: parseInt(config.short?.count) || 0, marks: parseInt(config.short?.marks) || 0 },
+            long: { count: parseInt(config.long?.count) || 0, marks: parseInt(config.long?.marks) || 0 }
+        };
+
+        const difficulty = config.difficulty || { easy: 0, medium: 0, hard: 0 };
+        const diffTotal = (difficulty.easy || 0) + (difficulty.medium || 0) + (difficulty.hard || 0);
+
+        const cognitive = config.cognitive || {};
+
+        const actualCounts = {
+            objective: { count: 0, marks: 0 },
+            veryShort: { count: 0, marks: 0 },
+            short: { count: 0, marks: 0 },
+            long: { count: 0, marks: 0 }
+        };
+
+        selectedQuestions.forEach(q => {
+            const typeName = q.question_type_name || 'Objective';
+            const marks = q.marks || 1;
+            
+            if (typeName === 'Objective' || typeName === 'Multiple Choice' || typeName === 'True/False' || typeName === 'Fill in the Blanks' || typeName === 'Match the Following') {
+                actualCounts.objective.count += 1;
+                actualCounts.objective.marks += marks;
+            } else if (typeName === 'Very Short Answer' || typeName === 'Very Short') {
+                actualCounts.veryShort.count += 1;
+                actualCounts.veryShort.marks += marks;
+            } else if (typeName === 'Short Answer' || typeName === 'Short') {
+                actualCounts.short.count += 1;
+                actualCounts.short.marks += marks;
+            } else if (typeName === 'Long Answer' || typeName === 'Long Essay' || typeName === 'Essay' || typeName === 'Long') {
+                actualCounts.long.count += 1;
+                actualCounts.long.marks += marks;
+            } else {
+                actualCounts.objective.count += 1;
+                actualCounts.objective.marks += marks;
+            }
+        });
+
+        const hasActualQuestions = selectedQuestions.length > 0;
+
+        const configuredTotalQuestions = configuredTypes.objective.count + configuredTypes.veryShort.count + 
+                                       configuredTypes.short.count + configuredTypes.long.count;
+        const configuredTotalMarks = (configuredTypes.objective.count * configuredTypes.objective.marks) +
+                                    (configuredTypes.veryShort.count * configuredTypes.veryShort.marks) +
+                                    (configuredTypes.short.count * configuredTypes.short.marks) +
+                                    (configuredTypes.long.count * configuredTypes.long.marks);
+
+        const actualTotalQuestions = actualCounts.objective.count + actualCounts.veryShort.count + 
+                                   actualCounts.short.count + actualCounts.long.count;
+        const actualTotalMarks = actualCounts.objective.marks + actualCounts.veryShort.marks + 
+                               actualCounts.short.marks + actualCounts.long.marks;
+
+        const displayTotalQuestions = hasActualQuestions ? actualTotalQuestions : configuredTotalQuestions;
+        const displayTotalMarks = hasActualQuestions ? actualTotalMarks : configuredTotalMarks;
+
+        totalCountSpan.textContent = displayTotalQuestions;
+        totalMarksSpan.textContent = displayTotalMarks;
+
+        const selectedCGs = getSelectedCGNames();
+        const selectedComps = getSelectedCompNames();
+
+        
+        const typeKeys = ['objective', 'veryShort', 'short', 'long'];
+        const typeLabels = {
+            objective: 'Objective',
+            veryShort: 'Very Short Answer',
+            short: 'Short Answer',
+            long: 'Long Answer'
+        };
+        
+        let breakdownRows = '';
+        
+        typeKeys.forEach(key => {
+            const configured = configuredTypes[key];
+            const actual = actualCounts[key];
+            const count = hasActualQuestions ? actual.count : configured.count;
+            const marks = hasActualQuestions ? (actual.count > 0 ? Math.round(actual.marks / actual.count) : configured.marks) : configured.marks;
+            const totalMarks = count * marks;
+            
+            
+            if (count > 0 || configured.count > 0) {
+                
+                breakdownRows += `
+                    <div class="breakdown-row">
+                        <span class="qt-name">${typeLabels[key]}</span>
+                        <span class="qt-detail">
+                            ${count} questions × ${marks} mark${marks > 1 ? 's' : ''} = <strong>${totalMarks}</strong> marks
+                        </span>
+                    </div>
+                `;
+            }
+        });
+
+        const difficultyLabels = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
+        const difficultyColors = { easy: '#2ecc71', medium: '#f39c12', hard: '#e74c3c' };
+        const diffValues = {
+            easy: difficulty.easy || 0,
+            medium: difficulty.medium || 0,
+            hard: difficulty.hard || 0
+        };
+        
+        let diffRows = '';
+        Object.keys(difficultyLabels).forEach(key => {
+            const val = diffValues[key] || 0;
+            diffRows += `
+                <div class="breakdown-row">
+                    <span class="qt-name" style="color: ${difficultyColors[key]};">${difficultyLabels[key]}</span>
+                    <span class="qt-detail" style="color: ${difficultyColors[key]};">${val}%</span>
+                </div>
+            `;
+        });
+        
+        const diffStatus = diffTotal === 100 ? '✅' : '⚠️';
+        const diffStatusColor = diffTotal === 100 ? '#2ecc71' : '#e74c3c';
+
+        
+        const domainGroupMap = {};
+        
+        if (cognitiveDomainsData && cognitiveDomainsData.length > 0) {
+            cognitiveDomainsData.forEach(domain => {
+                const subs = knowledgeLevelsData.filter(kl => kl.domain_id === domain.id);
+                if (subs.length > 0) {
+                    domainGroupMap[domain.id] = {
+                        domainName: domain.domain_name || 'Domain',
+                        subDomains: subs.map(sub => ({
+                            key: `sub_${domain.id}_${sub.id}`,
+                            subName: sub.level_name || 'Sub-Domain'
+                        }))
+                    };
+                }
+            });
+        }
+
+        let cognitiveHtml = '';
+        let cognitiveTotal = 0;
+        
+        if (Object.keys(domainGroupMap).length > 0) {
+            Object.keys(domainGroupMap).forEach(domainId => {
+                const domain = domainGroupMap[domainId];
+                let domainTotal = 0;
+                let subRows = '';
+                
+                domain.subDomains.forEach(sub => {
+                    let val = 0;
+                    
+                    if (cognitive[sub.key] !== undefined) {
+                        val = parseInt(cognitive[sub.key]) || 0;
+                    }
+                    if (val === 0) {
+                        const keyWithoutSub = sub.key.replace('sub_', '');
+                        if (cognitive[keyWithoutSub] !== undefined) {
+                            val = parseInt(cognitive[keyWithoutSub]) || 0;
+                        }
+                    }
+                    if (val === 0) {
+                        const parts = sub.key.split('_');
+                        if (parts.length === 3) {
+                            const numericKey = parts[1] + '_' + parts[2];
+                            if (cognitive[numericKey] !== undefined) {
+                                val = parseInt(cognitive[numericKey]) || 0;
+                            }
+                        }
+                    }
+                    if (val === 0) {
+                        const parts = sub.key.split('_');
+                        if (parts.length === 3) {
+                            const subIdKey = 'sub_' + parts[2];
+                            if (cognitive[subIdKey] !== undefined) {
+                                val = parseInt(cognitive[subIdKey]) || 0;
+                            }
+                        }
+                    }
+                    
+                    domainTotal += val;
+                    cognitiveTotal += val;
+                    
+                    subRows += `
+                        <div class="breakdown-row">
+                            <span class="qt-name" style="color: rgba(255,255,255,0.7); font-size: 12px; padding-left: 12px;">${sub.subName}</span>
+                            <span class="qt-detail" style="color: #2ecc71; font-size: 12px;">${val}%</span>
+                        </div>
+                    `;
+                });
+                
+                if (subRows) {
+                    cognitiveHtml += `
+                        <div style="margin-top: 6px;">
+                            <div style="color: #e67e22; font-weight: 600; font-size: 13px; padding: 4px 0;">${domain.domainName}</div>
+                            ${subRows}
+                            <div style="display: flex; justify-content: flex-end; padding: 4px 0; border-top: 1px solid rgba(255,255,255,0.06); margin-top: 2px;">
+                                <span style="color: rgba(255,255,255,0.5); font-size: 11px;">Domain Total: </span>
+                                <span style="color: #f39c12; font-weight: 600; font-size: 12px; margin-left: 6px;">${domainTotal}%</span>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+        } else {
+            if (Object.keys(cognitive).length > 0) {
+                let fallbackRows = '';
+                Object.keys(cognitive).forEach(key => {
+                    const val = parseInt(cognitive[key]) || 0;
+                    cognitiveTotal += val;
+                    fallbackRows += `
+                        <div class="breakdown-row">
+                            <span class="qt-name" style="color: rgba(255,255,255,0.7); font-size: 12px; padding-left: 12px;">${key}</span>
+                            <span class="qt-detail" style="color: #2ecc71; font-size: 12px;">${val}%</span>
+                        </div>
+                    `;
+                });
+                cognitiveHtml = fallbackRows;
+            }
+        }
+
+        const cognitiveStatus = cognitiveTotal === 100 ? '✅' : '⚠️';
+        const cognitiveStatusColor = cognitiveTotal === 100 ? '#2ecc71' : '#e74c3c';
+
+        
+        let noQuestionsNote = '';
+        if (!hasActualQuestions) {
+            noQuestionsNote = `
+                <div class="mismatch-note" style="border-left-color: #3498db; background: rgba(52, 152, 219, 0.12);">
+                    <span style="color: #3498db;"><i class="fas fa-info-circle"></i> 
+                        No questions have been loaded yet. Click "Generate Paper" to load questions.
+                    </span>
+                </div>
+            `;
+        }
+
+        container.innerHTML = `
+            <div class="blueprint-summary">
+                <div class="summary-header">
+                    <i class=""></i>
+                    <div>
+                        <h3>Blueprint List</h3>
+                        <p>${bp.name || 'Unnamed Blueprint'}</p>
+                    </div>
+                    <span class="status-badge">${bp.status || 'Saved'}</span>
+                </div>
+
+                <div class="summary-grid">
+                    <div class="summary-item" style="border-left-color: #e67e22;">
+                        <div class="label"><i class="fas fa-graduation-cap"></i> Grade</div>
+                        <div class="value">${currentSelections.grade?.display_name || 'Not selected'}</div>
+                    </div>
+                    <div class="summary-item" style="border-left-color: #3498db;">
+                        <div class="label"><i class="fas fa-book"></i> Subject</div>
+                        <div class="value">${currentSelections.subject?.name || 'Not selected'}</div>
+                    </div>
+                </div>
+
+                <div class="summary-section" style="border-left: 3px solid #e67e22;">
+                    <div class="section-label"><i class="fas fa-bullseye"></i> Curricular Goals (${selectedCGIds.length} selected)</div>
+                    <div class="section-content">${selectedCGs || '<span class="highlight-none">None selected</span>'}</div>
+                </div>
+
+                <div class="summary-section" style="border-left: 3px solid #2ecc71;">
+                    <div class="section-label"><i class="fas fa-check-circle"></i> Competencies (${selectedCompIds.length} selected)</div>
+                    <div class="section-content">${selectedComps || '<span class="highlight-none">None selected</span>'}</div>
+                </div>
+
+                <div class="summary-section" style="border-left: 3px solid #9b59b6;">
+                    <div class="section-label"><i class="fas fa-list-ul"></i> Question Types</div>
+                    <div class="question-types-breakdown">
+                        ${breakdownRows || '<div style="color: rgba(255,255,255,0.3); padding: 8px 0;">No question types configured</div>'}
+                        ${noQuestionsNote}
+                        <div class="breakdown-total">
+                            <span>Total Questions: <span class="total-questions">${displayTotalQuestions}</span></span>
+                            <span>Total Marks: <span class="total-marks">${displayTotalMarks}</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="summary-section" style="border-left: 3px solid #f39c12; margin-top: 15px;">
+                    <div class="section-label"><i class="fas fa-chart-bar"></i> Difficulty Level Distribution (%)</div>
+                    <div class="difficulty-breakdown">
+                        ${diffRows || '<div style="color: rgba(255,255,255,0.3); padding: 8px 0;">No difficulty levels configured</div>'}
+                        <div class="breakdown-total" style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 6px; margin-top: 4px;">
+                            <span>Total</span>
+                            <span style="color: ${diffStatusColor}; font-weight: 600;">${diffTotal}% ${diffStatus}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="summary-section" style="border-left: 3px solid #9b59b6; margin-top: 15px;">
+                    <div class="section-label"><i class="fas fa-brain"></i> Cognitive Domain Distribution (%)</div>
+                    <div class="cognitive-breakdown">
+                        ${cognitiveHtml || '<div style="color: rgba(255,255,255,0.3); padding: 8px 0;">No cognitive domains configured</div>'}
+                        <div class="breakdown-total" style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 6px; margin-top: 4px;">
+                            <span>Total</span>
+                            <span style="color: ${cognitiveStatusColor}; font-weight: 600;">${cognitiveTotal}% ${cognitiveStatus}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 15px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); text-align: center;">
+                    <span style="color: rgba(255,255,255,0.4); font-size: 12px;">
+                        <i class="fas fa-info-circle"></i> Click "Generate Paper" to review and Download the Paper...!
+                    </span>
+                </div>
+            </div>
+        `;
+    }
+
+    async function loadBlueprintAndShowStep6(id) {
+        if (isLoadingBlueprint) return;
+        isLoadingBlueprint = true;
+        document.getElementById('loadingModal').classList.add('active');
+        try {
+            const res = await fetch(`/api/paper-blueprints/${id}`);
+            if (!res.ok) throw new Error('Failed to load blueprint');
+            const data = await res.json();
+            const bp = data.blueprint;
+            currentBlueprintId = bp.id;
+            currentBlueprintName = bp.name;
+            switchPhase('build');
+            
+            if (bp.grade_id) {
+                currentSelections.grade = { id: bp.grade_id, display_name: bp.grade_name || 'Grade' };
+                document.getElementById('selectedGradeNameDisplay').textContent = bp.grade_name || 'Grade';
+                document.querySelectorAll('#stage1 .card').forEach(c => c.classList.remove('selected'));
+                const gradeCard = document.querySelector(`#stage1 .card[data-id="${bp.grade_id}"]`);
+                if (gradeCard) gradeCard.classList.add('selected');
+            }
+            
+            if (bp.subject_id) {
+                currentSelections.subject = { id: bp.subject_id, name: bp.subject_name || 'Subject' };
+                document.getElementById('selectedCGSubjectName').textContent = bp.subject_name || 'Subject';
+                document.getElementById('cgSubjectHeading').textContent = bp.subject_name || 'Subject';
+                document.getElementById('selectedCompSubjectName').textContent = bp.subject_name || 'Subject';
+                document.getElementById('compSubjectHeading').textContent = bp.subject_name || 'Subject';
+                document.querySelectorAll('#stage2 .card').forEach(c => c.classList.remove('selected'));
+                const subjectCard = document.querySelector(`#stage2 .card[data-id="${bp.subject_id}"]`);
+                if (subjectCard) subjectCard.classList.add('selected');
+            }
+            
+            selectedCGIds = bp.cg_ids || [];
+            await loadCGs();
+            document.querySelectorAll('.cg-list-item').forEach(item => {
+                const cgId = parseInt(item.dataset.cgId);
+                if (selectedCGIds.includes(cgId)) {
+                    const cb = document.getElementById(`cgchk_${cgId}`);
+                    if (cb) { cb.checked = true; item.classList.add('selected'); }
+                }
+            });
+            updateCGSelection();
+            
+            selectedCompIds = bp.comp_ids || [];
+            await loadCompetencies();
+            document.querySelectorAll('.comp-item').forEach(item => {
+                const compId = parseInt(item.dataset.compId);
+                if (selectedCompIds.includes(compId)) {
+                    const cb = document.getElementById(`comp_${compId}`);
+                    if (cb) { cb.checked = true; item.classList.add('selected-comp'); }
+                }
+            });
+            updateCompSelection();
+            
+            await loadCognitiveDomains();
+            
+            if (bp.config) {
+                const config = bp.config;
+                if (config.objective) {
+                    document.getElementById('objectiveCount').value = config.objective.count || 0;
+                    document.getElementById('objectiveMarks').value = config.objective.marks || 0;
+                }
+                if (config.veryShort) {
+                    document.getElementById('veryShortCount').value = config.veryShort.count || 0;
+                    document.getElementById('veryShortMarks').value = config.veryShort.marks || 0;
+                }
+                if (config.short) {
+                    document.getElementById('shortCount').value = config.short.count || 0;
+                    document.getElementById('shortMarks').value = config.short.marks || 0;
+                }
+                if (config.long) {
+                    document.getElementById('longCount').value = config.long.count || 0;
+                    document.getElementById('longMarks').value = config.long.marks || 0;
+                }
+                if (config.difficulty) {
+                    document.getElementById('easyPercent').value = config.difficulty.easy || 0;
+                    document.getElementById('mediumPercent').value = config.difficulty.medium || 0;
+                    document.getElementById('hardPercent').value = config.difficulty.hard || 0;
+                }
+                if (config.cognitive) {
+                    Object.keys(config.cognitive).forEach(key => {
+                        let input = document.getElementById(`sub_${key}`);
+                        if (!input) {
+                            input = document.getElementById(key);
+                        }
+                        if (!input) {
+                            const parts = key.split('_');
+                            if (parts.length >= 2) {
+                                const possibleId = `sub_${parts[0]}_${parts[1]}`;
+                                input = document.getElementById(possibleId);
+                            }
+                        }
+                        if (input) {
+                            input.value = config.cognitive[key];
+                            const totalSpan = document.getElementById(`sub_total_${input.id}`);
+                            if (totalSpan) totalSpan.textContent = config.cognitive[key] + '%';
+                            const domainId = input.dataset.domain;
+                            if (domainId) {
+                                updateSubDomainTotal(parseInt(domainId));
+                            }
+                        }
+                    });
+                    calculateCognitiveTotal();
+                }
+                
+                let totalMarks = 0;
+                if (config.objective) totalMarks += (config.objective.count || 0) * (config.objective.marks || 0);
+                if (config.veryShort) totalMarks += (config.veryShort.count || 0) * (config.veryShort.marks || 0);
+                if (config.short) totalMarks += (config.short.count || 0) * (config.short.marks || 0);
+                if (config.long) totalMarks += (config.long.count || 0) * (config.long.marks || 0);
+                document.getElementById('manualTotalMarks').value = totalMarks || 0;
+                
+                calculateQuestionMarks();
+                calculateTotals();
+            }
+            
+            if (bp.question_ids && bp.question_ids.length > 0) {
+                const questionIds = bp.question_ids.join(',');
+                const questionRes = await fetch(`/api/builder-questions?subject_id=${bp.subject_id}&status=approved&question_ids=${questionIds}`);
+                if (questionRes.ok) {
+                    const questionData = await questionRes.json();
+                    const allQuestions = questionData.questions || [];
+                    approvedQuestions = allQuestions.map(q => ({
+                        ...q,
+                        images: q.images ? (typeof q.images === 'string' ? JSON.parse(q.images) : q.images) : []
+                    }));
+                    selectedQuestions = approvedQuestions.map(q => ({...q}));
+                }
+            }
+            
+            renderBlueprintSummary(bp);
+            goToStage(6);
+            
+            document.getElementById('loadingModal').classList.remove('active');
+            isLoadingBlueprint = false;
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Blueprint Loaded',
+                text: `Blueprint "${bp.name}" loaded successfully!`,
+                timer: 2000,
+                showConfirmButton: false
+            });
+        } catch (e) {
+            document.getElementById('loadingModal').classList.remove('active');
+            isLoadingBlueprint = false;
+            console.error('Error loading blueprint:', e);
+            Swal.fire('Error', 'Failed to load blueprint: ' + e.message, 'error');
+        }
+    }
+
+    async function deleteBlueprint(id) {
+        const result = await Swal.fire({
+            title: 'Delete Blueprint?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e74c3c',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        });
+        if (!result.isConfirmed) return;
+        document.getElementById('loadingModal').classList.add('active');
+        try {
+            const res = await fetch(`/api/paper-blueprints/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Failed to delete blueprint');
+            await loadBlueprints();
+            document.getElementById('loadingModal').classList.remove('active');
+            Swal.fire('Deleted!', 'Blueprint has been deleted.', 'success');
+        } catch (e) {
+            document.getElementById('loadingModal').classList.remove('active');
+            console.error('Error deleting blueprint:', e);
+            Swal.fire('Error', 'Failed to delete blueprint: ' + e.message, 'error');
+        }
+    }
+
+    async function saveBlueprint(blueprintName) {
+        if (!currentSelections.grade) { Swal.fire('Error', 'Please select a grade first', 'error'); return; }
+        if (!currentSelections.subject) { Swal.fire('Error', 'Please select a subject first', 'error'); return; }
+        if (!selectedCGIds.length) { Swal.fire('Error', 'Please select at least one Curricular Goal', 'error'); return; }
+        if (!selectedCompIds.length) { Swal.fire('Error', 'Please select at least one Competency', 'error'); return; }
+
+        if (!blueprintName) {
+            Swal.fire('Error', 'Blueprint name is required', 'error');
+            return;
+        }
+
+        document.getElementById('loadingModal').classList.add('active');
+
+        const questionIds = selectedQuestions.map(q => q.id);
+
+        const blueprintData = {
+            name: blueprintName,
+            grade_id: currentSelections.grade.id,
+            subject_id: currentSelections.subject.id,
+            cg_ids: selectedCGIds,
+            comp_ids: selectedCompIds,
+            question_ids: questionIds,
+            config: {
+                objective: { count: parseInt(document.getElementById('objectiveCount').value)||0, marks: parseInt(document.getElementById('objectiveMarks').value)||0 },
+                veryShort: { count: parseInt(document.getElementById('veryShortCount').value)||0, marks: parseInt(document.getElementById('veryShortMarks').value)||0 },
+                short: { count: parseInt(document.getElementById('shortCount').value)||0, marks: parseInt(document.getElementById('shortMarks').value)||0 },
+                long: { count: parseInt(document.getElementById('longCount').value)||0, marks: parseInt(document.getElementById('longMarks').value)||0 },
+                difficulty: { easy: parseInt(document.getElementById('easyPercent').value)||0, medium: parseInt(document.getElementById('mediumPercent').value)||0, hard: parseInt(document.getElementById('hardPercent').value)||0 },
+                cognitive: getCognitiveConfig()
+            },
+            status: 'saved'
+        };
+
+        try {
+            let url = '/api/paper-blueprints';
+            let method = 'POST';
+            if (currentBlueprintId) { 
+                url += `/${currentBlueprintId}`; 
+                method = 'PUT'; 
+            }
+            const res = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(blueprintData)
+            });
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Failed to save blueprint');
+            }
+            const data = await res.json();
+            document.getElementById('loadingModal').classList.remove('active');
+            currentBlueprintName = blueprintName;
+            currentBlueprintId = data.id || null;
+            await loadBlueprints();
+            
+            const questionCount = selectedQuestions.length;
+            let message = `Blueprint "${blueprintName}" saved successfully!`;
+            if (questionCount > 0) {
+                message += ` Contains ${questionCount} questions.`;
+            } else {
+                message += ` No questions were saved. Please ensure approved questions exist for your selected criteria.`;
+            }
+            Swal.fire('Success', message, 'success');
+            
+            goToStage(6);
+            
+            const bp = data || blueprintData;
+            renderBlueprintSummary(bp);
+            
+        } catch (e) {
+            document.getElementById('loadingModal').classList.remove('active');
+            console.error('Error saving blueprint:', e);
+            Swal.fire('Error', 'Failed to save blueprint: ' + e.message, 'error');
+        }
+    }
+
+    async function loadAndDisplayQuestions() {
+        const container = document.getElementById('questionsDisplayList');
+        const totalCountSpan = document.getElementById('loadedQuestionTotalCount');
+        const totalMarksSpan = document.getElementById('loadedQuestionTotalMarks');
+        
+        if (!currentSelections.subject) {
+            container.innerHTML = '<div class="empty-state">Please select a subject first</div>';
+            return { success: false, questions: [], message: 'No subject selected' };
+        }
+        
+        container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading questions...</div>';
+        
+        try {
+            let url = `/api/builder-questions?subject_id=${currentSelections.subject.id}&status=approved`;
+            if (selectedCGIds.length) url += `&cg_ids=${selectedCGIds.join(',')}`;
+            if (selectedCompIds.length) url += `&comp_ids=${selectedCompIds.join(',')}`;
+            
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Failed to load questions: ${response.status} ${response.statusText}`);
+            }
+            const data = await response.json();
+            if (data.error) throw new Error(data.error);
+            
+            const filteredQuestions = data.questions || [];
+            approvedQuestions = filteredQuestions.map(q => ({
+                ...q,
+                images: q.images ? (typeof q.images === 'string' ? JSON.parse(q.images) : q.images) : []
+            }));
+            
+            selectedQuestions = approvedQuestions.map(q => ({...q}));
+            
+            if (approvedQuestions.length === 0) {
+                container.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle"></i> No approved questions found matching your criteria.</div>`;
+                totalCountSpan.textContent = '0';
+                totalMarksSpan.textContent = '0';
+                return { 
+                    success: true, 
+                    questions: [], 
+                    message: 'No questions found matching your criteria' 
+                };
+            }
+            
+            let totalMarks = 0;
+            let html = '';
+            approvedQuestions.forEach((q, index) => {
+                totalMarks += (q.marks || 1);
+                const hasImages = q.images && q.images.length > 0;
+                const questionText = q.question_text || '';
+                html += `
+                    <div class="question-display-item">
+                        <div style="flex:1;">
+                            <div class="q-header">
+                                <span style="color:#e67e22; font-weight:600; min-width:40px;">Q${index + 1}.</span>
+                                <span class="q-text">${escapeHtml(questionText)}</span>
+                                <span class="q-type">${q.question_type_name || 'Objective'}</span>
+                            </div>
+                            ${hasImages ? `
+                                <div class="q-images">
+                                    ${q.images.map(img => `
+                                        <div class="q-thumb" onclick="event.stopPropagation(); showFullImage('${img}')">
+                                            <img src="${img}" alt="Question image">
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="q-marks">${q.marks || 1} marks</div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            totalCountSpan.textContent = approvedQuestions.length;
+            totalMarksSpan.textContent = totalMarks;
+            
+            document.getElementById('generateBtn').disabled = false;
+            updateNavigator();
+            
+            return { 
+                success: true, 
+                questions: approvedQuestions, 
+                message: `Loaded ${approvedQuestions.length} questions` 
+            };
+            
+        } catch (error) {
+            console.error('Error loading questions:', error);
+            container.innerHTML = `<div class="empty-state">Error loading questions: ${error.message}</div>`;
+            return { 
+                success: false, 
+                questions: [], 
+                message: error.message 
+            };
+        }
+    }
+
+    async function finishConfigurationAndSave() {
+        const grand = parseInt(document.getElementById('grandTotal').textContent) || 0;
+        const manualTotal = parseInt(document.getElementById('manualTotalMarks').value) || 0;
+        if (grand !== manualTotal) {
+            Swal.fire('Invalid Total', `Questions total (${grand}) must match Entered Total Marks (${manualTotal})`, 'warning');
+            return;
+        }
+        const e = parseInt(document.getElementById('easyPercent').value)||0;
+        const m = parseInt(document.getElementById('mediumPercent').value)||0;
+        const h = parseInt(document.getElementById('hardPercent').value)||0;
+        if (e + m + h !== 100) {
+            Swal.fire('Invalid Difficulty', 'Difficulty total must be 100%', 'warning');
+            return;
+        }
+        const cognitiveTotal = calculateCognitiveTotal();
+        if (cognitiveTotal !== 100) {
+            Swal.fire('Invalid Cognitive', 'Cognitive Domain total must be 100%', 'warning');
+            return;
+        }
+        
+        document.getElementById('loadingModal').classList.add('active');
+        let loadResult = { success: false, questions: [], message: 'Unknown error' };
+        
+        try {
+            loadResult = await loadAndDisplayQuestions();
+        } catch (e) {
+            console.error('Error in loadAndDisplayQuestions:', e);
+            loadResult = { success: false, questions: [], message: e.message };
+        }
+        
+        document.getElementById('loadingModal').classList.remove('active');
+        
+        if (!loadResult.success || loadResult.questions.length === 0) {
+            const confirmSave = await Swal.fire({
+                title: 'No Questions Found',
+                text: loadResult.message || 'No approved questions were found matching your criteria. Do you want to save the blueprint anyway?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, save blueprint',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#27ae60'
+            });
+            
+            if (!confirmSave.isConfirmed) {
+                return;
+            }
+        }
+        
+        const result = await Swal.fire({
+            title: currentBlueprintId ? 'Update Blueprint' : 'Save BluePrint',
+            text: currentBlueprintId ? 'Update the blueprint name below:' : 'Enter a name for your blueprint:',
+            input: 'text',
+            inputPlaceholder: 'Enter your Blueprint name here....',
+            inputValue: currentBlueprintName || '',
+            showCancelButton: true,
+            confirmButtonText: currentBlueprintId ? 'Update' : 'SAVE',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#27ae60',
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'Blueprint name is required!';
+                }
+                return null;
+            }
+        });
+        
+        if (!result.isConfirmed) return;
+        
+        const blueprintName = result.value;
+        await saveBlueprint(blueprintName);
+    }
+
+    function getCognitiveConfig() {
+        const config = {};
+        const inputs = document.querySelectorAll('#cognitiveDomainsContainer .sub-input');
+        inputs.forEach(input => {
+            const id = input.id.replace('sub_', '');
+            config[id] = parseInt(input.value) || 0;
+        });
+        return config;
+    }
+
+    function updateCognitiveTotals() {
+        const inputs = document.querySelectorAll('#cognitiveDomainsContainer .sub-input');
+        inputs.forEach(input => {
+            const domainId = input.dataset.domain;
+            updateSubDomainTotal(parseInt(domainId));
+        });
+        calculateCognitiveTotal();
+    }
+
+    async function loadCognitiveDomains() {
+        try {
+            const dr = await fetch('/api/cognitive-domains');
+            if (dr.ok) { const d = await dr.json(); cognitiveDomainsData = d.domains || []; }
+            const lr = await fetch('/api/knowledge-levels');
+            if (lr.ok) { const d = await lr.json(); knowledgeLevelsData = d.knowledge_levels || []; }
+        } catch(e) { console.error('Cognitive domains error', e); }
+        renderCognitiveDomains();
+    }
+
+    function renderCognitiveDomains() {
+        const container = document.getElementById('cognitiveDomainsContainer');
+        if (!container) return;
+        if (!cognitiveDomainsData || !cognitiveDomainsData.length) {
+            container.innerHTML = '<div class="no-data">No cognitive domains found</div>';
+            return;
+        }
+        let allSubDomains = [];
+        cognitiveDomainsData.forEach(domain => {
+            const subs = knowledgeLevelsData.filter(kl => kl.domain_id === domain.id);
+            subs.forEach(sub => {
+                allSubDomains.push({
+                    domainId: domain.id,
+                    domainName: domain.domain_name || 'Domain',
+                    subId: sub.id,
+                    subName: sub.level_name || 'Sub-Domain'
+                });
+            });
+        });
+        const totalSubDomains = allSubDomains.length;
+        if (totalSubDomains === 0) {
+            container.innerHTML = '<div class="no-data">No sub-domains found</div>';
+            return;
+        }
+        const basePercent = Math.floor(100 / totalSubDomains);
+        let extraRemainder = 100 - (basePercent * totalSubDomains);
+        let html = '';
+        const groupedByDomain = {};
+        allSubDomains.forEach(sub => {
+            if (!groupedByDomain[sub.domainId]) {
+                groupedByDomain[sub.domainId] = { domainName: sub.domainName, subDomains: [] };
+            }
+            groupedByDomain[sub.domainId].subDomains.push(sub);
+        });
+        Object.keys(groupedByDomain).forEach(domainId => {
+            const domain = groupedByDomain[domainId];
+            const subDomains = domain.subDomains;
+            let domainSubTotal = 0;
+            html += `<div class="sub-domain-group">`;
+            html += `<span class="domain-label"><i class="fas fa-chevron-right"></i> ${domain.domainName}</span>`;
+            subDomains.forEach((sub) => {
+                let percent = basePercent;
+                if (extraRemainder > 0) { percent += 1; extraRemainder -= 1; }
+                const key = `sub_${sub.domainId}_${sub.subId}`;
+                subDomainPercentages[key] = percent;
+                domainSubTotal += percent;
+                html += `
+                    <div class="sub-domain-row">
+                        <span class="sub-label">${sub.subName}</span>
+                        <input type="number" class="sub-input" id="sub_${sub.domainId}_${sub.subId}" 
+                            value="${percent}" min="0" max="100" 
+                            data-domain="${sub.domainId}" data-sub="${sub.subId}"
+                            onchange="updateSubDomainTotal(${sub.domainId})">
+                        <span style="color: #e67e22;">%</span>
+                        <span class="sub-percent" id="sub_total_sub_${sub.domainId}_${sub.subId}">${percent}%</span>
+                    </div>
+                `;
+            });
+            html += `<div class="sub-domain-total">Domain Total: <strong id="domain_total_${domainId}">${domainSubTotal}%</strong></div>`;
+            html += `</div>`;
+        });
+        container.innerHTML = html;
+        cognitiveDomainsData.forEach(domain => updateSubDomainTotal(domain.id));
+        calculateCognitiveTotal();
+        const totalDisplay = document.getElementById('cognitiveTotal');
+        if (totalDisplay) { totalDisplay.textContent = '100%'; totalDisplay.style.color = '#27ae60'; }
+    }
+
+    function updateSubDomainTotal(domainId) {
+        const subInputs = document.querySelectorAll(`input[data-domain="${domainId}"]`);
+        let total = 0;
+        subInputs.forEach(input => {
+            const val = parseInt(input.value) || 0;
+            total += val;
+            const id = input.id;
+            const totalSpan = document.getElementById(`sub_total_${id}`);
+            if (totalSpan) totalSpan.textContent = val + '%';
+        });
+        const domainTotalSpan = document.getElementById(`domain_total_${domainId}`);
+        if (domainTotalSpan) {
+            domainTotalSpan.textContent = total + '%';
+            if (total === 100) domainTotalSpan.style.color = '#27ae60';
+            else if (total > 80 && total < 120) domainTotalSpan.style.color = '#f39c12';
+            else domainTotalSpan.style.color = '#e74c3c';
+        }
+        calculateCognitiveTotal();
+    }
+
+    function calculateCognitiveTotal() {
+        const container = document.getElementById('cognitiveDomainsContainer');
+        const inputs = container.querySelectorAll('.sub-input');
+        let grandTotal = 0;
+        inputs.forEach(input => { grandTotal += parseInt(input.value) || 0; });
+        const totalDisplay = document.getElementById('cognitiveTotal');
+        if (totalDisplay) {
+            totalDisplay.textContent = grandTotal + '%';
+            if (grandTotal === 100) totalDisplay.style.color = '#27ae60';
+            else if (grandTotal > 80 && grandTotal < 120) totalDisplay.style.color = '#f39c12';
+            else totalDisplay.style.color = '#e74c3c';
+        }
+        return grandTotal;
+    }
+
+    async function loadGrades() {
+        try {
+            const res = await fetch('/api/grades');
+            const data = await res.json();
+            gradesData = data.grades || [];
+            const grid = document.getElementById('gradeGrid');
+            if (!gradesData.length) { grid.innerHTML = '<div class="empty-state">No grades available</div>'; return; }
+            grid.innerHTML = gradesData.map(g => `
+                <div class="card" data-id="${g.id}" onclick="selectGrade(${g.id}, '${g.grade_name}', this)">
+                    <div class="card-icon"><i class="fas fa-graduation-cap"></i></div>
+                    <h3>${g.grade_name}</h3>
+                    <p>Select this grade to continue</p>
+                    <div class="badge">${g.grade_name}</div>
+                </div>
+            `).join('');
+        } catch(e) { document.getElementById('gradeGrid').innerHTML = '<div class="empty-state">Error loading grades</div>'; }
+    }
+
+    function selectGrade(id, name, el) {
+        document.querySelectorAll('#stage1 .card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        currentSelections.grade = { id, display_name: name };
+        currentSelections.subject = null;
+        selectedCGIds = [];
+        selectedCompIds = [];
+        selectedQuestions = [];
+        currentBlueprintId = null;
+        currentBlueprintName = '';
+        document.getElementById('selectedGradeNameDisplay').textContent = name;
+        updateNavigator();
+        showAutoRedirect('Moving to Subject selection...');
+        setTimeout(() => { goToStage(2); loadSubjects(); }, 600);
+    }
+
+    async function loadSubjects() {
+        const container = document.getElementById('subjectGrid');
+        const gradeId = currentSelections.grade.id;
+        const page1Data = window.page1Data || { subjects: [] };
+        subjectsList = page1Data.subjects?.filter(s => s.grade_id == gradeId) || [];
+        if (!subjectsList.length) { container.innerHTML = '<div class="empty-state">No subjects available</div>'; return; }
+        container.innerHTML = subjectsList.map(s => `
+            <div class="card" data-id="${s.id}" onclick="selectSubject(${s.id}, '${s.subject_name}', this)">
+                <div class="card-icon"><i class="fas fa-book"></i></div>
+                <h3>${s.subject_name}</h3>
+                <p>${s.subject_name} for ${currentSelections.grade.display_name}</p>
+            </div>
+        `).join('');
+    }
+
+    function selectSubject(id, name, el) {
+        document.querySelectorAll('#stage2 .card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        currentSelections.subject = { id, name };
+        selectedCGIds = [];
+        selectedCompIds = [];
+        selectedQuestions = [];
+        currentBlueprintId = null;
+        currentBlueprintName = '';
+        document.getElementById('selectedCGSubjectName').textContent = name;
+        document.getElementById('cgSubjectHeading').textContent = name;
+        document.getElementById('selectedCompSubjectName').textContent = name;
+        document.getElementById('compSubjectHeading').textContent = name;
+        updateNavigator();
+        showAutoRedirect('Loading Curricular Goals...');
+        setTimeout(() => { goToStage(3); loadCGs(); }, 600);
+    }
+
+    async function loadCGs() {
+        const container = document.getElementById('cgContainer');
+        const subjectId = currentSelections.subject.id;
+        try {
+            const page1Data = window.page1Data || {};
+            cgsList = page1Data.cgs?.filter(cg => cg.subject_id == subjectId) || [];
+            document.getElementById('cgTotalCount').textContent = cgsList.length;
+            if (!cgsList.length) {
+                container.innerHTML = '<div class="empty-state">No Curricular Goals found for this subject</div>';
+                document.getElementById('nextAfterCGBtn').disabled = true;
+                return;
+            }
+            container.innerHTML = cgsList.map(cg => {
+                let chapterDisplay = cg.chapter_name && cg.chapter_name.toLowerCase() !== 'general' ? cg.chapter_name : '';
+                return `
+                <div class="cg-list-item" data-cg-id="${cg.id}">
+                    <input type="checkbox" class="cg-check" id="cgchk_${cg.id}" 
+                           onchange="toggleCGFromCheckbox(${cg.id}, this.checked, this.closest('.cg-list-item'))">
+                    <span class="cg-code">${cg.cg_code || 'CG ' + cg.id}</span>
+                    <span class="cg-desc">${cg.cg_description ? cg.cg_description.substring(0, 100) + (cg.cg_description.length > 100 ? '...' : '') : 'No description'}</span>
+                    ${chapterDisplay ? `<span class="cg-chapter">${chapterDisplay}</span>` : ''}
+                    
+                </div>
+            `}).join('');
+            document.querySelectorAll('.cg-list-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    if (e.target.type === 'checkbox') return;
+                    const id = parseInt(this.dataset.cgId);
+                    const cb = document.getElementById(`cgchk_${id}`);
+                    if (cb) {
+                        cb.checked = !cb.checked;
+                        const event = new Event('change', { bubbles: true });
+                        cb.dispatchEvent(event);
+                    }
+                });
+            });
+            if (!isLoadingBlueprint) selectedCGIds = [];
+            document.getElementById('selectAllCGs').checked = false;
+            updateCGSelection();
+        } catch(e) {
+            console.error(e);
+            container.innerHTML = '<div class="empty-state">Error loading Curricular Goals</div>';
+        }
+    }
+
+    function toggleCGFromCheckbox(id, checked, el) {
+        const idx = selectedCGIds.indexOf(id);
+        if (checked) {
+            if (idx === -1) selectedCGIds.push(id);
+            if (el) el.classList.add('selected');
+        } else {
+            if (idx > -1) selectedCGIds.splice(idx, 1);
+            if (el) el.classList.remove('selected');
+        }
+        updateCGSelection();
+    }
+
+    function toggleAllCGs() {
+        const chk = document.getElementById('selectAllCGs');
+        const items = document.querySelectorAll('.cg-list-item');
+        selectedCGIds = [];
+        items.forEach(item => {
+            const id = parseInt(item.dataset.cgId);
+            const cb = document.getElementById(`cgchk_${id}`);
+            if (cb) {
+                cb.checked = chk.checked;
+                if (chk.checked) { selectedCGIds.push(id); item.classList.add('selected'); }
+                else { item.classList.remove('selected'); }
+            }
+        });
+        updateCGSelection();
+    }
+
+    function updateCGSelection() {
+        document.getElementById('cgSelectedCount').textContent = selectedCGIds.length;
+        document.getElementById('nextAfterCGBtn').disabled = selectedCGIds.length === 0;
+        updateNavigator();
+    }
+
+    function confirmCGSelection() {
+        if (!selectedCGIds.length) { Swal.fire('Error', 'Please select at least one Curricular Goal', 'error'); return; }
+        showAutoRedirect('Loading Competencies...');
+        setTimeout(() => { goToStage(4); loadCompetencies(); }, 600);
+    }
+
+    async function loadCompetencies() {
+        const container = document.getElementById('compContainer');
+        const subjectId = currentSelections.subject.id;
+        try {
+            const page1Data = window.page1Data || {};
+            const allCGs = page1Data.cgs?.filter(cg => cg.subject_id == subjectId) || [];
+            const allComps = page1Data.competencies?.filter(c => {
+                const cg = allCGs.find(cg => cg.id === c.cg_id);
+                return cg && cg.subject_id == subjectId;
+            }) || [];
+            const filteredComps = allComps.filter(c => selectedCGIds.includes(c.cg_id));
+            const compsByCG = {};
+            filteredComps.forEach(comp => {
+                const cg = allCGs.find(c => c.id === comp.cg_id);
+                if (cg) {
+                    if (!compsByCG[comp.cg_id]) compsByCG[comp.cg_id] = { cg: cg, comps: [] };
+                    compsByCG[comp.cg_id].comps.push(comp);
+                }
+            });
+            competenciesList = filteredComps;
+            if (!isLoadingBlueprint) selectedCompIds = [];
+            document.getElementById('compTotalCount').textContent = filteredComps.length;
+            if (!Object.keys(compsByCG).length) {
+                container.innerHTML = '<div class="empty-state">No competencies found for the selected CGs</div>';
+                document.getElementById('nextAfterCompBtn').disabled = true;
+                return;
+            }
+            let html = '';
+            Object.keys(compsByCG).forEach(cgId => {
+                const group = compsByCG[cgId];
+                const cg = group.cg;
+                const comps = group.comps;
+                const isCgSelected = selectedCGIds.includes(cg.id);
+                html += `
+                    <div class="cg-card ${isCgSelected ? 'selected-cg' : ''}">
+                        <div class="cg-header" onclick="toggleCGCompList(this)">
+                            <input type="checkbox" class="cg-check" ${isCgSelected ? 'checked' : ''} onchange="event.stopPropagation(); toggleCGSelectionFromComp(${cg.id}, this.checked)" ${isCgSelected ? '' : 'disabled'}>
+                            <span class="cg-code">${cg.cg_code || 'CG ' + cg.id}</span>
+                            <span class="cg-desc">${cg.cg_description || 'No description'}</span>
+                            <span class="cg-chapter">${cg.chapter_name || ''}</span>
+                            <span class="cg-toggle"><i class="fas fa-chevron-down"></i></span>
+                        </div>
+                        <div class="comp-list-container">
+                            ${comps.map(comp => `
+                                <div class="comp-item" data-comp-id="${comp.id}" onclick="toggleComp(${comp.id}, this)">
+                                    <input type="checkbox" class="comp-check" id="comp_${comp.id}" onchange="event.stopPropagation(); toggleCompFromCheckbox(${comp.id}, this.checked)">
+                                    <span class="comp-code">${comp.comp_code || 'COMP-' + comp.id}</span>
+                                    <span class="comp-desc">${comp.comp_description || 'No description'}</span>
+                                    <span class="comp-meta">${comp.status ? 'Active' : 'Inactive'}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+            document.querySelectorAll('.cg-header').forEach(header => {
+                const list = header.nextElementSibling;
+                if (list) { list.classList.add('open'); header.querySelector('.cg-toggle').classList.add('open'); }
+            });
+            document.getElementById('selectAllComps').checked = false;
+            updateCompSelection();
+        } catch(e) {
+            console.error(e);
+            container.innerHTML = '<div class="empty-state">Error loading competencies</div>';
+        }
+    }
+
+    function toggleCGCompList(header) {
+        const list = header.nextElementSibling;
+        const toggleIcon = header.querySelector('.cg-toggle');
+        if (list) { list.classList.toggle('open'); toggleIcon.classList.toggle('open'); }
+    }
+
+    function toggleCGSelectionFromComp(cgId, checked) {
+        const idx = selectedCGIds.indexOf(cgId);
+        if (checked && idx === -1) selectedCGIds.push(cgId);
+        else if (!checked && idx > -1) {
+            selectedCGIds.splice(idx, 1);
+            const compsUnderCG = competenciesList.filter(c => c.cg_id === cgId);
+            compsUnderCG.forEach(comp => {
+                const compIdx = selectedCompIds.indexOf(comp.id);
+                if (compIdx > -1) selectedCompIds.splice(compIdx, 1);
+                const cb = document.getElementById(`comp_${comp.id}`);
+                if (cb) cb.checked = false;
+                const item = document.querySelector(`.comp-item[data-comp-id="${comp.id}"]`);
+                if (item) item.classList.remove('selected-comp');
+            });
+        }
+        const cards = document.querySelectorAll('.cg-card');
+        cards.forEach(card => {
+            const header = card.querySelector('.cg-header');
+            const cgCheck = header ? header.querySelector('.cg-check') : null;
+            if (cgCheck) {
+                const cgCodeSpan = header.querySelector('.cg-code');
+                const cg = cgsList.find(c => c.cg_code === cgCodeSpan?.textContent.trim());
+                if (cg && cg.id === cgId) {
+                    if (checked) card.classList.add('selected-cg');
+                    else card.classList.remove('selected-cg');
+                }
+            }
+        });
+        updateCGSelection();
+        updateCompSelection();
+    }
+
+    function toggleComp(id, el) {
+        const idx = selectedCompIds.indexOf(id);
+        const cb = document.getElementById(`comp_${id}`);
+        if (idx > -1) { selectedCompIds.splice(idx, 1); el.classList.remove('selected-comp'); if (cb) cb.checked = false; }
+        else { selectedCompIds.push(id); el.classList.add('selected-comp'); if (cb) cb.checked = true; }
+        updateCompSelection();
+    }
+
+    function toggleCompFromCheckbox(id, checked) {
+        const item = document.querySelector(`.comp-item[data-comp-id="${id}"]`);
+        if (checked) { if (!selectedCompIds.includes(id)) selectedCompIds.push(id); if (item) item.classList.add('selected-comp'); }
+        else { selectedCompIds = selectedCompIds.filter(c => c !== id); if (item) item.classList.remove('selected-comp'); }
+        updateCompSelection();
+    }
+
+    function toggleAllComps() {
+        const chk = document.getElementById('selectAllComps');
+        const items = document.querySelectorAll('.comp-item');
+        items.forEach(el => {
+            const id = parseInt(el.dataset.compId);
+            if (chk.checked) { if (!selectedCompIds.includes(id)) selectedCompIds.push(id); el.classList.add('selected-comp'); const cb = document.getElementById(`comp_${id}`); if (cb) cb.checked = true; }
+            else { selectedCompIds = []; el.classList.remove('selected-comp'); const cb = document.getElementById(`comp_${id}`); if (cb) cb.checked = false; }
+        });
+        updateCompSelection();
+    }
+
+    function updateCompSelection() {
+        document.getElementById('compSelectedCount').textContent = selectedCompIds.length;
+        document.getElementById('nextAfterCompBtn').disabled = selectedCompIds.length === 0;
+        updateNavigator();
+    }
+
+    function confirmCompSelection() {
+        if (!selectedCompIds.length) { Swal.fire('Error', 'Please select at least one Competency', 'error'); return; }
+        showAutoRedirect('Moving to Configuration...');
+        setTimeout(() => { goToStage(5); loadCognitiveDomains(); }, 600);
+    }
+
+    function updateSectionLockStates() {
+        const grandTotal = parseInt(document.getElementById('grandTotal').textContent) || 0;
+        const manualTotal = parseInt(document.getElementById('manualTotalMarks').value) || 0;
+        const isTotalMatched = (grandTotal === manualTotal && grandTotal > 0);
+
+        const difficultySection = document.getElementById('difficultySection');
+        const difficultyLockLabel = document.getElementById('difficultyLockLabel');
+
+        if (isTotalMatched) {
+            difficultySection.classList.remove('section-locked');
+            difficultySection.classList.add('section-unlocked');
+            difficultyLockLabel.textContent = '';
+            difficultyLockLabel.className = 'lock-label unlocked';
+        } else {
+            difficultySection.classList.remove('section-unlocked');
+            difficultySection.classList.add('section-locked');
+            difficultyLockLabel.textContent = '';
+            difficultyLockLabel.className = 'lock-label locked';
+        }
+
+        const e = parseInt(document.getElementById('easyPercent').value) || 0;
+        const m = parseInt(document.getElementById('mediumPercent').value) || 0;
+        const h = parseInt(document.getElementById('hardPercent').value) || 0;
+        const diffTotal = e + m + h;
+        const isDiffMatched = (diffTotal === 100);
+
+        const cognitiveSection = document.getElementById('cognitiveSection');
+        const cognitiveLockLabel = document.getElementById('cognitiveLockLabel');
+
+        if (isTotalMatched && isDiffMatched) {
+            cognitiveSection.classList.remove('section-locked');
+            cognitiveSection.classList.add('section-unlocked');
+            cognitiveLockLabel.textContent = '';
+            cognitiveLockLabel.className = 'lock-label unlocked';
+        } else {
+            cognitiveSection.classList.remove('section-unlocked');
+            cognitiveSection.classList.add('section-locked');
+            cognitiveLockLabel.textContent = '';
+            cognitiveLockLabel.className = 'lock-label locked';
+        }
+    }
+
+    function calculateTotals() {
+        const e = parseInt(document.getElementById('easyPercent').value) || 0;
+        const m = parseInt(document.getElementById('mediumPercent').value) || 0;
+        const h = parseInt(document.getElementById('hardPercent').value) || 0;
+        const t = e + m + h;
+        document.getElementById('difficultyTotal').textContent = t + '%';
+        document.getElementById('difficultyTotal').style.color = t === 100 ? '#27ae60' : '#e74c3c';
+        calculateCognitiveTotal();
+        updateSectionLockStates();
+    }
+
+    function calculateQuestionMarks() {
+        const obj = (parseInt(document.getElementById('objectiveCount').value)||0) * (parseInt(document.getElementById('objectiveMarks').value)||0);
+        const vs = (parseInt(document.getElementById('veryShortCount').value)||0) * (parseInt(document.getElementById('veryShortMarks').value)||0);
+        const sh = (parseInt(document.getElementById('shortCount').value)||0) * (parseInt(document.getElementById('shortMarks').value)||0);
+        const lg = (parseInt(document.getElementById('longCount').value)||0) * (parseInt(document.getElementById('longMarks').value)||0);
+        document.getElementById('objectiveTotal').textContent = obj;
+        document.getElementById('veryShortTotal').textContent = vs;
+        document.getElementById('shortTotal').textContent = sh;
+        document.getElementById('longTotal').textContent = lg;
+        const grand = obj + vs + sh + lg;
+        document.getElementById('grandTotal').textContent = grand;
+
+        const manualTotal = parseInt(document.getElementById('manualTotalMarks').value) || 0;
+        const match = (grand === manualTotal && grand > 0);
+        const statusEl = document.getElementById('totalMatchStatus');
+        if (match) {
+            statusEl.textContent = '';
+            statusEl.style.color = '#2ecc71';
+        } else {
+            statusEl.textContent = '';
+            statusEl.style.color = '#e74c3c';
+        }
+        updateSectionLockStates();
+    }
+
+    function navigateToStage(stage) {
+        if (currentPhase !== 'build') switchPhase('build');
+        if (stage === 1) { goToStage(1); return; }
+        if (stage === 2) { if (currentSelections.grade) { goToStage(2); loadSubjects(); } else Swal.fire('Warning','Select grade first','warning'); return; }
+        if (stage === 3) { if (currentSelections.subject) { goToStage(3); loadCGs(); } else Swal.fire('Warning','Select subject first','warning'); return; }
+        if (stage === 4) { if (selectedCGIds.length > 0) { goToStage(4); loadCompetencies(); } else Swal.fire('Warning','Select CGs first','warning'); return; }
+        if (stage === 5) { if (selectedCompIds.length > 0) { goToStage(5); loadCognitiveDomains(); } else Swal.fire('Warning','Select Competencies first','warning'); return; }
+        if (stage === 6) { goToStage(6); return; }
+    }
+
+    function goToStage(stage) {
+        for (let i = 1; i <= 6; i++) { const el = document.getElementById('stage'+i); if (el) el.style.display = 'none'; }
+        const target = document.getElementById('stage'+stage);
+        if (target) target.style.display = 'block';
+        currentStage = stage;
+        updateNavigator();
+        updateProgress();
+        document.getElementById('autoRedirectNotice').style.display = 'none';
+        
+        if (stage === 5) {
+            const contentArea = document.querySelector('.content-area');
+            if (contentArea) {
+                contentArea.scrollTop = 0;
+            }
+            updateSectionLockStates();
+        }
+    }
+
+    function updateNavigator() {
+        document.getElementById('nav-grade').textContent = currentSelections.grade ? currentSelections.grade.display_name : 'Select Grade';
+        document.getElementById('nav-subject').textContent = currentSelections.subject ? currentSelections.subject.name : 'Select Subject';
+        document.getElementById('nav-cg').textContent = selectedCGIds.length > 0 ? `${selectedCGIds.length} Selected` : 'Select CGs';
+        document.getElementById('nav-comp').textContent = selectedCompIds.length > 0 ? `${selectedCompIds.length} Selected` : 'Select Comps';
+        document.getElementById('nav-config').textContent = 'Configure';
+        document.getElementById('nav-questions').textContent = selectedQuestions.length > 0 ? `${selectedQuestions.length} Selected` : 'Review & Generate';
+        document.querySelectorAll('.nav-step').forEach(step => {
+            const stepNum = parseInt(step.dataset.step);
+            step.classList.remove('active', 'completed');
+            if (stepNum < currentStage) step.classList.add('completed');
+            else if (stepNum === currentStage) step.classList.add('active');
+        });
+        if (currentSelections.grade) document.querySelector('.nav-step[data-step="1"]').classList.add('completed');
+        if (currentSelections.subject) document.querySelector('.nav-step[data-step="2"]').classList.add('completed');
+        if (selectedCGIds.length > 0) document.querySelector('.nav-step[data-step="3"]').classList.add('completed');
+        if (selectedCompIds.length > 0) document.querySelector('.nav-step[data-step="4"]').classList.add('completed');
+        if (selectedQuestions.length > 0) document.querySelector('.nav-step[data-step="6"]').classList.add('completed');
+    }
+
+    function updateProgress() {
+        const pct = ((currentStage - 1) / 5) * 100;
+        document.getElementById('progressFill').style.width = pct + '%';
+        document.getElementById('progressText').textContent = `Step ${currentStage} of 6`;
+    }
+
+    function showAutoRedirect(msg) {
+        const n = document.getElementById('autoRedirectNotice');
+        n.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${msg}`;
+        n.style.display = 'block';
+        if (autoNavigateTimeout) clearTimeout(autoNavigateTimeout);
+        autoNavigateTimeout = setTimeout(() => n.style.display = 'none', 2000);
+    }
+
+    async function loadBlueprints() {
+        try {
+            const res = await fetch('/api/paper-blueprints');
+            if (!res.ok) throw new Error('Failed to load blueprints');
+            const data = await res.json();
+            blueprints = data.blueprints || [];
+            renderSavedFullList();
+        } catch (e) { console.error('Error loading blueprints:', e); }
+    }
+
+    function createPaperContent() {
+        let html = `
+            <div class="paper-header">
+                <h2>COHSEM | PARAKH</h2>
+                <h3>${currentSelections.grade.display_name} - ${currentSelections.subject.name}</h3>
+                <div class="paper-meta">
+                    <span><i class="far fa-clock"></i> Time: 3 Hours</span>
+                    <span><i class="fas fa-star"></i> Total Marks: ${selectedQuestions.reduce((sum, q) => sum + (q.marks || 1), 0)}</span>
+                </div>
+            </div>
+        `;
+        selectedQuestions.forEach((q, index) => {
+            const hasImages = q.images && q.images.length > 0;
+            const cleanQuestionText = stripHtmlForPrint(q.question_text || '');
+            html += `
+                <div class="question-item">
+                    <div class="question-header">
+                        <span><strong>Q${index + 1}.</strong> ${escapeHtml(cleanQuestionText)}</span>
+                        <span class="question-marks">[${q.marks || 1} marks]</span>
+                    </div>
+                    ${hasImages ? `
+                        <div class="question-images-preview-modal">
+                            ${q.images.map(img => `<img src="${img}" class="preview-image" alt="Question image" crossorigin="anonymous" onerror="this.style.display='none'">`).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        });
+        return html;
+    }
+
+    function generatePreview() { document.getElementById('paperPreview').innerHTML = createPaperContent(); }
+
+    async function generatePaper() {
+        if (selectedQuestions.length === 0) {
+            if (!currentBlueprintId) {
+                Swal.fire('Error', 'Please load a blueprint first. Click "Print BluePrint" on a saved blueprint.', 'error');
+                return;
+            }
+            
+            document.getElementById('loadingModal').classList.add('active');
+            try {
+                const res = await fetch(`/api/paper-blueprints/${currentBlueprintId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const bp = data.blueprint;
+                    
+                    if (bp.question_ids && bp.question_ids.length > 0) {
+                        const questionIds = bp.question_ids.join(',');
+                        const questionRes = await fetch(`/api/builder-questions?subject_id=${bp.subject_id}&status=approved&question_ids=${questionIds}`);
+                        if (questionRes.ok) {
+                            const questionData = await questionRes.json();
+                            const allQuestions = questionData.questions || [];
+                            approvedQuestions = allQuestions.map(q => ({
+                                ...q,
+                                images: q.images ? (typeof q.images === 'string' ? JSON.parse(q.images) : q.images) : []
+                            }));
+                            selectedQuestions = approvedQuestions.map(q => ({...q}));
+                            
+                            const container = document.getElementById('questionsDisplayList');
+                            const totalCountSpan = document.getElementById('loadedQuestionTotalCount');
+                            const totalMarksSpan = document.getElementById('loadedQuestionTotalMarks');
+                            
+                            if (selectedQuestions.length === 0) {
+                                container.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle"></i> No questions found for this blueprint.</div>`;
+                                totalCountSpan.textContent = '0';
+                                totalMarksSpan.textContent = '0';
+                                document.getElementById('loadingModal').classList.remove('active');
+                                Swal.fire('Error', 'No questions found for this blueprint. Please create a new blueprint with questions.', 'error');
+                                return;
+                            } else {
+                                let totalMarks = 0;
+                                let html = '';
+                                selectedQuestions.forEach((q, index) => {
+                                    totalMarks += (q.marks || 1);
+                                    const hasImages = q.images && q.images.length > 0;
+                                    const questionText = q.question_text || '';
+                                    html += `
+                                        <div class="question-display-item">
+                                            <div style="flex:1;">
+                                                <div class="q-header">
+                                                    <span style="color:#e67e22; font-weight:600; min-width:40px;">Q${index + 1}.</span>
+                                                    <span class="q-text">${escapeHtml(questionText)}</span>
+                                                    <span class="q-type">${q.question_type_name || 'Objective'}</span>
+                                                </div>
+                                                ${hasImages ? `
+                                                    <div class="q-images">
+                                                        ${q.images.map(img => `
+                                                            <div class="q-thumb" onclick="event.stopPropagation(); showFullImage('${img}')">
+                                                                <img src="${img}" alt="Question image">
+                                                            </div>
+                                                        `).join('')}
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                            <div class="q-marks">${q.marks || 1} marks</div>
+                                        </div>
+                                    `;
+                                });
+                                container.innerHTML = html;
+                                totalCountSpan.textContent = selectedQuestions.length;
+                                totalMarksSpan.textContent = totalMarks;
+                            }
+                        } else {
+                            document.getElementById('loadingModal').classList.remove('active');
+                            Swal.fire('Error', 'Failed to load questions from the blueprint', 'error');
+                            return;
+                        }
+                    } else {
+                        document.getElementById('loadingModal').classList.remove('active');
+                        Swal.fire('Error', 'This blueprint has no questions saved. Please create a new blueprint with questions.', 'error');
+                        return;
+                    }
+                } else {
+                    document.getElementById('loadingModal').classList.remove('active');
+                    Swal.fire('Error', 'Failed to load blueprint data', 'error');
+                    return;
+                }
+                document.getElementById('loadingModal').classList.remove('active');
+            } catch (e) {
+                document.getElementById('loadingModal').classList.remove('active');
+                console.error('Error loading questions for generation:', e);
+                Swal.fire('Error', 'Failed to load questions: ' + e.message, 'error');
+                return;
+            }
+        }
+        
+        if (!selectedQuestions.length) {
+            Swal.fire('Error', 'No questions to generate paper. Please load a blueprint first.', 'error');
+            return;
+        }
+        
+        document.getElementById('loadingModal').classList.add('active');
+        try {
+            generatePreview();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const tempDiv = document.createElement('div');
+            tempDiv.style.position = 'absolute';
+            tempDiv.style.left = '-9999px';
+            tempDiv.style.top = '0';
+            tempDiv.style.width = '800px';
+            tempDiv.style.backgroundColor = 'white';
+            tempDiv.style.padding = '30px';
+            tempDiv.innerHTML = createPaperContent();
+            document.body.appendChild(tempDiv);
+            const tempImages = tempDiv.querySelectorAll('img');
+            await Promise.all(Array.from(tempImages).map(img => {
+                if (img.complete) return Promise.resolve();
+                return new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
+            }));
+            await new Promise(resolve => setTimeout(resolve, 300));
+            const canvas = await html2canvas(tempDiv, {
+                scale: 2,
+                backgroundColor: '#ffffff',
+                useCORS: true,
+                logging: false,
+                allowTaint: false,
+                imageTimeout: 0
+            });
+            document.body.removeChild(tempDiv);
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            if (!imgData || imgData === 'data:,') throw new Error('Failed to capture preview image');
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const imgWidth = 210;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            let position = 0;
+            doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+            let remainingHeight = imgHeight;
+            while (remainingHeight > 297) {
+                position = position - 297;
+                doc.addPage();
+                doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+                remainingHeight -= 297;
+            }
+            generatedPDF = doc.output('datauristring');
+            generatedPDFName = `${currentSelections.grade.display_name}_${currentSelections.subject.name}_Question_Paper.pdf`;
+            document.getElementById('loadingModal').classList.remove('active');
+            document.getElementById('paperPreviewModal').classList.add('active');
+            Swal.fire({ icon: 'success', title: 'Success!', text: 'Your question paper is ready', timer: 1500, showConfirmButton: false });
+        } catch (error) {
+            console.error('Error generating paper:', error);
+            document.getElementById('loadingModal').classList.remove('active');
+            Swal.fire('Error', 'Failed to generate PDF: ' + error.message, 'error');
+        }
+    }
+
+    function downloadPDF() {
+        if (!generatedPDF) { Swal.fire('Error', 'No PDF generated yet', 'error'); return; }
+        const link = document.createElement('a');
+        link.href = generatedPDF;
+        link.download = generatedPDFName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        Swal.fire('Success', 'PDF downloaded successfully', 'success');
+    }
+
+    function showFullImage(url) {
+        const modal = document.getElementById('imageModal');
+        const img = document.getElementById('modalImage');
+        img.src = url;
+        modal.style.display = 'block';
+    }
+
+    function closeImageModal() {
+        document.getElementById('imageModal').style.display = 'none';
+    }
+
+    function closeModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') { closeImageModal(); closeModal('paperPreviewModal'); }
+    });
+</script>
+</body>
+</html>

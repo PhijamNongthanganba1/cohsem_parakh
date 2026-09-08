@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COHSEM | PARAKH - Review Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #0a1a3a, #1a3a6d, #0c2461, #1e3a5f, #0a1a3a);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .dashboard { max-width: 100%; margin: 0 auto; }
+        
+        .header {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50px;
+            padding: 10px 20px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .header h1 { color: white; font-size: 20px; display: flex; align-items: center; gap: 8px; }
+        .header h1 i { color: #f1c40f; }
+        .header-right { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        
+        .btn {
+            padding: 8px 18px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            line-height: 1.5;
+            min-height: 36px;
+        }
+        .btn-primary { background: #3498db; color: white; }
+        .btn-primary:hover { background: #2980b9; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-success:hover { background: #229954; }
+        .btn-warning { background: #f39c12; color: white; }
+        .btn-warning:hover { background: #e67e22; }
+        .btn-master { background: #8e44ad; color: white; }
+        .btn-master:hover { background: #7d3c98; }
+        .btn-sm { padding: 4px 12px; font-size: 11px; min-height: 28px; border-radius: 15px; }
+        
+        .role-badge {
+            background: rgba(52,152,219,0.3);
+            color: white;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .permission-note {
+            background: rgba(52,152,219,0.12);
+            border-left: 3px solid #3498db;
+            padding: 8px 16px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: rgba(255,255,255,0.8);
+            font-size: 13px;
+        }
+        .permission-note i { color: #3498db; font-size: 16px; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 12px 8px;
+            text-align: center;
+        }
+        .stat-value { color: white; font-size: 24px; font-weight: 700; }
+        .stat-label { color: rgba(255,255,255,0.5); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .filter-section {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            padding: 10px 16px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+        .filter-select, .search-input {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 6px 14px;
+            color: white;
+            font-size: 12px;
+            min-width: 120px;
+            flex: 1 1 120px;
+            outline: none;
+        }
+        .filter-select:focus, .search-input:focus { border-color: #3498db; }
+        .filter-select option { background: #1a2a4a; color: white; }
+        .search-input::placeholder { color: rgba(255,255,255,0.3); }
+
+        
+        .tab-container {
+            background: rgba(255,255,255,0.06);
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .tab-header {
+            display: flex;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            flex-wrap: wrap;
+            background: rgba(0,0,0,0.15);
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px 16px;
+            background: transparent;
+            border: none;
+            color: rgba(255,255,255,0.6);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            border-bottom: 2px solid transparent;
+            text-align: center;
+            min-width: 0;
+            white-space: nowrap;
+        }
+        .tab-btn:hover { background: rgba(255,255,255,0.05); color: white; }
+        .tab-btn.active {
+            color: #3498db;
+            border-bottom-color: #3498db;
+            background: rgba(52,152,219,0.08);
+        }
+        .tab-btn .count {
+            background: rgba(255,255,255,0.08);
+            padding: 0 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.5);
+            flex-shrink: 0;
+        }
+        .tab-btn.active .count { background: rgba(52,152,219,0.2); color: #3498db; }
+
+        .tab-content { padding: 15px; }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+
+        
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.15);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        th {
+            text-align: left;
+            padding: 8px 10px;
+            color: rgba(255,255,255,0.5);
+            font-weight: 600;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            background: rgba(0,0,0,0.2);
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            white-space: nowrap;
+        }
+        td {
+            padding: 6px 10px;
+            color: rgba(255,255,255,0.85);
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            vertical-align: middle;
+            font-size: 12px;
+        }
+        tr:hover { background: rgba(255,255,255,0.03); }
+
+        .badge {
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+            display: inline-block;
+        }
+        .badge-grade { background: rgba(52,152,219,0.2); color: #85c1e9; }
+        .badge-subject { background: rgba(142,68,173,0.2); color: #bb8fce; }
+        .badge-unassigned { background: rgba(149,165,166,0.2); color: #bdc3c7; }
+        .badge-under-review { background: rgba(243,156,18,0.2); color: #f7dc6f; }
+        .badge-reviewed { background: rgba(0,188,212,0.2); color: #76d7c4; }
+        .badge-approved { background: rgba(39,174,96,0.2); color: #82e0aa; }
+        .badge-rejected { background: rgba(231,76,60,0.2); color: #f1948a; }
+        .badge-rework { background: rgba(243,156,18,0.2); color: #f7dc6f; }
+        .badge-source { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5); }
+
+        .question-text {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: block;
+        }
+        .answer-text {
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: block;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .action-group {
+            display: flex;
+            gap: 3px;
+            flex-wrap: wrap;
+        }
+        .action-icon {
+            width: 26px;
+            height: 26px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 11px;
+            transition: all 0.2s ease;
+        }
+        .action-icon:disabled { opacity: 0.25; cursor: not-allowed; }
+        .action-icon:not(:disabled):hover { transform: scale(1.05); }
+        .icon-edit { background: #f39c12; }
+        .icon-edit:hover:not(:disabled) { background: #e67e22; }
+        .icon-delete { background: #e74c3c; }
+        .icon-delete:hover:not(:disabled) { background: #c0392b; }
+        .icon-assign { background: #8e44ad; }
+        .icon-assign:hover:not(:disabled) { background: #7d3c98; }
+        .icon-approve { background: #27ae60; }
+        .icon-approve:hover:not(:disabled) { background: #229954; }
+        .icon-rework { background: #f39c12; }
+        .icon-rework:hover:not(:disabled) { background: #e67e22; }
+        .icon-view { background: #3498db; }
+        .icon-view:hover:not(:disabled) { background: #2980b9; }
+
+        .no-data {
+            text-align: center;
+            padding: 30px;
+            color: rgba(255,255,255,0.3);
+            font-size: 13px;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: rgba(255,255,255,0.3);
+        }
+        .loading i {
+            font-size: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: #1a2a4a;
+            border-radius: 10px;
+            width: 92%;
+            max-width: 480px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .modal-header {
+            padding: 12px 20px;
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+        }
+        .modal-header.master { background: linear-gradient(135deg, #6c3483, #8e44ad); }
+        .modal-header.review { background: linear-gradient(135deg, #0e6655, #00bcd4); }
+        .modal-header.rework { background: linear-gradient(135deg, #b9770e, #f39c12); }
+        .modal-header.approve { background: linear-gradient(135deg, #1a7a3a, #27ae60); }
+        .modal-header h3 { font-size: 16px; display: flex; align-items: center; gap: 8px; }
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0 6px;
+        }
+        .close-btn:hover { opacity: 0.7; }
+        .modal-body { padding: 16px 20px; color: #e8edf5; }
+        .modal-body textarea, .modal-body select {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.3);
+            color: white;
+            font-size: 13px;
+            margin-bottom: 10px;
+            font-family: inherit;
+        }
+        .modal-body textarea:focus, .modal-body select:focus { outline: none; border-color: #3498db; }
+        .modal-body label { font-weight: 500; color: rgba(255,255,255,0.6); font-size: 12px; display: block; margin-bottom: 3px; }
+        .modal-footer {
+            padding: 10px 20px 16px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+        .readonly-box {
+            background: rgba(0,0,0,0.2);
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border-left: 3px solid #3498db;
+        }
+        .readonly-box .label { font-weight: 600; color: rgba(255,255,255,0.3); font-size: 10px; text-transform: uppercase; }
+        .readonly-box .value { color: #e8edf5; font-size: 13px; margin-top: 2px; }
+
+        @media (max-width: 1024px) {
+            .stats-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .header h1 { font-size: 16px; }
+            .filter-section { flex-direction: column; }
+            .filter-select, .search-input { width: 100%; flex: none; }
+            .tab-btn { padding: 8px 12px; font-size: 12px; white-space: normal; }
+            .tab-content { padding: 10px; }
+            th, td { padding: 4px 6px; font-size: 11px; }
+            .question-text, .answer-text { max-width: 80px; }
+        }
+        @media (max-width: 480px) {
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .stat-value { font-size: 18px; }
+            .tab-btn { padding: 6px 10px; font-size: 11px; white-space: normal; }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <div class="dashboard">
+        
+        <div class="header">
+            <h1><i class="fas fa-check-circle"></i> Review Dashboard</h1>
+            <div class="header-right">
+                <span class="role-badge">
+                    <i class="fas fa-user-shield"></i> {{ user }} 
+                    (<span id="userRoleDisplay">{{ session.get('user_role', 'writer')|upper }}</span>)
+                </span>
+                <a href="/dashboard" class="btn btn-primary"><i class="fas fa-home"></i> Home</a>
+                <a href="/logout" class="btn btn-danger"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </div>
+
+        
+        <div class="permission-note" id="permissionNote">
+            <i class="fas fa-info-circle"></i> 
+            <span id="permissionText">Loading permissions...</span>
+        </div>
+
+        
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-value" id="totalCount">0</div><div class="stat-label">Total</div></div>
+            <div class="stat-card"><div class="stat-value" id="unassignedCount">0</div><div class="stat-label">Unassigned</div></div>
+            <div class="stat-card"><div class="stat-value" id="underReviewCount">0</div><div class="stat-label">Under Review</div></div>
+            <div class="stat-card"><div class="stat-value" id="reviewedCount">0</div><div class="stat-label">Reviewed</div></div>
+            <div class="stat-card"><div class="stat-value" id="approvedCount">0</div><div class="stat-label">Approved</div></div>
+        </div>
+
+        
+        <div class="filter-section">
+            <select class="filter-select" id="gradeFilter"><option value="">All Grades</option></select>
+            <select class="filter-select" id="subjectFilter"><option value="">All Subjects</option></select>
+            <select class="filter-select" id="statusFilter">
+                <option value="">All Status</option>
+                <option value="unassigned">Unassigned</option>
+                <option value="under_review">Under Review</option>
+                <option value="reviewed_completed">Reviewed</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="rework">Rework</option>
+            </select>
+            <input type="text" class="search-input" id="searchInput" placeholder="Search...">
+        </div>
+
+        
+        <div class="tab-container">
+            <div class="tab-header" id="tabHeader">
+                
+            </div>
+            <div class="tab-content" id="tabContent">
+                
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="modal" id="masterReviewModal">
+        <div class="modal-content">
+            <div class="modal-header master"><h3><i class="fas fa-user-check"></i> Assign to Reviewer</h3><button class="close-btn" onclick="closeModal('masterReviewModal')">&times;</button></div>
+            <div class="modal-body">
+                <div class="readonly-box"><div class="label">Question</div><div class="value" id="masterReviewQuestionDisplay"></div></div>
+                <label>Reviewer *</label>
+                <select id="reviewerSelect" class="form-control"><option value="">-- Select --</option></select>
+                <label>Comment</label>
+                <textarea id="masterReviewComment" rows="2" placeholder="Optional..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger btn-sm" onclick="closeModal('masterReviewModal')">Cancel</button>
+                <button class="btn btn-master btn-sm" onclick="submitMasterReview()"><i class="fas fa-paper-plane"></i> Assign</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="reviewModal">
+        <div class="modal-content">
+            <div class="modal-header review"><h3><i class="fas fa-user-check"></i> Assign to Approver</h3><button class="close-btn" onclick="closeModal('reviewModal')">&times;</button></div>
+            <div class="modal-body">
+                <div class="readonly-box"><div class="label">Question</div><div class="value" id="reviewQuestionDisplay"></div></div>
+                <label>Approver *</label>
+                <select id="approverSelect" class="form-control"><option value="">-- Select --</option></select>
+                <label>Comment</label>
+                <textarea id="reviewComment" rows="2" placeholder="Optional..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger btn-sm" onclick="closeModal('reviewModal')">Cancel</button>
+                <button class="btn btn-primary btn-sm" onclick="submitReview()"><i class="fas fa-paper-plane"></i> Assign</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="approveModal">
+        <div class="modal-content">
+            <div class="modal-header approve"><h3><i class="fas fa-check-circle"></i> Approve</h3><button class="close-btn" onclick="closeModal('approveModal')">&times;</button></div>
+            <div class="modal-body">
+                <div class="readonly-box"><div class="label">Question</div><div class="value" id="approveQuestionDisplay"></div></div>
+                <div class="readonly-box" style="border-left-color:#00bcd4;"><div class="label">Answer</div><div class="value" id="approveAnswerDisplay"></div></div>
+                <label>Comment</label>
+                <textarea id="approveComment" rows="2" placeholder="Optional..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger btn-sm" onclick="closeModal('approveModal')">Cancel</button>
+                <button class="btn btn-success btn-sm" onclick="submitApprove()"><i class="fas fa-check"></i> Approve</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="reworkModal">
+        <div class="modal-content">
+            <div class="modal-header rework"><h3><i class="fas fa-redo"></i> Rework</h3><button class="close-btn" onclick="closeModal('reworkModal')">&times;</button></div>
+            <div class="modal-body">
+                <div id="reworkReasonDisplay" style="background:rgba(243,156,18,0.1);padding:8px 12px;border-radius:6px;margin-bottom:10px;border-left:3px solid #f39c12;font-size:12px;display:none;"></div>
+                <div class="readonly-box"><div class="label">Question</div><div class="value" id="reworkQuestionDisplay"></div></div>
+                <div class="readonly-box" style="border-left-color:#00bcd4;"><div class="label">Answer</div><div class="value" id="reworkAnswerDisplay"></div></div>
+                <label>Rework Comment *</label>
+                <textarea id="reworkComment" rows="2" placeholder="Explain why..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger btn-sm" onclick="closeModal('reworkModal')">Cancel</button>
+                <button class="btn btn-warning btn-sm" onclick="submitRework()"><i class="fas fa-redo"></i> Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        
+        const currentUserId = {{ user_id|default(0) }};
+        const currentUserRole = '{{ session.get("user_role", "writer") }}';
+        const currentUsername = '{{ user }}';
+        
+        const permissions = {
+            RE: {{ permissions.RE|default('false')|lower }},
+            RA: {{ permissions.RA|default('false')|lower }},
+            RC: {{ permissions.RC|default('false')|lower }},
+            AP: {{ permissions.AP|default('false')|lower }},
+            MASTER: {{ permissions.MASTER|default('false')|lower }}
+        };
+
+        
+        let allQuestions = [];
+        let allGrades = [];
+        let allSubjects = [];
+        let reviewers = [];
+        let approvers = [];
+        let currentModalId = null;
+        let activeTab = 0;
+        let isFetching = false;
+        let lastFetchTime = 0;
+        const MIN_FETCH_INTERVAL = 30000;
+
+        
+        function escapeHtml(text) { if (!text) return ''; const d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
+        
+        function getStatusClass(s) {
+            const map = {
+                'unassigned': 'badge-unassigned',
+                'under_review': 'badge-under-review',
+                'reviewed_completed': 'badge-reviewed',
+                'approved': 'badge-approved',
+                'rejected': 'badge-rejected',
+                'rework': 'badge-rework'
+            };
+            return map[s] || 'badge-unassigned';
+        }
+        
+        function getStatusText(s) {
+            const map = {
+                'unassigned': 'Unassigned',
+                'under_review': 'Under Review',
+                'reviewed_completed': 'Reviewed',
+                'approved': 'Approved',
+                'rejected': 'Rejected',
+                'rework': 'Rework'
+            };
+            return map[s] || s || 'Unassigned';
+        }
+
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+        
+        async function loadReviewers() {
+            try { const r = await fetch('/api/reviewers'); const d = await r.json(); reviewers = d.reviewers || []; populateReviewerSelect(); } catch(e) { console.error(e); }
+        }
+        async function loadApprovers() {
+            try { const r = await fetch('/api/approvers'); const d = await r.json(); approvers = d.approvers || []; populateApproverSelect(); } catch(e) { console.error(e); }
+        }
+        function populateReviewerSelect() {
+            const sel = document.getElementById('reviewerSelect');
+            let opts = '<option value="">-- Select Reviewer --</option>';
+            reviewers.forEach(r => {
+                opts += `<option value="${r.id}" data-name="${r.username}">${escapeHtml(r.username)} (${r.role})</option>`;
+            });
+            sel.innerHTML = opts;
+        }
+        function populateApproverSelect() {
+            const sel = document.getElementById('approverSelect');
+            let opts = '<option value="">-- Select Approver --</option>';
+            approvers.forEach(a => {
+                opts += `<option value="${a.id}" data-name="${a.username}">${escapeHtml(a.username)} (${a.role})</option>`;
+            });
+            sel.innerHTML = opts;
+        }
+
+        async function loadGrades() {
+            try { const r = await fetch('/api/grades'); const d = await r.json(); allGrades = d.grades || []; updateGradeFilter(); } catch(e) { console.error(e); }
+        }
+        async function loadSubjects() {
+            try { const r = await fetch('/api/subjects'); const d = await r.json(); allSubjects = d.subjects || []; updateSubjectFilter(); } catch(e) { console.error(e); }
+        }
+        function updateGradeFilter() {
+            const sel = document.getElementById('gradeFilter');
+            let opts = '<option value="">All Grades</option>';
+            allGrades.forEach(g => { opts += `<option value="${g.id}">${escapeHtml(g.grade_name)}</option>`; });
+            sel.innerHTML = opts;
+        }
+        function updateSubjectFilter() {
+            const gradeId = document.getElementById('gradeFilter').value;
+            const sel = document.getElementById('subjectFilter');
+            let filtered = gradeId ? allSubjects.filter(s => s.grade_id == gradeId) : allSubjects;
+            let opts = '<option value="">All Subjects</option>';
+            if (!gradeId) {
+                const grouped = {};
+                filtered.forEach(s => { if (!grouped[s.grade_id]) grouped[s.grade_id] = []; grouped[s.grade_id].push(s); });
+                Object.keys(grouped).forEach(gid => {
+                    const grade = allGrades.find(g => g.id == gid);
+                    opts += `<optgroup label="${grade ? escapeHtml(grade.grade_name) : 'Grade '+gid}">`;
+                    grouped[gid].forEach(s => { opts += `<option value="${s.id}">${escapeHtml(s.subject_name)}</option>`; });
+                    opts += '</optgroup>';
+                });
+            } else {
+                filtered.forEach(s => { opts += `<option value="${s.id}">${escapeHtml(s.subject_name)}</option>`; });
+            }
+            sel.innerHTML = opts;
+        }
+
+        
+        async function fetchQuestions(force = false) {
+            if (isFetching) return;
+            const now = Date.now();
+            if (!force && now - lastFetchTime < MIN_FETCH_INTERVAL) return;
+            isFetching = true; lastFetchTime = now;
+            try {
+                const r = await fetch('/api/review-questions');
+                const d = await r.json();
+                allQuestions = d.questions || [];
+                updatePermissionNote(d);
+                updateStats();
+                renderTabs();
+            } catch(e) {
+                console.error(e);
+                document.getElementById('tabContent').innerHTML = `<div class="no-data"><i class="fas fa-exclamation-circle"></i> Error loading questions<br><button class="btn btn-primary btn-sm" onclick="fetchQuestions(true)" style="margin-top:8px;">Retry</button></div>`;
+            } finally { isFetching = false; }
+        }
+
+        function updatePermissionNote(data) {
+            const note = document.getElementById('permissionText');
+            const role = data.user_role || currentUserRole;
+            document.getElementById('userRoleDisplay').textContent = role.toUpperCase();
+            if (data.permissions) Object.assign(permissions, data.permissions);
+            
+            let msg = 'Welcome to Review Dashboard. ';
+            if (role === 'admin') msg = '🔑 Admin – Full access.';
+            else if (role === 'master' || permissions.MASTER) msg = '📋 Master – Assign questions to reviewers.';
+            else if (role === 'reviewer' || permissions.RC) msg = '📝 Reviewer – Review assigned questions.';
+            else if (role === 'approver' || permissions.AP) msg = '✅ Approver – Approve reviewed questions.';
+            else if (role === 'builder' || permissions.RA) msg = '📊 Builder – View approved questions.';
+            else if (role === 'writer' || permissions.RE) msg = '✏️ Writer – Create & edit own questions.';
+            note.innerHTML = msg;
+        }
+
+        function updateStats() {
+            const total = allQuestions.length;
+            const unassigned = allQuestions.filter(q => (q.status||'unassigned') === 'unassigned').length;
+            const under = allQuestions.filter(q => q.status === 'under_review').length;
+            const reviewed = allQuestions.filter(q => q.status === 'reviewed_completed').length;
+            const approved = allQuestions.filter(q => q.status === 'approved').length;
+            document.getElementById('totalCount').textContent = total;
+            document.getElementById('unassignedCount').textContent = unassigned;
+            document.getElementById('underReviewCount').textContent = under;
+            document.getElementById('reviewedCount').textContent = reviewed;
+            document.getElementById('approvedCount').textContent = approved;
+        }
+
+        
+        function getFilteredQuestions() {
+            const gradeVal = document.getElementById('gradeFilter').value;
+            const subjectVal = document.getElementById('subjectFilter').value;
+            const statusVal = document.getElementById('statusFilter').value;
+            const search = document.getElementById('searchInput').value.toLowerCase();
+
+            return allQuestions.filter(q => {
+                if (gradeVal && q.grade_id != gradeVal) return false;
+                if (subjectVal && q.subject_id != subjectVal) return false;
+                if (statusVal && (q.status||'unassigned') !== statusVal) return false;
+                if (search) {
+                    const qText = (q.question||'').toLowerCase();
+                    const ans = (q.answer||'').toLowerCase();
+                    if (!qText.includes(search) && !ans.includes(search)) return false;
+                }
+                return true;
+            });
+        }
+
+        
+        function renderTabs() {
+            const isAdmin = currentUserRole === 'admin';
+            const isMaster = permissions.MASTER || currentUserRole === 'master' || isAdmin;
+            const isReviewer = permissions.RC || currentUserRole === 'reviewer' || isAdmin;
+            const isApprover = permissions.AP || currentUserRole === 'approver' || isAdmin;
+            const isWriter = permissions.RE || currentUserRole === 'writer' || isAdmin;
+
+            let tabs = [];
+
+            if (isAdmin) {
+                tabs = [
+                    { id: 'admin_unassigned', icon: 'fa-user-shield', label: 'Unassigned / Rework', filter: q => (q.status === 'unassigned' || q.status === null || q.status === 'rework'), showAssign: true },
+                    { id: 'admin_under_review', icon: 'fa-clock', label: 'Under Review', filter: q => q.status === 'under_review', showAssign: false },
+                    { id: 'admin_reviewed', icon: 'fa-check-double', label: 'Ready to Approve', filter: q => q.status === 'reviewed_completed', showAssign: false },
+                    { id: 'admin_approved', icon: 'fa-check-circle', label: 'Approved', filter: q => q.status === 'approved', showAssign: false }
+                ];
+            } else if (isMaster) {
+                tabs = [
+                    { id: 'master_unassigned', icon: 'fa-user-check', label: 'Unassigned', filter: q => (q.status === 'unassigned' || q.status === null || q.status === 'rework'), showAssign: true }
+                ];
+            } else if (isReviewer) {
+                tabs = [
+                    { id: 'reviewer_self', icon: 'fa-user-edit', label: 'My Questions', filter: q => q.created_by === currentUsername && (q.status === 'unassigned' || q.status === 'rejected' || q.status === 'rework'), showAssign: false },
+                    { id: 'reviewer_assigned', icon: 'fa-tasks', label: 'Assigned to Me', filter: q => q.status === 'under_review' && q.assigned_reviewer_id === currentUserId, showAssign: false }
+                ];
+            } else if (isApprover) {
+                tabs = [
+                    { id: 'approver_self', icon: 'fa-user-edit', label: 'My Questions', filter: q => q.created_by === currentUsername && (q.status === 'unassigned' || q.status === 'rejected' || q.status === 'rework'), showAssign: false },
+                    { id: 'approver_from_reviewer', icon: 'fa-arrow-right', label: 'From Reviewers', filter: q => q.status === 'under_review' && q.assigned_reviewer_id !== currentUserId && q.assigned_reviewer_id !== null, showAssign: false },
+                    { id: 'approver_ready', icon: 'fa-check-double', label: 'Ready to Approve', filter: q => q.status === 'reviewed_completed' && q.assigned_approver_id === currentUserId, showAssign: false }
+                ];
+            } else {
+                tabs = [
+                    { id: 'writer_self', icon: 'fa-user-edit', label: 'My Questions', filter: q => q.created_by === currentUsername, showAssign: false }
+                ];
+            }
+
+            
+            const header = document.getElementById('tabHeader');
+            let headerHtml = '';
+            tabs.forEach((tab, index) => {
+                const count = allQuestions.filter(tab.filter).length;
+                const isActive = index === activeTab ? 'active' : '';
+                headerHtml += `
+                    <button class="tab-btn ${isActive}" onclick="switchTab(${index})">
+                        <i class="fas ${tab.icon}"></i> ${tab.label}
+                        <span class="count">${count}</span>
+                    </button>
+                `;
+            });
+            header.innerHTML = headerHtml;
+
+            
+            const content = document.getElementById('tabContent');
+            let contentHtml = '';
+            tabs.forEach((tab, index) => {
+                const isActive = index === activeTab ? 'active' : '';
+                const tabQuestions = allQuestions.filter(tab.filter);
+                
+                let tableRows = '';
+                if (tabQuestions.length === 0) {
+                    tableRows = `<tr><td colspan="8" class="no-data">No questions in this category</td></tr>`;
+                } else {
+                    tableRows = tabQuestions.map(q => renderTableRow(q, tab.showAssign, isAdmin)).join('');
+                }
+
+                contentHtml += `
+                    <div class="tab-pane ${isActive}" id="tabPane${index}">
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th style="width:20px;">#</th>
+                                        <th style="min-width:120px;">Question</th>
+                                        <th style="min-width:80px;">Answer</th>
+                                        <th>Grade</th>
+                                        <th>Subject</th>
+                                        <th>Status</th>
+                                        <th>Source</th>
+                                        <th style="min-width:100px;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${tableRows}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            });
+            content.innerHTML = contentHtml;
+        }
+
+        
+        function renderTableRow(q, showAssign, isAdmin) {
+            const status = q.status || 'unassigned';
+            const subject = allSubjects.find(s => s.id == q.subject_id);
+            const grade = allGrades.find(g => g.id == q.grade_id);
+            const subjectName = subject ? subject.subject_name : (q.subject || 'N/A');
+            const gradeName = grade ? grade.grade_name : (q.grade || 'N/A');
+            const isMy = q.created_by === currentUsername;
+            const isAssignedReviewer = q.assigned_reviewer_id === currentUserId;
+            const isAssignedApprover = q.assigned_approver_id === currentUserId;
+
+            const isAdminFull = currentUserRole === 'admin' || isAdmin;
+            const canMasterReview = isAdminFull || (permissions.MASTER && (status === 'unassigned' || status === null || status === 'rework'));
+            const canReview = isAdminFull || (permissions.RC && isAssignedReviewer && status === 'under_review');
+            const canApprove = isAdminFull || (permissions.AP && isAssignedApprover && status === 'reviewed_completed');
+            const canDirectApprove = isAdminFull && status !== 'approved';
+            const canEdit = isAdminFull || (permissions.RE && isMy && (status === 'unassigned' || status === 'rejected' || status === 'rework'));
+            const canDelete = isAdminFull;
+            const canRework = isAdminFull || isAssignedReviewer || isAssignedApprover || (isMy && status === 'rejected');
+
+            let sourceLabel = '';
+            if (isMy) sourceLabel = `<span class="badge badge-source"><i class="fas fa-user-edit"></i> Self</span>`;
+            else if (q.created_by) sourceLabel = `<span class="badge badge-source">${escapeHtml(q.created_by)}</span>`;
+            if (q.assigned_reviewer_name && !isMy) sourceLabel += ` <span class="badge badge-source">R: ${escapeHtml(q.assigned_reviewer_name)}</span>`;
+
+            let actions = '';
+            if (canEdit) actions += `<button class="action-icon icon-edit" onclick="editQuestion(${q.id})" title="Edit"><i class="fas fa-edit"></i></button>`;
+            if (canMasterReview) actions += `<button class="action-icon icon-assign" onclick="openMasterReview(${q.id})" title="Assign"><i class="fas fa-user-check"></i></button>`;
+            if (canReview) actions += `<button class="action-icon icon-assign" onclick="openReview(${q.id})" title="Send to Approver"><i class="fas fa-paper-plane"></i></button>`;
+            if (canApprove || canDirectApprove) actions += `<button class="action-icon icon-approve" onclick="openApprove(${q.id})" title="Approve"><i class="fas fa-check"></i></button>`;
+            if (canRework) actions += `<button class="action-icon icon-rework" onclick="openRework(${q.id})" title="Rework"><i class="fas fa-redo"></i></button>`;
+            if (canDelete) actions += `<button class="action-icon icon-delete" onclick="deleteQuestion(${q.id})" title="Delete"><i class="fas fa-trash"></i></button>`;
+            if (!actions) actions = `<span style="color:rgba(255,255,255,0.2);font-size:10px;">No actions</span>`;
+
+            return `
+                <tr>
+                    <td style="color:rgba(255,255,255,0.2);font-size:10px;">${q.id}</td>
+                    <td><span class="question-text" title="${escapeHtml(q.question)}">${escapeHtml(q.question)}</span></td>
+                    <td><span class="answer-text" title="${escapeHtml(q.answer || 'N/A')}">${escapeHtml(q.answer || 'N/A')}</span></td>
+                    <td><span class="badge badge-grade">${escapeHtml(gradeName)}</span></td>
+                    <td><span class="badge badge-subject">${escapeHtml(subjectName)}</span></td>
+                    <td><span class="badge ${getStatusClass(status)}">${getStatusText(status)}</span></td>
+                    <td>${sourceLabel}</td>
+                    <td><div class="action-group">${actions}</div></td>
+                </tr>
+            `;
+        }
+
+        
+        function switchTab(index) {
+            activeTab = index;
+            renderTabs();
+        }
+
+        
+        async function deleteQuestion(id) {
+            const result = await Swal.fire({
+                title: 'Delete Question?',
+                text: 'This cannot be undone!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e74c3c',
+                confirmButtonText: 'Delete'
+            });
+            if (result.isConfirmed) {
+                try {
+                    const r = await fetch(`/api/delete-question/${id}`, { method: 'DELETE' });
+                    const d = await r.json();
+                    if (d.success) { Swal.fire('Deleted!', '', 'success'); fetchQuestions(true); }
+                    else Swal.fire('Error', d.error || 'Failed', 'error');
+                } catch(e) { Swal.fire('Error', 'Failed to delete', 'error'); }
+            }
+        }
+
+        function openMasterReview(id) {
+            currentModalId = id;
+            const q = allQuestions.find(x => x.id === id);
+            if (q) document.getElementById('masterReviewQuestionDisplay').textContent = q.question || '';
+            document.getElementById('masterReviewModal').classList.add('active');
+            if (!reviewers.length) loadReviewers();
+            document.getElementById('reviewerSelect').value = '';
+            document.getElementById('masterReviewComment').value = '';
+        }
+
+        async function submitMasterReview() {
+            const sel = document.getElementById('reviewerSelect');
+            const reviewerId = sel.value;
+            const reviewerName = sel.options[sel.selectedIndex]?.getAttribute('data-name') || '';
+            const comment = document.getElementById('masterReviewComment').value;
+            if (!reviewerId) { Swal.fire('Error', 'Select a reviewer', 'error'); return; }
+            try {
+                const r = await fetch(`/api/master-review-question/${currentModalId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ comment, reviewer_id: reviewerId, reviewer_name: reviewerName })
+                });
+                const d = await r.json();
+                if (d.success) { Swal.fire('Assigned!', '', 'success'); closeModal('masterReviewModal'); fetchQuestions(true); }
+                else Swal.fire('Error', d.error || 'Failed', 'error');
+            } catch(e) { Swal.fire('Error', 'Failed', 'error'); }
+        }
+
+        function openReview(id) {
+            currentModalId = id;
+            const q = allQuestions.find(x => x.id === id);
+            if (q) document.getElementById('reviewQuestionDisplay').textContent = q.question || '';
+            document.getElementById('reviewModal').classList.add('active');
+            if (!approvers.length) loadApprovers();
+            document.getElementById('approverSelect').value = '';
+            document.getElementById('reviewComment').value = '';
+        }
+
+        async function submitReview() {
+            const sel = document.getElementById('approverSelect');
+            const approverId = sel.value;
+            const approverName = sel.options[sel.selectedIndex]?.getAttribute('data-name') || '';
+            const comment = document.getElementById('reviewComment').value;
+            if (!approverId) { Swal.fire('Error', 'Select an approver', 'error'); return; }
+            try {
+                const r = await fetch(`/api/review-question/${currentModalId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ comment, approver_id: approverId, approver_name: approverName })
+                });
+                const d = await r.json();
+                if (d.success) { Swal.fire('Assigned!', '', 'success'); closeModal('reviewModal'); fetchQuestions(true); }
+                else Swal.fire('Error', d.error || 'Failed', 'error');
+            } catch(e) { Swal.fire('Error', 'Failed', 'error'); }
+        }
+
+        function openApprove(id) {
+            currentModalId = id;
+            const q = allQuestions.find(x => x.id === id);
+            if (q) {
+                document.getElementById('approveQuestionDisplay').textContent = q.question || '';
+                document.getElementById('approveAnswerDisplay').textContent = q.answer || '';
+            }
+            document.getElementById('approveComment').value = '';
+            document.getElementById('approveModal').classList.add('active');
+        }
+
+        async function submitApprove() {
+            const comment = document.getElementById('approveComment').value;
+            try {
+                const r = await fetch(`/api/approve-question/${currentModalId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ comment: comment || '' })
+                });
+                const d = await r.json();
+                if (d.success) { Swal.fire('Approved!', '', 'success'); closeModal('approveModal'); fetchQuestions(true); }
+                else Swal.fire('Error', d.error || 'Failed', 'error');
+            } catch(e) { Swal.fire('Error', 'Failed', 'error'); }
+        }
+
+        function openRework(id) {
+            currentModalId = id;
+            const q = allQuestions.find(x => x.id === id);
+            if (!q) return;
+            const reason = document.getElementById('reworkReasonDisplay');
+            if (q.rejection_reason) { reason.innerHTML = `<strong>Previous:</strong> ${escapeHtml(q.rejection_reason)}`; reason.style.display = 'block'; } 
+            else reason.style.display = 'none';
+            document.getElementById('reworkQuestionDisplay').textContent = q.question || '';
+            document.getElementById('reworkAnswerDisplay').textContent = q.answer || '';
+            document.getElementById('reworkComment').value = '';
+            document.getElementById('reworkModal').classList.add('active');
+        }
+
+        async function submitRework() {
+            const comment = document.getElementById('reworkComment').value.trim();
+            if (!comment) { Swal.fire('Error', 'Comment required', 'error'); return; }
+            try {
+                const r = await fetch(`/api/rework-question/${currentModalId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ comment })
+                });
+                const d = await r.json();
+                if (d.success) { Swal.fire('Sent!', '', 'success'); closeModal('reworkModal'); fetchQuestions(true); }
+                else Swal.fire('Error', d.error || 'Failed', 'error');
+            } catch(e) { Swal.fire('Error', 'Failed', 'error'); }
+        }
+
+        async function editQuestion(id) {
+            const q = allQuestions.find(x => x.id === id);
+            if (!q) return;
+            const { value: form } = await Swal.fire({
+                title: 'Edit Question',
+                html: `
+                    <textarea id="swal-question" class="swal2-textarea" style="border-radius:6px;padding:8px;width:100%;margin-bottom:8px;">${escapeHtml(q.question)}</textarea>
+                    <textarea id="swal-answer" class="swal2-textarea" style="border-radius:6px;padding:8px;width:100%;margin-bottom:8px;">${escapeHtml(q.answer || '')}</textarea>
+                    <div style="display:flex;gap:8px;">
+                        <input id="swal-marks" class="swal2-input" type="number" value="${q.marks || 1}" min="0" max="100" style="flex:1;border-radius:6px;padding:8px;">
+                        <input id="swal-duration" class="swal2-input" type="number" value="${q.duration_minutes || 0}" min="0" max="180" style="flex:1;border-radius:6px;padding:8px;">
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonColor: '#f39c12',
+                preConfirm: () => {
+                    const qt = document.getElementById('swal-question').value;
+                    const an = document.getElementById('swal-answer').value;
+                    const mk = parseInt(document.getElementById('swal-marks').value);
+                    const dur = parseInt(document.getElementById('swal-duration').value);
+                    if (!qt || !an) { Swal.showValidationMessage('Question & answer required'); return false; }
+                    if (isNaN(mk) || mk < 0 || mk > 100) { Swal.showValidationMessage('Marks 0-100'); return false; }
+                    return { question_text: qt, answer: an, marks: mk, duration_minutes: dur || 0 };
+                }
+            });
+            if (form) {
+                try {
+                    const r = await fetch(`/api/update-question/${id}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(form)
+                    });
+                    const d = await r.json();
+                    if (d.success) { Swal.fire('Updated!', '', 'success'); fetchQuestions(true); }
+                    else Swal.fire('Error', d.error || 'Failed', 'error');
+                } catch(e) { Swal.fire('Error', 'Failed to update', 'error'); }
+            }
+        }
+
+        
+        document.getElementById('gradeFilter').addEventListener('change', function() {
+            updateSubjectFilter();
+            renderTabs();
+        });
+        document.getElementById('subjectFilter').addEventListener('change', renderTabs);
+        document.getElementById('statusFilter').addEventListener('change', renderTabs);
+        document.getElementById('searchInput').addEventListener('input', renderTabs);
+
+        
+        document.querySelectorAll('.modal').forEach(m => {
+            m.addEventListener('click', function(e) {
+                if (e.target === this) this.classList.remove('active');
+            });
+        });
+
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadGrades();
+            await loadSubjects();
+            await loadReviewers();
+            await loadApprovers();
+            fetchQuestions(true);
+            setInterval(() => fetchQuestions(false), 45000);
+        });
+    </script>
+</body>
+</html>
