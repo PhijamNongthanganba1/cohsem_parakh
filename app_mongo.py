@@ -97,6 +97,7 @@ def to_object_id(value):
         value = value.strip()
         if not value or value == 'undefined' or value == 'null' or value == 'None':
             return None
+        # Check if it's a valid ObjectId string (24 hex chars)
         if len(value) == 24 and re.match(r'^[0-9a-fA-F]{24}$', value):
             try:
                 return ObjectId(value)
@@ -251,18 +252,6 @@ def init_db():
                 'created_at': datetime.now()
             })
             print("✓ Created default admin user")
-        
-        # Fix any existing subjects with "undefined" grade_id
-        print("🔧 Fixing existing subjects with undefined grade_id...")
-        first_grade = db.grades.find_one({})
-        if first_grade:
-            grade_id = first_grade['_id']
-            result = db.subjects.update_many(
-                {'grade_id': 'undefined'},
-                {'$set': {'grade_id': grade_id}}
-            )
-            if result.modified_count > 0:
-                print(f"✓ Fixed {result.modified_count} subjects with 'undefined' grade_id")
         
         print("✅ Database initialization complete")
     except Exception as e:
@@ -704,6 +693,10 @@ def delete_grade(grade_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ============================================
+# FIXED SUBJECT ENDPOINTS
+# ============================================
+
 @app.route('/api/subjects', methods=['GET'])
 def get_subjects():
     if 'user' not in session:
@@ -713,14 +706,6 @@ def get_subjects():
     subject_group = session.get('subject_group')
     
     try:
-        # Fix any subjects with "undefined" grade_id
-        first_grade = db.grades.find_one({})
-        if first_grade:
-            db.subjects.update_many(
-                {'grade_id': 'undefined'},
-                {'$set': {'grade_id': first_grade['_id']}}
-            )
-        
         pipeline = [
             {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
             {'$addFields': {'grade_name': {'$arrayElemAt': ['$grade_info.grade_name', 0]}}},
@@ -763,17 +748,28 @@ def create_subject():
     if not name:
         return jsonify({'error': 'Subject name is required'}), 400
     
+    if not grade_id:
+        return jsonify({'error': 'Grade ID is required'}), 400
+    
     try:
-        grade_id_obj = get_grade_id_from_value(grade_id)
+        # Convert grade_id to ObjectId
+        grade_id_obj = to_object_id(grade_id)
         
+        # If grade_id is not a valid ObjectId, try to find by grade_name
         if grade_id_obj is None:
-            first_grade = db.grades.find_one({})
-            if first_grade:
-                grade_id_obj = first_grade['_id']
+            # Check if grade_id is a grade name
+            grade = db.grades.find_one({'grade_name': grade_id})
+            if grade:
+                grade_id_obj = grade['_id']
             else:
-                return jsonify({'error': 'No grades available. Please create a grade first.'}), 400
+                return jsonify({'error': f'Invalid grade: {grade_id}. Please select a valid grade.'}), 400
         
-        existing = db.subjects.find_one({'subject_name': name, 'grade_id': grade_id_obj})
+        # Check if subject already exists for this grade
+        existing = db.subjects.find_one({
+            'subject_name': name,
+            'grade_id': grade_id_obj
+        })
+        
         if existing:
             return jsonify({'error': f'Subject "{name}" already exists for this grade'}), 400
         
@@ -802,15 +798,18 @@ def update_subject(subject_id):
     if not name:
         return jsonify({'error': 'Subject name is required'}), 400
     
+    if not grade_id:
+        return jsonify({'error': 'Grade ID is required'}), 400
+    
     try:
-        grade_id_obj = get_grade_id_from_value(grade_id)
+        grade_id_obj = to_object_id(grade_id)
         
         if grade_id_obj is None:
-            first_grade = db.grades.find_one({})
-            if first_grade:
-                grade_id_obj = first_grade['_id']
+            grade = db.grades.find_one({'grade_name': grade_id})
+            if grade:
+                grade_id_obj = grade['_id']
             else:
-                return jsonify({'error': 'No grades available'}), 400
+                return jsonify({'error': f'Invalid grade: {grade_id}'}), 400
         
         result = db.subjects.update_one(
             {'_id': ObjectId(subject_id)},
@@ -841,6 +840,125 @@ def delete_subject(subject_id):
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# ============================================
+# FIXED PAGE1 DATA ENDPOINT
+# ============================================
+
+@app.route('/api/page1-data')
+def get_page1_data():
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user_role = session.get('user_role')
+    subject_group = session.get('subject_group')
+    
+    try:
+        # Get all data from collections
+        grades = list(db.grades.find())
+        subjects = list(db.subjects.find())
+        cgs = list(db.curricular_goals.find())
+        competencies = list(db.competencies.find({'status': 1}))
+        question_types = list(db.question_types.find())
+        cognitive_domains = list(db.cognitive_domains.find())
+        
+        # Build response structure
+        data = {
+            'grades': [],
+            'subjects': [],
+            'cgs': [],
+            'competencies': [],
+            'subjects_by_grade': {},
+            'cgs_by_subject': {},
+            'comps_by_cg': {},
+            'question_types': [],
+            'cognitive_domains': []
+        }
+        
+        # Process grades - convert ObjectId to string
+        for g in grades:
+            g['id'] = str(g['_id'])
+            if '_id' in g:
+                del g['_id']
+            data['grades'].append(g)
+        
+        # Process subjects - convert ObjectId to string
+        for s in subjects:
+            s['id'] = str(s['_id'])
+            
+            # Convert grade_id to string
+            if 'grade_id' in s:
+                if isinstance(s['grade_id'], ObjectId):
+                    s['grade_id'] = str(s['grade_id'])
+            
+            if '_id' in s:
+                del s['_id']
+            
+            grade_id_str = str(s['grade_id']) if s.get('grade_id') else None
+            if grade_id_str:
+                if grade_id_str not in data['subjects_by_grade']:
+                    data['subjects_by_grade'][grade_id_str] = []
+                data['subjects_by_grade'][grade_id_str].append(s)
+            data['subjects'].append(s)
+        
+        # Process CGs
+        for cg in cgs:
+            cg['id'] = str(cg['_id'])
+            if cg.get('subject_id'):
+                if isinstance(cg['subject_id'], ObjectId):
+                    cg['subject_id'] = str(cg['subject_id'])
+            if cg.get('chapter_id') and isinstance(cg['chapter_id'], ObjectId):
+                cg['chapter_id'] = str(cg['chapter_id'])
+            
+            if '_id' in cg:
+                del cg['_id']
+            
+            subject_id_str = str(cg['subject_id']) if cg.get('subject_id') else None
+            if subject_id_str:
+                if subject_id_str not in data['cgs_by_subject']:
+                    data['cgs_by_subject'][subject_id_str] = []
+                data['cgs_by_subject'][subject_id_str].append(cg)
+            data['cgs'].append(cg)
+        
+        # Process competencies
+        for comp in competencies:
+            comp['id'] = str(comp['_id'])
+            if comp.get('cg_id'):
+                if isinstance(comp['cg_id'], ObjectId):
+                    comp['cg_id'] = str(comp['cg_id'])
+            
+            if '_id' in comp:
+                del comp['_id']
+            
+            cg_id_str = str(comp['cg_id']) if comp.get('cg_id') else None
+            if cg_id_str:
+                if cg_id_str not in data['comps_by_cg']:
+                    data['comps_by_cg'][cg_id_str] = []
+                data['comps_by_cg'][cg_id_str].append(comp)
+            data['competencies'].append(comp)
+        
+        # Process question types
+        for qt in question_types:
+            qt['id'] = str(qt['_id'])
+            if '_id' in qt:
+                del qt['_id']
+            data['question_types'].append(qt)
+        
+        # Process cognitive domains
+        for cd in cognitive_domains:
+            cd['id'] = str(cd['_id'])
+            if '_id' in cd:
+                del cd['_id']
+            data['cognitive_domains'].append(cd)
+        
+        return jsonify(data)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+# ============================================
+# REMAINING API ENDPOINTS
+# ============================================
 
 @app.route('/api/textbooks', methods=['GET'])
 def get_textbooks():
@@ -900,13 +1018,13 @@ def create_textbook():
         if subject_id_obj is None:
             return jsonify({'error': 'Invalid subject_id'}), 400
         
-        grade_id_obj = get_grade_id_from_value(grade_id)
+        grade_id_obj = to_object_id(grade_id)
         if grade_id_obj is None:
-            first_grade = db.grades.find_one({})
-            if first_grade:
-                grade_id_obj = first_grade['_id']
+            grade = db.grades.find_one({'grade_name': grade_id})
+            if grade:
+                grade_id_obj = grade['_id']
             else:
-                return jsonify({'error': 'No grades available'}), 400
+                return jsonify({'error': f'Invalid grade: {grade_id}'}), 400
         
         existing = db.textbooks.find_one({'textbook_name': textbook_name, 'subject_id': subject_id_obj})
         if existing:
@@ -948,13 +1066,13 @@ def update_textbook(textbook_id):
         if subject_id_obj is None:
             return jsonify({'error': 'Invalid subject_id'}), 400
         
-        grade_id_obj = get_grade_id_from_value(grade_id)
+        grade_id_obj = to_object_id(grade_id)
         if grade_id_obj is None:
-            first_grade = db.grades.find_one({})
-            if first_grade:
-                grade_id_obj = first_grade['_id']
+            grade = db.grades.find_one({'grade_name': grade_id})
+            if grade:
+                grade_id_obj = grade['_id']
             else:
-                return jsonify({'error': 'No grades available'}), 400
+                return jsonify({'error': f'Invalid grade: {grade_id}'}), 400
         
         result = db.textbooks.update_one(
             {'_id': ObjectId(textbook_id)},
@@ -1522,13 +1640,13 @@ def create_subject_group():
         return jsonify({'error': 'All fields are required'}), 400
     
     try:
-        grade_id_obj = get_grade_id_from_value(grade_id)
+        grade_id_obj = to_object_id(grade_id)
         if grade_id_obj is None:
-            first_grade = db.grades.find_one({})
-            if first_grade:
-                grade_id_obj = first_grade['_id']
+            grade = db.grades.find_one({'grade_name': grade_id})
+            if grade:
+                grade_id_obj = grade['_id']
             else:
-                return jsonify({'error': 'No grades available'}), 400
+                return jsonify({'error': f'Invalid grade: {grade_id}'}), 400
         
         subject_id_obj = to_object_id(subject_id)
         if subject_id_obj is None:
@@ -1565,13 +1683,13 @@ def update_subject_group(group_id):
     subject_id = data.get('subject_id')
     
     try:
-        grade_id_obj = get_grade_id_from_value(grade_id)
+        grade_id_obj = to_object_id(grade_id)
         if grade_id_obj is None:
-            first_grade = db.grades.find_one({})
-            if first_grade:
-                grade_id_obj = first_grade['_id']
+            grade = db.grades.find_one({'grade_name': grade_id})
+            if grade:
+                grade_id_obj = grade['_id']
             else:
-                return jsonify({'error': 'No grades available'}), 400
+                return jsonify({'error': f'Invalid grade: {grade_id}'}), 400
         
         subject_id_obj = to_object_id(subject_id)
         if subject_id_obj is None:
@@ -2410,128 +2528,6 @@ def get_builder_questions():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/page1-data')
-def get_page1_data():
-    if 'user' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    user_role = session.get('user_role')
-    subject_group = session.get('subject_group')
-    
-    try:
-        # Fix any subjects with "undefined" grade_id
-        first_grade = db.grades.find_one({})
-        if first_grade:
-            db.subjects.update_many(
-                {'grade_id': 'undefined'},
-                {'$set': {'grade_id': first_grade['_id']}}
-            )
-        
-        # Get all data from collections
-        grades = list(db.grades.find())
-        subjects = list(db.subjects.find())
-        cgs = list(db.curricular_goals.find())
-        competencies = list(db.competencies.find({'status': 1}))
-        question_types = list(db.question_types.find())
-        cognitive_domains = list(db.cognitive_domains.find())
-        
-        # Build response structure
-        data = {
-            'grades': [],
-            'subjects': [],
-            'cgs': [],
-            'competencies': [],
-            'subjects_by_grade': {},
-            'cgs_by_subject': {},
-            'comps_by_cg': {},
-            'question_types': [],
-            'cognitive_domains': []
-        }
-        
-        # Process grades
-        for g in grades:
-            g['id'] = str(g['_id'])
-            if '_id' in g:
-                del g['_id']
-            data['grades'].append(g)
-        
-        # Process subjects
-        for s in subjects:
-            s['id'] = str(s['_id'])
-            if 'grade_id' in s:
-                if s['grade_id'] == 'undefined' or s['grade_id'] == 'null':
-                    if first_grade:
-                        s['grade_id'] = str(first_grade['_id'])
-                    else:
-                        s['grade_id'] = None
-                elif isinstance(s['grade_id'], ObjectId):
-                    s['grade_id'] = str(s['grade_id'])
-            
-            if '_id' in s:
-                del s['_id']
-            
-            grade_id_str = str(s['grade_id']) if s['grade_id'] else None
-            if grade_id_str:
-                if grade_id_str not in data['subjects_by_grade']:
-                    data['subjects_by_grade'][grade_id_str] = []
-                data['subjects_by_grade'][grade_id_str].append(s)
-            data['subjects'].append(s)
-        
-        # Process CGs
-        for cg in cgs:
-            cg['id'] = str(cg['_id'])
-            if cg.get('subject_id'):
-                if isinstance(cg['subject_id'], ObjectId):
-                    cg['subject_id'] = str(cg['subject_id'])
-            if cg.get('chapter_id') and isinstance(cg['chapter_id'], ObjectId):
-                cg['chapter_id'] = str(cg['chapter_id'])
-            
-            if '_id' in cg:
-                del cg['_id']
-            
-            subject_id_str = str(cg['subject_id']) if cg.get('subject_id') else None
-            if subject_id_str:
-                if subject_id_str not in data['cgs_by_subject']:
-                    data['cgs_by_subject'][subject_id_str] = []
-                data['cgs_by_subject'][subject_id_str].append(cg)
-            data['cgs'].append(cg)
-        
-        # Process competencies
-        for comp in competencies:
-            comp['id'] = str(comp['_id'])
-            if comp.get('cg_id'):
-                if isinstance(comp['cg_id'], ObjectId):
-                    comp['cg_id'] = str(comp['cg_id'])
-            
-            if '_id' in comp:
-                del comp['_id']
-            
-            cg_id_str = str(comp['cg_id']) if comp.get('cg_id') else None
-            if cg_id_str:
-                if cg_id_str not in data['comps_by_cg']:
-                    data['comps_by_cg'][cg_id_str] = []
-                data['comps_by_cg'][cg_id_str].append(comp)
-            data['competencies'].append(comp)
-        
-        # Process question types
-        for qt in question_types:
-            qt['id'] = str(qt['_id'])
-            if '_id' in qt:
-                del qt['_id']
-            data['question_types'].append(qt)
-        
-        # Process cognitive domains
-        for cd in cognitive_domains:
-            cd['id'] = str(cd['_id'])
-            if '_id' in cd:
-                del cd['_id']
-            data['cognitive_domains'].append(cd)
-        
-        return jsonify(data)
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
-
 @app.route('/api/page2-data')
 def get_page2_data():
     if 'user' not in session:
@@ -3151,7 +3147,7 @@ def update_paper_blueprint(blueprint_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/paper-blueprints/<blueprint_id>', methods=['DELETE'])
+@app.route('/api/paper-blueprints/<blueprint_id>', methods(['DELETE'])
 def delete_paper_blueprint(blueprint_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
