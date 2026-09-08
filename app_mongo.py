@@ -25,13 +25,13 @@ print(f"🔗 Connecting to MongoDB Atlas...")
 
 try:
     client = pymongo.MongoClient(
-        MONGO_URI,
-        serverSelectionTimeoutMS=30000,
-        ssl=True,
-        ssl_cert_reqs=ssl.CERT_NONE,
-        tlsAllowInvalidCertificates=True,
-        tlsAllowInvalidHostnames=True
+    MONGO_URI,
+    serverSelectionTimeoutMS=30000,
+    tls=True,
+    tlsAllowInvalidCertificates=True,
+    tlsAllowInvalidHostnames=True
     )
+    
     client.admin.command('ping')
     db = client['cohsemitms']
     print("✅ MongoDB Atlas connected successfully!")
