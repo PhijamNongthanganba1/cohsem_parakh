@@ -18,20 +18,18 @@ print(f"🐍 Python version: {sys.version}")
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'cohsem_it_secure_key_2026_change_this_in_production')
 
-# --- MongoDB Configuration - NON-SRV (FIXED) ---
-MONGO_URI = 'mongodb://nongthanganbaphijam_db_user:BG2uPkyRu1L4ov30@cluster0.b5arftz.mongodb.net:27017/cohsemitms?ssl=true&replicaSet=ac-rirl4zv-shard-0&authSource=admin&retryWrites=true&w=majority'
+# --- MongoDB Configuration - SRV (WORKING) ---
+MONGO_URI = 'mongodb+srv://nongthanganbaphijam_db_user:BG2uPkyRu1L4ov30@cluster0.b5arftz.mongodb.net/?retryWrites=true&w=majority'
 
 print(f"🔗 Connecting to MongoDB Atlas...")
 
 try:
     client = pymongo.MongoClient(
-    MONGO_URI,
-    serverSelectionTimeoutMS=30000,
-    tls=True,
-    tlsAllowInvalidCertificates=True,
-    tlsAllowInvalidHostnames=True
+        MONGO_URI,
+        serverSelectionTimeoutMS=30000,
+        tlsAllowInvalidCertificates=True,
+        tlsAllowInvalidHostnames=True
     )
-    
     client.admin.command('ping')
     db = client['cohsemitms']
     print("✅ MongoDB Atlas connected successfully!")
