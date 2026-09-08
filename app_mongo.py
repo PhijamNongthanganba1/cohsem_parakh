@@ -87,6 +87,46 @@ def convert_objectid(doc):
         return result
     return doc
 
+def to_object_id(value):
+    """Safely convert a value to ObjectId"""
+    if value is None:
+        return None
+    if isinstance(value, ObjectId):
+        return value
+    if isinstance(value, str):
+        # Clean the string
+        value = value.strip()
+        if not value:
+            return None
+        # Check if it's a valid ObjectId string (24 hex chars)
+        if len(value) == 24 and re.match(r'^[0-9a-fA-F]{24}$', value):
+            try:
+                return ObjectId(value)
+            except:
+                return None
+        # If it's a numeric string, try to convert
+        if value.isdigit():
+            # Try to pad to 24 chars if it's a number
+            padded = value.zfill(24)
+            if len(padded) == 24:
+                try:
+                    return ObjectId(padded)
+                except:
+                    pass
+        # Try to find by ID in collection (for grade_id)
+        try:
+            # Try to find in grades collection
+            grade = db.grades.find_one({'_id': value})
+            if grade:
+                return grade['_id']
+            # Try to find by grade_name
+            grade = db.grades.find_one({'grade_name': value})
+            if grade:
+                return grade['_id']
+        except:
+            pass
+    return None
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -715,16 +755,18 @@ def create_subject():
         return jsonify({'error': 'Name and grade required'}), 400
     
     try:
-        # Convert grade_id to ObjectId if it's a string
-        if isinstance(grade_id, str):
-            grade_id = ObjectId(grade_id)
+        # Convert grade_id to ObjectId safely
+        grade_id_obj = to_object_id(grade_id)
+        if grade_id_obj is None:
+            return jsonify({'error': f'Invalid grade_id: {grade_id}. Please select a valid grade.'}), 400
         
         result = db.subjects.insert_one({
             'subject_name': name, 
-            'grade_id': grade_id
+            'grade_id': grade_id_obj
         })
         return jsonify({'success': True, 'id': str(result.inserted_id)})
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/subjects/<subject_id>', methods=['PUT'])
@@ -743,12 +785,13 @@ def update_subject(subject_id):
         return jsonify({'error': 'Name and grade required'}), 400
     
     try:
-        if isinstance(grade_id, str):
-            grade_id = ObjectId(grade_id)
+        grade_id_obj = to_object_id(grade_id)
+        if grade_id_obj is None:
+            return jsonify({'error': f'Invalid grade_id: {grade_id}'}), 400
         
         result = db.subjects.update_one(
             {'_id': ObjectId(subject_id)},
-            {'$set': {'subject_name': name, 'grade_id': grade_id}}
+            {'$set': {'subject_name': name, 'grade_id': grade_id_obj}}
         )
         if result.matched_count == 0:
             return jsonify({'error': 'Subject not found'}), 404
@@ -830,20 +873,22 @@ def create_textbook():
         return jsonify({'error': 'Textbook name, subject, and grade are required'}), 400
     
     try:
-        # Convert IDs to ObjectId
-        if isinstance(subject_id, str):
-            subject_id = ObjectId(subject_id)
-        if isinstance(grade_id, str):
-            grade_id = ObjectId(grade_id)
+        subject_id_obj = to_object_id(subject_id)
+        grade_id_obj = to_object_id(grade_id)
         
-        existing = db.textbooks.find_one({'textbook_name': textbook_name, 'subject_id': subject_id})
+        if subject_id_obj is None:
+            return jsonify({'error': 'Invalid subject_id'}), 400
+        if grade_id_obj is None:
+            return jsonify({'error': 'Invalid grade_id'}), 400
+        
+        existing = db.textbooks.find_one({'textbook_name': textbook_name, 'subject_id': subject_id_obj})
         if existing:
             return jsonify({'error': 'Book already exists for this subject'}), 400
         
         result = db.textbooks.insert_one({
             'textbook_name': textbook_name,
-            'subject_id': subject_id,
-            'grade_id': grade_id,
+            'subject_id': subject_id_obj,
+            'grade_id': grade_id_obj,
             'publisher': publisher,
             'is_reference': is_reference,
             'created_at': datetime.now()
@@ -872,17 +917,20 @@ def update_textbook(textbook_id):
         return jsonify({'error': 'Textbook name, subject, and grade are required'}), 400
     
     try:
-        if isinstance(subject_id, str):
-            subject_id = ObjectId(subject_id)
-        if isinstance(grade_id, str):
-            grade_id = ObjectId(grade_id)
+        subject_id_obj = to_object_id(subject_id)
+        grade_id_obj = to_object_id(grade_id)
+        
+        if subject_id_obj is None:
+            return jsonify({'error': 'Invalid subject_id'}), 400
+        if grade_id_obj is None:
+            return jsonify({'error': 'Invalid grade_id'}), 400
         
         result = db.textbooks.update_one(
             {'_id': ObjectId(textbook_id)},
             {'$set': {
                 'textbook_name': textbook_name,
-                'subject_id': subject_id,
-                'grade_id': grade_id,
+                'subject_id': subject_id_obj,
+                'grade_id': grade_id_obj,
                 'publisher': publisher,
                 'is_reference': is_reference
             }}
@@ -997,24 +1045,26 @@ def create_chapter():
         return jsonify({'error': 'Textbook selection is required'}), 400
     
     try:
-        # Convert IDs to ObjectId
-        if isinstance(subject_id, str):
-            subject_id = ObjectId(subject_id)
-        if isinstance(textbook_id, str):
-            textbook_id = ObjectId(textbook_id)
+        subject_id_obj = to_object_id(subject_id)
+        textbook_id_obj = to_object_id(textbook_id)
         
-        existing = db.chapters.find_one({'subject_id': subject_id, 'chapter_name': chapter_name})
+        if subject_id_obj is None:
+            return jsonify({'error': 'Invalid subject_id'}), 400
+        if textbook_id_obj is None:
+            return jsonify({'error': 'Invalid textbook_id'}), 400
+        
+        existing = db.chapters.find_one({'subject_id': subject_id_obj, 'chapter_name': chapter_name})
         if existing:
             return jsonify({'error': 'Chapter already exists for this subject'}), 400
         
-        subject = db.subjects.find_one({'_id': subject_id})
+        subject = db.subjects.find_one({'_id': subject_id_obj})
         grade_id = subject.get('grade_id') if subject else None
         
         result = db.chapters.insert_one({
-            'subject_id': subject_id,
+            'subject_id': subject_id_obj,
             'chapter_name': chapter_name,
             'chapter_number': chapter_number,
-            'textbook_id': textbook_id,
+            'textbook_id': textbook_id_obj,
             'reference_book': reference_book,
             'grade_id': grade_id,
             'created_at': datetime.now()
@@ -1045,18 +1095,21 @@ def update_chapter(chapter_id):
         return jsonify({'error': 'Textbook selection is required'}), 400
     
     try:
-        if isinstance(subject_id, str):
-            subject_id = ObjectId(subject_id)
-        if isinstance(textbook_id, str):
-            textbook_id = ObjectId(textbook_id)
+        subject_id_obj = to_object_id(subject_id)
+        textbook_id_obj = to_object_id(textbook_id)
+        
+        if subject_id_obj is None:
+            return jsonify({'error': 'Invalid subject_id'}), 400
+        if textbook_id_obj is None:
+            return jsonify({'error': 'Invalid textbook_id'}), 400
         
         result = db.chapters.update_one(
             {'_id': ObjectId(chapter_id)},
             {'$set': {
-                'subject_id': subject_id,
+                'subject_id': subject_id_obj,
                 'chapter_name': chapter_name,
                 'chapter_number': chapter_number,
-                'textbook_id': textbook_id,
+                'textbook_id': textbook_id_obj,
                 'reference_book': reference_book
             }}
         )
@@ -1160,14 +1213,15 @@ def create_cg():
         return jsonify({'error': 'Code and subject required'}), 400
     
     try:
-        if isinstance(subject_id, str):
-            subject_id = ObjectId(subject_id)
-        if chapter_id and isinstance(chapter_id, str):
-            chapter_id = ObjectId(chapter_id)
+        subject_id_obj = to_object_id(subject_id)
+        if subject_id_obj is None:
+            return jsonify({'error': 'Invalid subject_id'}), 400
         
-        dup_query = {'cg_code': code, 'subject_id': subject_id}
-        if chapter_id:
-            dup_query['chapter_id'] = chapter_id
+        chapter_id_obj = to_object_id(chapter_id) if chapter_id else None
+        
+        dup_query = {'cg_code': code, 'subject_id': subject_id_obj}
+        if chapter_id_obj:
+            dup_query['chapter_id'] = chapter_id_obj
         else:
             dup_query['chapter_id'] = None
         
@@ -1177,8 +1231,8 @@ def create_cg():
         result = db.curricular_goals.insert_one({
             'cg_code': code,
             'cg_description': description,
-            'subject_id': subject_id,
-            'chapter_id': chapter_id
+            'subject_id': subject_id_obj,
+            'chapter_id': chapter_id_obj
         })
         return jsonify({'success': True, 'id': str(result.inserted_id)})
     except Exception as e:
@@ -1203,18 +1257,19 @@ def update_cg(cg_id):
         return jsonify({'error': 'Code and subject required'}), 400
     
     try:
-        if isinstance(subject_id, str):
-            subject_id = ObjectId(subject_id)
-        if chapter_id and isinstance(chapter_id, str):
-            chapter_id = ObjectId(chapter_id)
+        subject_id_obj = to_object_id(subject_id)
+        if subject_id_obj is None:
+            return jsonify({'error': 'Invalid subject_id'}), 400
+        
+        chapter_id_obj = to_object_id(chapter_id) if chapter_id else None
         
         result = db.curricular_goals.update_one(
             {'_id': ObjectId(cg_id)},
             {'$set': {
                 'cg_code': code,
                 'cg_description': description,
-                'subject_id': subject_id,
-                'chapter_id': chapter_id
+                'subject_id': subject_id_obj,
+                'chapter_id': chapter_id_obj
             }}
         )
         if result.matched_count == 0:
@@ -1289,13 +1344,14 @@ def create_competency():
         return jsonify({'error': 'Code and CG required'}), 400
     
     try:
-        if isinstance(cg_id, str):
-            cg_id = ObjectId(cg_id)
+        cg_id_obj = to_object_id(cg_id)
+        if cg_id_obj is None:
+            return jsonify({'error': 'Invalid cg_id'}), 400
         
         result = db.competencies.insert_one({
             'comp_code': code,
             'comp_description': description,
-            'cg_id': cg_id,
+            'cg_id': cg_id_obj,
             'status': status
         })
         return jsonify({'success': True, 'id': str(result.inserted_id)})
@@ -1321,15 +1377,16 @@ def update_competency(comp_id):
         return jsonify({'error': 'Code and CG required'}), 400
     
     try:
-        if isinstance(cg_id, str):
-            cg_id = ObjectId(cg_id)
+        cg_id_obj = to_object_id(cg_id)
+        if cg_id_obj is None:
+            return jsonify({'error': 'Invalid cg_id'}), 400
         
         result = db.competencies.update_one(
             {'_id': ObjectId(comp_id)},
             {'$set': {
                 'comp_code': code,
                 'comp_description': description,
-                'cg_id': cg_id,
+                'cg_id': cg_id_obj,
                 'status': status
             }}
         )
@@ -1434,10 +1491,13 @@ def create_subject_group():
         return jsonify({'error': 'All fields are required'}), 400
     
     try:
-        if isinstance(grade_id, str):
-            grade_id = ObjectId(grade_id)
-        if isinstance(subject_id, str):
-            subject_id = ObjectId(subject_id)
+        grade_id_obj = to_object_id(grade_id)
+        subject_id_obj = to_object_id(subject_id)
+        
+        if grade_id_obj is None:
+            return jsonify({'error': 'Invalid grade_id'}), 400
+        if subject_id_obj is None:
+            return jsonify({'error': 'Invalid subject_id'}), 400
         
         existing = db.subject_groups.find_one({'group_code': group_code})
         if existing:
@@ -1446,8 +1506,8 @@ def create_subject_group():
         result = db.subject_groups.insert_one({
             'group_code': group_code,
             'group_name': group_name,
-            'grade_id': grade_id,
-            'subject_id': subject_id,
+            'grade_id': grade_id_obj,
+            'subject_id': subject_id_obj,
             'created_at': datetime.now()
         })
         return jsonify({'success': True, 'id': str(result.inserted_id), 'message': 'Group created successfully'})
@@ -1470,18 +1530,21 @@ def update_subject_group(group_id):
     subject_id = data.get('subject_id')
     
     try:
-        if isinstance(grade_id, str):
-            grade_id = ObjectId(grade_id)
-        if isinstance(subject_id, str):
-            subject_id = ObjectId(subject_id)
+        grade_id_obj = to_object_id(grade_id)
+        subject_id_obj = to_object_id(subject_id)
+        
+        if grade_id_obj is None:
+            return jsonify({'error': 'Invalid grade_id'}), 400
+        if subject_id_obj is None:
+            return jsonify({'error': 'Invalid subject_id'}), 400
         
         result = db.subject_groups.update_one(
             {'_id': ObjectId(group_id)},
             {'$set': {
                 'group_code': group_code,
                 'group_name': group_name,
-                'grade_id': grade_id,
-                'subject_id': subject_id
+                'grade_id': grade_id_obj,
+                'subject_id': subject_id_obj
             }}
         )
         if result.matched_count == 0:
