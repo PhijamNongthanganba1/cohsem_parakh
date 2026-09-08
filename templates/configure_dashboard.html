@@ -1050,10 +1050,6 @@
             });
         }
 
-        
-        
-        
-
         async function loadGrades() {
             try {
                 const response = await fetch('/api/grades');
@@ -1065,13 +1061,13 @@
                     return;
                 }
                 container.innerHTML = grades.map(g => `
-                    <div class="card" onclick="selectGrade(${g.id}, '${g.grade_name}')">
+                    <div class="card" onclick="selectGrade('${g.id}', '${g.grade_name}')">
                         <div class="card-icon"><i class="fas fa-layer-group"></i></div>
                         <h3>${g.grade_name}</h3>
                         <div class="metadata-actions">
                             ${isAdmin ? `
-                                <button class="action-btn action-edit" onclick="event.stopPropagation(); openEditModal('grade', ${g.id}, '${g.grade_name}')"><i class="fas fa-edit"></i></button>
-                                <button class="action-btn action-delete" onclick="event.stopPropagation(); deleteGrade(${g.id})"><i class="fas fa-trash"></i></button>
+                                <button class="action-btn action-edit" onclick="event.stopPropagation(); openEditModal('grade', '${g.id}', '${g.grade_name}')"><i class="fas fa-edit"></i></button>
+                                <button class="action-btn action-delete" onclick="event.stopPropagation(); deleteGrade('${g.id}')"><i class="fas fa-trash"></i></button>
                             ` : `<button class="action-btn action-view" onclick="event.stopPropagation(); showViewOnly('grade', '${g.grade_name}')"><i class="fas fa-eye"></i></button>`}
                         </div>
                     </div>
@@ -1130,10 +1126,6 @@
             }
         }
 
-        
-        
-        
-
         async function loadSubjects(gradeId) {
             try {
                 const response = await fetch('/api/page1-data');
@@ -1145,13 +1137,13 @@
                     return;
                 }
                 container.innerHTML = subjects.map(s => `
-                    <div class="card" onclick="selectSubject(${s.id}, '${s.subject_name}')">
+                    <div class="card" onclick="selectSubject('${s.id}', '${s.subject_name}')">
                         <div class="card-icon"><i class="fas fa-book"></i></div>
                         <h3>${s.subject_name}</h3>
                         <div class="metadata-actions">
                             ${isAdmin ? `
-                                <button class="action-btn action-edit" onclick="event.stopPropagation(); openEditModal('subject', ${s.id}, '${s.subject_name}', ${s.grade_id})"><i class="fas fa-edit"></i></button>
-                                <button class="action-btn action-delete" onclick="event.stopPropagation(); deleteSubject(${s.id})"><i class="fas fa-trash"></i></button>
+                                <button class="action-btn action-edit" onclick="event.stopPropagation(); openEditModal('subject', '${s.id}', '${s.subject_name}', '${s.grade_id}')"><i class="fas fa-edit"></i></button>
+                                <button class="action-btn action-delete" onclick="event.stopPropagation(); deleteSubject('${s.id}')"><i class="fas fa-trash"></i></button>
                             ` : `<button class="action-btn action-view" onclick="event.stopPropagation(); showViewOnly('subject', '${s.subject_name}')"><i class="fas fa-eye"></i></button>`}
                         </div>
                     </div>
@@ -1209,10 +1201,6 @@
             }
         }
 
-        
-        
-        
-
         function toggleBookType() {
             const isReference = document.querySelector('input[name="bookType"]:checked').value === 'reference';
             const description = document.getElementById('bookTypeDescription');
@@ -1262,7 +1250,7 @@
                     const bookTypeColor = isReference ? '#8e44ad' : '#27ae60';
                     
                     return `
-                        <div class="card" onclick="selectTextbook(${t.id}, '${t.textbook_name.replace(/'/g, "\\'")}')">
+                        <div class="card" onclick="selectTextbook('${t.id}', '${t.textbook_name.replace(/'/g, "\\'")}')">
                             <div class="card-icon" style="background: linear-gradient(45deg, ${bookTypeColor}, ${bookTypeColor}dd);">
                                 <i class="fas ${bookTypeIcon}"></i>
                             </div>
@@ -1271,8 +1259,8 @@
                             ${isReference ? '<span class="reference-badge">📖 Reference</span>' : ''}
                             <div class="metadata-actions">
                                 ${isAdmin ? `
-                                    <button class="action-btn action-edit" onclick="event.stopPropagation(); editTextbook(${t.id}, '${t.textbook_name.replace(/'/g, "\\'")}', '${(t.publisher||'').replace(/'/g, "\\'")}', ${isReference ? 1 : 0})"><i class="fas fa-edit"></i></button>
-                                    <button class="action-btn action-delete" onclick="event.stopPropagation(); deleteTextbook(${t.id})"><i class="fas fa-trash"></i></button>
+                                    <button class="action-btn action-edit" onclick="event.stopPropagation(); editTextbook('${t.id}', '${t.textbook_name.replace(/'/g, "\\'")}', '${(t.publisher||'').replace(/'/g, "\\'")}', ${isReference ? 1 : 0})"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn action-delete" onclick="event.stopPropagation(); deleteTextbook('${t.id}')"><i class="fas fa-trash"></i></button>
                                 ` : `<button class="action-btn action-view" onclick="event.stopPropagation(); showViewOnly('textbook', '${t.textbook_name.replace(/'/g, "\\'")}')"><i class="fas fa-eye"></i></button>`}
                             </div>
                         </div>
@@ -1426,10 +1414,6 @@
             }
         }
 
-        
-        
-        
-
         async function loadChapters(textbookId) {
             const container = document.getElementById('chapterGrid');
             
@@ -1484,14 +1468,14 @@
                 }
                 
                 container.innerHTML = chapters.map(ch => `
-                    <div class="card" onclick="selectChapter(${ch.id}, '${ch.chapter_name.replace(/'/g, "\\'")}')">
+                    <div class="card" onclick="selectChapter('${ch.id}', '${ch.chapter_name.replace(/'/g, "\\'")}')">
                         <div class="card-icon"><i class="fas fa-book"></i></div>
                         <h3>${ch.chapter_name}</h3>
                         ${ch.chapter_number ? `<p>Chapter ${ch.chapter_number}</p>` : ''}
                         <div class="metadata-actions">
                             ${isAdmin ? `
-                                <button class="action-btn action-edit" onclick="event.stopPropagation(); editChapter(${ch.id}, '${ch.chapter_name.replace(/'/g, "\\'")}', ${ch.chapter_number||0}, ${ch.textbook_id||'null'})"><i class="fas fa-edit"></i></button>
-                                <button class="action-btn action-delete" onclick="event.stopPropagation(); deleteChapter(${ch.id})"><i class="fas fa-trash"></i></button>
+                                <button class="action-btn action-edit" onclick="event.stopPropagation(); editChapter('${ch.id}', '${ch.chapter_name.replace(/'/g, "\\'")}', ${ch.chapter_number||0}, '${ch.textbook_id||''}')"><i class="fas fa-edit"></i></button>
+                                <button class="action-btn action-delete" onclick="event.stopPropagation(); deleteChapter('${ch.id}')"><i class="fas fa-trash"></i></button>
                             ` : `<button class="action-btn action-view" onclick="event.stopPropagation(); showViewOnly('chapter', '${ch.chapter_name.replace(/'/g, "\\'")}')"><i class="fas fa-eye"></i></button>`}
                         </div>
                     </div>
@@ -1655,7 +1639,6 @@
             }
         }
 
-
         async function loadCGs(subjectId) {
             const container = document.getElementById('cgGrid');
             container.innerHTML = `
@@ -1695,14 +1678,14 @@
                     const description = c.cg_description || 'No description provided';
                     
                     html += `
-                        <div class="card" onclick="selectCG(${id}, '${code.replace(/'/g, "\\'")}')">
+                        <div class="card" onclick="selectCG('${id}', '${code.replace(/'/g, "\\'")}')">
                             <div class="card-icon"><i class="fas fa-bullseye"></i></div>
                             <h3>${code}</h3>
                             <p class="cg-description">${description}</p>
                             <div class="metadata-actions">
                                 ${isAdmin ? `
-                                    <button class="action-btn action-edit" onclick="event.stopPropagation(); openEditModal('cg', ${id}, '${code.replace(/'/g, "\\'")}', '${description.replace(/'/g, "\\'")}', ${c.subject_id||0})"><i class="fas fa-edit"></i></button>
-                                    <button class="action-btn action-delete" onclick="event.stopPropagation(); deleteCG(${id})"><i class="fas fa-trash"></i></button>
+                                    <button class="action-btn action-edit" onclick="event.stopPropagation(); openEditModal('cg', '${id}', '${code.replace(/'/g, "\\'")}', '${description.replace(/'/g, "\\'")}', '${c.subject_id||0}')"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn action-delete" onclick="event.stopPropagation(); deleteCG('${id}')"><i class="fas fa-trash"></i></button>
                                 ` : `<button class="action-btn action-view" onclick="event.stopPropagation(); showViewOnly('cg', '${code.replace(/'/g, "\\'")}')"><i class="fas fa-eye"></i></button>`}
                             </div>
                         </div>
@@ -1767,10 +1750,6 @@
             }
         }
 
-        // ================================================================
-        // COMPETENCY FUNCTIONS
-        // ================================================================
-
         async function loadCompetencies(cgId) {
             const container = document.getElementById('competencyGrid');
             container.innerHTML = `
@@ -1808,7 +1787,7 @@
                     const status = c.status || 1;
                     
                     html += `
-                        <div class="card" onclick="selectCompetency(${id}, '${code.replace(/'/g, "\\'")}')">
+                        <div class="card" onclick="selectCompetency('${id}', '${code.replace(/'/g, "\\'")}')">
                             <div class="card-icon"><i class="fas fa-tasks"></i></div>
                             <h3>${code}</h3>
                             <p class="cg-description">${description}</p>
@@ -1819,9 +1798,9 @@
                             </div>
                             <div class="metadata-actions">
                                 ${isAdmin ? `
-                                    <button class="action-btn action-edit" onclick="event.stopPropagation(); openEditModal('competency', ${id}, '${code.replace(/'/g, "\\'")}', '${description.replace(/'/g, "\\'")}', ${c.cg_id||0}, ${status})"><i class="fas fa-edit"></i></button>
-                                    <button class="action-btn action-delete" onclick="event.stopPropagation(); deleteCompetency(${id})"><i class="fas fa-trash"></i></button>
-                                    <button class="action-btn icon-toggle" onclick="event.stopPropagation(); toggleCompetencyStatus(${id}, ${status})" title="${status == 1 ? 'Deactivate' : 'Activate'}"><i class="fas ${status == 1 ? 'fa-eye-slash' : 'fa-eye'}"></i></button>
+                                    <button class="action-btn action-edit" onclick="event.stopPropagation(); openEditModal('competency', '${id}', '${code.replace(/'/g, "\\'")}', '${description.replace(/'/g, "\\'")}', '${c.cg_id||0}', ${status})"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn action-delete" onclick="event.stopPropagation(); deleteCompetency('${id}')"><i class="fas fa-trash"></i></button>
+                                    <button class="action-btn icon-toggle" onclick="event.stopPropagation(); toggleCompetencyStatus('${id}', ${status})" title="${status == 1 ? 'Deactivate' : 'Activate'}"><i class="fas ${status == 1 ? 'fa-eye-slash' : 'fa-eye'}"></i></button>
                                 ` : `<button class="action-btn action-view" onclick="event.stopPropagation(); showViewOnly('competency', '${code.replace(/'/g, "\\'")}')"><i class="fas fa-eye"></i></button>`}
                             </div>
                         </div>
@@ -1920,10 +1899,6 @@
             }
         }
 
-        
-        
-        
-
         function openAddModal(type) {
             if(!isAdmin) return showViewOnly(type, '');
             document.getElementById('editItemId').value = '';
@@ -1935,9 +1910,13 @@
                     fields = `<div class="form-group"><label>Grade Name *</label><input type="text" id="editName" class="form-control" placeholder="e.g., Class X, Class XI" required></div>`;
                     break;
                 case 'subject':
+                    // Get the grade ID from current selection or first grade
+                    const gradeId = currentSelections.grade ? currentSelections.grade.id : (grades.length > 0 ? grades[0].id : '');
                     fields = `
                         <div class="form-group"><label>Subject Name *</label><input type="text" id="editName" class="form-control" placeholder="e.g., Physics, Chemistry" required></div>
-                        <div class="form-group"><label>Grade *</label><select id="editGradeId" class="form-control" required>${grades.map(g => `<option value="${g.id}">${g.grade_name}</option>`).join('')}</select></div>
+                        <div class="form-group"><label>Grade *</label><select id="editGradeId" class="form-control" required>
+                            ${grades.map(g => `<option value="${g.id}" ${g.id == gradeId ? 'selected' : ''}>${g.grade_name}</option>`).join('')}
+                        </select></div>
                     `;
                     break;
                 case 'cg':
@@ -2013,10 +1992,22 @@
             const id = document.getElementById('editItemId').value;
             let data = {}, url = '', method = id ? 'PUT' : 'POST';
             switch(type) {
-                case 'grade': data = { name: document.getElementById('editName').value }; url = id ? `/api/grades/${id}` : '/api/grades'; break;
-                case 'subject': data = { name: document.getElementById('editName').value, grade_id: document.getElementById('editGradeId').value }; url = id ? `/api/subjects/${id}` : '/api/subjects'; break;
-                case 'cg': data = { code: document.getElementById('editCode').value, description: document.getElementById('editDescription').value, subject_id: document.getElementById('editSubjectId').value }; url = id ? `/api/cgs/${id}` : '/api/cgs'; break;
-                case 'competency': data = { code: document.getElementById('editCode').value, description: document.getElementById('editDescription').value, cg_id: document.getElementById('editCGId').value, status: document.getElementById('editStatus').value }; url = id ? `/api/competencies/${id}` : '/api/competencies'; break;
+                case 'grade': 
+                    data = { name: document.getElementById('editName').value }; 
+                    url = id ? `/api/grades/${id}` : '/api/grades'; 
+                    break;
+                case 'subject': 
+                    data = { name: document.getElementById('editName').value, grade_id: document.getElementById('editGradeId').value }; 
+                    url = id ? `/api/subjects/${id}` : '/api/subjects'; 
+                    break;
+                case 'cg': 
+                    data = { code: document.getElementById('editCode').value, description: document.getElementById('editDescription').value, subject_id: document.getElementById('editSubjectId').value }; 
+                    url = id ? `/api/cgs/${id}` : '/api/cgs'; 
+                    break;
+                case 'competency': 
+                    data = { code: document.getElementById('editCode').value, description: document.getElementById('editDescription').value, cg_id: document.getElementById('editCGId').value, status: document.getElementById('editStatus').value }; 
+                    url = id ? `/api/competencies/${id}` : '/api/competencies'; 
+                    break;
             }
             try {
                 const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
@@ -2040,10 +2031,6 @@
             }
         }
 
-        
-        
-        
-
         async function loadGroups() {
             try {
                 const response = await fetch('/api/subject-groups');
@@ -2061,8 +2048,8 @@
                             <td>
                                 <div class="action-group">
                                     ${isAdmin ? `
-                                        <button class="icon-btn icon-edit" onclick="editGroup(${g.id}, '${g.group_code}', '${g.group_name||''}', ${g.grade_id}, ${g.subject_id})"><i class="fas fa-edit"></i></button>
-                                        <button class="icon-btn icon-delete" onclick="deleteGroup(${g.id})"><i class="fas fa-trash"></i></button>
+                                        <button class="icon-btn icon-edit" onclick="editGroup('${g.id}', '${g.group_code}', '${g.group_name||''}', '${g.grade_id}', '${g.subject_id}')"><i class="fas fa-edit"></i></button>
+                                        <button class="icon-btn icon-delete" onclick="deleteGroup('${g.id}')"><i class="fas fa-trash"></i></button>
                                     ` : `<button class="icon-btn icon-view" onclick="showViewOnly('group', '${g.group_code}')"><i class="fas fa-eye"></i></button>`}
                                 </div>
                             </td>
@@ -2152,7 +2139,6 @@
             }
         });
 
-        
         function generateGroupName(existingPrefix = null) {
             const gradeSelect = document.getElementById('groupGrade');
             const subjectSelect = document.getElementById('groupSubject');
@@ -2179,7 +2165,6 @@
         }
 
         function getGradeCode(gradeName) {
-            
             const romanMap = {
                 'X': 'X',
                 'XI': 'XI',
@@ -2196,12 +2181,10 @@
                 'I': 'I'
             };
             
-            
             const romanMatch = gradeName.match(/\b(X{1,3}|I[VX]|V?I{0,2})\b/);
             if (romanMatch && romanMap[romanMatch[1]]) {
                 return romanMap[romanMatch[1]];
             }
-            
             
             const numMatch = gradeName.match(/\b(\d+)\b/);
             if (numMatch) {
@@ -2212,7 +2195,6 @@
                 if (num <= 15) return romanNumerals[num];
                 return num.toString();
             }
-            
             
             return gradeName.replace(/^(Class|Grade)\s+/i, '').trim();
         }
@@ -2271,7 +2253,6 @@
 
         document.getElementById('groupSuffix')?.addEventListener('input', updateFullGroupName);
 
-        
         async function saveGroup() {
             if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can save groups', 'error');
             const id = document.getElementById('groupId').value;
@@ -2282,7 +2263,6 @@
             
             if(!gradeId || !subjectId) return Swal.fire('Error', 'Please select both grade and subject', 'error');
             if(!fullCode || fullCode === '---') return Swal.fire('Error', 'Invalid group code', 'error');
-            
             
             if(!/^[a-zA-Z0-9_\-]+$/.test(fullCode)) {
                 return Swal.fire('Error', 'Group code can only contain letters, numbers, underscores, and hyphens', 'error');
@@ -2349,10 +2329,6 @@
             }
         }
 
-        
-        
-        
-
         async function loadUsers() {
             try {
                 const response = await fetch('/api/users');
@@ -2377,9 +2353,9 @@
                                 <td>
                                     <div class="action-group">
                                         ${isAdmin ? `
-                                            <button class="icon-btn icon-edit" onclick="editUser(${user.id}, '${user.username}', '${user.role}', '${user.subject_group||''}')"><i class="fas fa-edit"></i></button>
-                                            <button class="icon-btn icon-key" onclick="openPasswordModal(${user.id})"><i class="fas fa-key"></i></button>
-                                            <button class="icon-btn icon-delete" onclick="deleteUser(${user.id})"><i class="fas fa-trash"></i></button>
+                                            <button class="icon-btn icon-edit" onclick="editUser('${user.id}', '${user.username}', '${user.role}', '${user.subject_group||''}')"><i class="fas fa-edit"></i></button>
+                                            <button class="icon-btn icon-key" onclick="openPasswordModal('${user.id}')"><i class="fas fa-key"></i></button>
+                                            <button class="icon-btn icon-delete" onclick="deleteUser('${user.id}')"><i class="fas fa-trash"></i></button>
                                         ` : `<button class="icon-btn icon-view" onclick="showViewOnly('user', '${user.username}')"><i class="fas fa-eye"></i></button>`}
                                     </div>
                                 </td>
