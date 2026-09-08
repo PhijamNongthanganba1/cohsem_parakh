@@ -87,16 +87,17 @@ def convert_objectid(doc):
         return result
     return doc
 
-def to_object_id(value):
-    """Safely convert a value to ObjectId"""
+def safe_object_id(value):
+    """Safely convert a value to ObjectId, returns None for invalid values"""
     if value is None:
         return None
     if isinstance(value, ObjectId):
         return value
     if isinstance(value, str):
         value = value.strip()
-        if not value or value == 'undefined' or value == 'null' or value == 'None':
+        if not value or value == 'undefined' or value == 'null' or value == 'None' or value == '':
             return None
+        # Check if it's a valid ObjectId string (24 hex chars)
         if len(value) == 24 and re.match(r'^[0-9a-fA-F]{24}$', value):
             try:
                 return ObjectId(value)
@@ -105,22 +106,31 @@ def to_object_id(value):
     return None
 
 def get_grade_id_from_value(value):
-    """Get grade ObjectId from various formats"""
+    """Get grade ObjectId from various formats, handles undefined gracefully"""
     if value is None:
+        # Try to get first available grade
+        grade = db.grades.find_one({})
+        if grade:
+            return grade['_id']
         return None
+    
     if isinstance(value, ObjectId):
         return value
+    
     if isinstance(value, str):
         value = value.strip()
-        if not value or value == 'undefined' or value == 'null' or value == 'None':
+        # Handle undefined/null/empty values
+        if not value or value == 'undefined' or value == 'null' or value == 'None' or value == '':
             grade = db.grades.find_one({})
             if grade:
                 return grade['_id']
             return None
+        
         # Try to find by grade_name
         grade = db.grades.find_one({'grade_name': value})
         if grade:
             return grade['_id']
+        
         # Try to find by string ID
         try:
             grade = db.grades.find_one({'_id': value})
@@ -128,6 +138,12 @@ def get_grade_id_from_value(value):
                 return grade['_id']
         except:
             pass
+        
+        # Try to find by regex match on grade_name
+        grade = db.grades.find_one({'grade_name': {'$regex': value, '$options': 'i'}})
+        if grade:
+            return grade['_id']
+    
     # If all fails, try to get first grade
     grade = db.grades.find_one({})
     if grade:
@@ -258,6 +274,18 @@ def init_db():
                 'created_at': datetime.now()
             })
             print("✓ Created default admin user")
+        
+        # Fix any existing subjects with "undefined" grade_id
+        print("🔧 Fixing existing subjects with undefined grade_id...")
+        first_grade = db.grades.find_one({})
+        if first_grade:
+            grade_id = first_grade['_id']
+            result = db.subjects.update_many(
+                {'grade_id': 'undefined'},
+                {'$set': {'grade_id': grade_id}}
+            )
+            if result.modified_count > 0:
+                print(f"✓ Fixed {result.modified_count} subjects with 'undefined' grade_id")
         
         print("✅ Database initialization complete")
     except Exception as e:
@@ -699,6 +727,10 @@ def delete_grade(grade_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ============================================
+# FIXED SUBJECT ENDPOINTS
+# ============================================
+
 @app.route('/api/subjects', methods=['GET'])
 def get_subjects():
     if 'user' not in session:
@@ -713,6 +745,14 @@ def get_subjects():
         if first_grade:
             db.subjects.update_many(
                 {'grade_id': 'undefined'},
+                {'$set': {'grade_id': first_grade['_id']}}
+            )
+            db.subjects.update_many(
+                {'grade_id': 'null'},
+                {'$set': {'grade_id': first_grade['_id']}}
+            )
+            db.subjects.update_many(
+                {'grade_id': ''},
                 {'$set': {'grade_id': first_grade['_id']}}
             )
         
@@ -759,11 +799,13 @@ def create_subject():
         return jsonify({'error': 'Subject name is required'}), 400
     
     try:
+        # Get grade_id from value - handles undefined gracefully
         grade_id_obj = get_grade_id_from_value(grade_id)
         
         if grade_id_obj is None:
             return jsonify({'error': 'No grades available. Please create a grade first.'}), 400
         
+        # Check if subject already exists for this grade
         existing = db.subjects.find_one({
             'subject_name': name,
             'grade_id': grade_id_obj
@@ -887,7 +929,7 @@ def create_textbook():
         return jsonify({'error': 'Textbook name, subject, and grade are required'}), 400
     
     try:
-        subject_id_obj = to_object_id(subject_id)
+        subject_id_obj = safe_object_id(subject_id)
         if subject_id_obj is None:
             return jsonify({'error': 'Invalid subject_id'}), 400
         
@@ -931,7 +973,7 @@ def update_textbook(textbook_id):
         return jsonify({'error': 'Textbook name, subject, and grade are required'}), 400
     
     try:
-        subject_id_obj = to_object_id(subject_id)
+        subject_id_obj = safe_object_id(subject_id)
         if subject_id_obj is None:
             return jsonify({'error': 'Invalid subject_id'}), 400
         
@@ -1059,8 +1101,8 @@ def create_chapter():
         return jsonify({'error': 'Textbook selection is required'}), 400
     
     try:
-        subject_id_obj = to_object_id(subject_id)
-        textbook_id_obj = to_object_id(textbook_id)
+        subject_id_obj = safe_object_id(subject_id)
+        textbook_id_obj = safe_object_id(textbook_id)
         
         if subject_id_obj is None:
             return jsonify({'error': 'Invalid subject_id'}), 400
@@ -1109,8 +1151,8 @@ def update_chapter(chapter_id):
         return jsonify({'error': 'Textbook selection is required'}), 400
     
     try:
-        subject_id_obj = to_object_id(subject_id)
-        textbook_id_obj = to_object_id(textbook_id)
+        subject_id_obj = safe_object_id(subject_id)
+        textbook_id_obj = safe_object_id(textbook_id)
         
         if subject_id_obj is None:
             return jsonify({'error': 'Invalid subject_id'}), 400
@@ -1227,11 +1269,11 @@ def create_cg():
         return jsonify({'error': 'Code and subject required'}), 400
     
     try:
-        subject_id_obj = to_object_id(subject_id)
+        subject_id_obj = safe_object_id(subject_id)
         if subject_id_obj is None:
             return jsonify({'error': 'Invalid subject_id'}), 400
         
-        chapter_id_obj = to_object_id(chapter_id) if chapter_id else None
+        chapter_id_obj = safe_object_id(chapter_id) if chapter_id else None
         
         dup_query = {'cg_code': code, 'subject_id': subject_id_obj}
         if chapter_id_obj:
@@ -1271,11 +1313,11 @@ def update_cg(cg_id):
         return jsonify({'error': 'Code and subject required'}), 400
     
     try:
-        subject_id_obj = to_object_id(subject_id)
+        subject_id_obj = safe_object_id(subject_id)
         if subject_id_obj is None:
             return jsonify({'error': 'Invalid subject_id'}), 400
         
-        chapter_id_obj = to_object_id(chapter_id) if chapter_id else None
+        chapter_id_obj = safe_object_id(chapter_id) if chapter_id else None
         
         result = db.curricular_goals.update_one(
             {'_id': ObjectId(cg_id)},
@@ -1358,7 +1400,7 @@ def create_competency():
         return jsonify({'error': 'Code and CG required'}), 400
     
     try:
-        cg_id_obj = to_object_id(cg_id)
+        cg_id_obj = safe_object_id(cg_id)
         if cg_id_obj is None:
             return jsonify({'error': 'Invalid cg_id'}), 400
         
@@ -1391,7 +1433,7 @@ def update_competency(comp_id):
         return jsonify({'error': 'Code and CG required'}), 400
     
     try:
-        cg_id_obj = to_object_id(cg_id)
+        cg_id_obj = safe_object_id(cg_id)
         if cg_id_obj is None:
             return jsonify({'error': 'Invalid cg_id'}), 400
         
@@ -1509,7 +1551,7 @@ def create_subject_group():
         if grade_id_obj is None:
             return jsonify({'error': 'No grades available'}), 400
         
-        subject_id_obj = to_object_id(subject_id)
+        subject_id_obj = safe_object_id(subject_id)
         if subject_id_obj is None:
             return jsonify({'error': 'Invalid subject_id'}), 400
         
@@ -1548,7 +1590,7 @@ def update_subject_group(group_id):
         if grade_id_obj is None:
             return jsonify({'error': 'No grades available'}), 400
         
-        subject_id_obj = to_object_id(subject_id)
+        subject_id_obj = safe_object_id(subject_id)
         if subject_id_obj is None:
             return jsonify({'error': 'Invalid subject_id'}), 400
         
@@ -1831,7 +1873,7 @@ def get_approvers():
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# QUESTION REVIEW OPERATIONS
+# QUESTION REVIEW OPERATIONS (Continued)
 # ============================================
 
 @app.route('/api/master-review-question/<question_id>', methods=['POST'])
@@ -2394,10 +2436,19 @@ def get_page1_data():
     subject_group = session.get('subject_group')
     
     try:
+        # Fix any subjects with undefined grade_id
         first_grade = db.grades.find_one({})
         if first_grade:
             db.subjects.update_many(
                 {'grade_id': 'undefined'},
+                {'$set': {'grade_id': first_grade['_id']}}
+            )
+            db.subjects.update_many(
+                {'grade_id': 'null'},
+                {'$set': {'grade_id': first_grade['_id']}}
+            )
+            db.subjects.update_many(
+                {'grade_id': ''},
                 {'$set': {'grade_id': first_grade['_id']}}
             )
         
@@ -2429,7 +2480,7 @@ def get_page1_data():
         for s in subjects:
             s['id'] = str(s['_id'])
             if 'grade_id' in s:
-                if s['grade_id'] == 'undefined' or s['grade_id'] == 'null':
+                if s['grade_id'] == 'undefined' or s['grade_id'] == 'null' or s['grade_id'] == '':
                     if first_grade:
                         s['grade_id'] = str(first_grade['_id'])
                     else:
