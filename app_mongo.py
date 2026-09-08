@@ -17,48 +17,39 @@ print(f"🐍 Python version: {sys.version}")
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'cohsem_it_secure_key_2026_change_this_in_production')
 
-# --- MongoDB Configuration ---
-MONGODB_URI = os.environ.get('MONGODB_URI', 'mongodb+srv://nongthanganbaphijam_db_user:BG2uPkyRu1L4ov30@cluster0.b5arftz.mongodb.net/')
+# --- HARDCODE MongoDB Connection ---
+MONGO_URI = 'mongodb+srv://nongthanganbaphijam_db_user:BG2uPkyRu1L4ov30@cluster0.b5arftz.mongodb.net/?retryWrites=true&w=majority'
 
 print(f"🔗 Connecting to MongoDB...")
 
-# Connect with SSL disabled for Render
+# Direct connection - bypass Flask-PyMongo issues
 try:
     client = pymongo.MongoClient(
-        MONGODB_URI,
+        MONGO_URI,
         serverSelectionTimeoutMS=10000,
         tls=False,
         ssl=False,
         tlsAllowInvalidCertificates=True,
         tlsAllowInvalidHostnames=True
     )
-    # Test connection
     client.admin.command('ping')
     db = client['cohsemitms']
     print("✅ MongoDB connected successfully!")
     
+    app.config["MONGO_URI"] = MONGO_URI
     mongo = PyMongo(app)
     mongo.db = db
     mongo.cx = client
     
 except Exception as e:
-    print(f"❌ Connection attempt 1 failed: {e}")
-    try:
-        client = pymongo.MongoClient(MONGODB_URI)
-        db = client['cohsemitms']
-        mongo = PyMongo(app)
-        mongo.db = db
-        mongo.cx = client
-        print("✅ MongoDB connected with fallback!")
-    except Exception as e2:
-        print(f"❌ All connection attempts failed: {e2}")
-        # Create a dummy connection for testing
-        client = pymongo.MongoClient('mongodb://localhost:27017/')
-        db = client['cohsemitms']
-        mongo = PyMongo(app)
-        mongo.db = db
-        mongo.cx = client
-        print("⚠️ Using dummy database connection")
+    print(f"❌ Connection failed: {e}")
+    client = pymongo.MongoClient('mongodb://localhost:27017/')
+    db = client['cohsemitms']
+    app.config["MONGO_URI"] = 'mongodb://localhost:27017/'
+    mongo = PyMongo(app)
+    mongo.db = db
+    mongo.cx = client
+    print("⚠️ Using dummy database connection")
 
 # --- File Upload Configuration ---
 UPLOAD_FOLDER = 'static/uploads/questions'
@@ -99,18 +90,24 @@ def get_question_text_safe(html_content):
     return ''
 
 def get_user_subject_ids(username):
-    user = db.users.find_one({'username': username})
-    if not user or not user.get('subject_group'):
+    try:
+        user = db.users.find_one({'username': username})
+        if not user or not user.get('subject_group'):
+            return []
+        groups = db.subject_groups.find({'group_code': user['subject_group']})
+        return [group['subject_id'] for group in groups]
+    except:
         return []
-    groups = db.subject_groups.find({'group_code': user['subject_group']})
-    return [group['subject_id'] for group in groups]
 
 def get_user_grades(username):
-    user = db.users.find_one({'username': username})
-    if not user or not user.get('subject_group'):
+    try:
+        user = db.users.find_one({'username': username})
+        if not user or not user.get('subject_group'):
+            return []
+        groups = db.subject_groups.find({'group_code': user['subject_group']})
+        return [group['grade_id'] for group in groups]
+    except:
         return []
-    groups = db.subject_groups.find({'group_code': user['subject_group']})
-    return [group['grade_id'] for group in groups]
 
 def apply_subject_filter(query, user_role, subject_group, subject_id_column='subject_id'):
     if user_role == 'admin':
@@ -125,9 +122,7 @@ def apply_subject_filter(query, user_role, subject_group, subject_id_column='sub
 
 # --- Database Initialization ---
 def init_db():
-    """Initialize MongoDB collections and default data"""
     try:
-        # Insert default cognitive domains if empty
         if db.cognitive_domains.count_documents({}) == 0:
             domains_data = [
                 {'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
@@ -137,17 +132,14 @@ def init_db():
             db.cognitive_domains.insert_many(domains_data)
             print("✓ Inserted default cognitive domains")
         
-        # Insert default difficulty levels if empty
         if db.difficulty_levels.count_documents({}) == 0:
             difficulty_data = ['Easy', 'Medium', 'Hard']
             db.difficulty_levels.insert_many([{'level_name': level} for level in difficulty_data])
             print("✓ Inserted default difficulty levels")
         
-        # Get domain IDs
         domains = {doc['domain_name']: doc['_id'] for doc in db.cognitive_domains.find()}
         difficulties = {doc['level_name']: doc['_id'] for doc in db.difficulty_levels.find()}
         
-        # Insert default knowledge levels if empty
         if db.knowledge_levels.count_documents({}) == 0:
             knowledge_levels = [
                 ('Knowledge', 'Basic recall of information and facts', domains.get('Awareness'), difficulties.get('Easy')),
@@ -166,7 +158,6 @@ def init_db():
                 ('Design Thinking', 'Human-centered problem solving approach', domains.get('Creativity'), difficulties.get('Hard')),
                 ('Reflection', 'Thoughtful consideration and self-assessment', domains.get('Creativity'), difficulties.get('Hard'))
             ]
-            
             for level_name, description, domain_id, difficulty_id in knowledge_levels:
                 db.knowledge_levels.insert_one({
                     'level_name': level_name,
@@ -177,7 +168,6 @@ def init_db():
                 })
             print("✓ Inserted default knowledge levels")
         
-        # Insert default question types if empty
         if db.question_types.count_documents({}) == 0:
             question_types = [
                 ('Objective', domains.get('Awareness')),
@@ -186,7 +176,6 @@ def init_db():
                 ('Long Answer', domains.get('Sensitivity')),
                 ('MCQ', domains.get('Creativity'))
             ]
-            
             for type_name, cognitive_id in question_types:
                 db.question_types.insert_one({
                     'type_name': type_name,
@@ -194,14 +183,11 @@ def init_db():
                 })
             print("✓ Inserted default question types")
         
-        # Create default admin user if no users exist
         if db.users.count_documents({}) == 0:
             ADMIN_USERNAME = "admin"
             ADMIN_PASSWORD = "admin123"
             ADMIN_ROLE = "admin"
-            
             hashed_password = generate_password_hash(ADMIN_PASSWORD)
-            
             db.users.insert_one({
                 'username': ADMIN_USERNAME,
                 'password': hashed_password,
@@ -221,7 +207,6 @@ def init_db():
     except Exception as e:
         print(f"⚠️ Database initialization error: {e}")
 
-# Initialize on startup
 with app.app_context():
     init_db()
 
@@ -248,7 +233,6 @@ def dashboard_login():
         
         try:
             user = db.users.find_one({'username': username})
-            
             if not user:
                 flash('Invalid username or password!', 'error')
                 return render_template('dashboard_login.html')
@@ -270,7 +254,6 @@ def dashboard_login():
             else:
                 flash('Invalid username or password!', 'error')
                 return render_template('dashboard_login.html')
-                
         except Exception as e:
             print(f"❌ Login error: {e}")
             flash(f'Login error: {str(e)}', 'error')
@@ -545,24 +528,9 @@ def dashboard_stats():
             }
         
         pipeline_recent = [
-            {'$lookup': {
-                'from': 'grades',
-                'localField': 'grade_id',
-                'foreignField': '_id',
-                'as': 'grade_info'
-            }},
-            {'$lookup': {
-                'from': 'subjects',
-                'localField': 'subject_id',
-                'foreignField': '_id',
-                'as': 'subject_info'
-            }},
-            {'$lookup': {
-                'from': 'chapters',
-                'localField': 'chapter_id',
-                'foreignField': '_id',
-                'as': 'chapter_info'
-            }},
+            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
+            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': '_id', 'as': 'subject_info'}},
+            {'$lookup': {'from': 'chapters', 'localField': 'chapter_id', 'foreignField': '_id', 'as': 'chapter_info'}},
             {'$sort': {'created_at': -1}},
             {'$limit': 10}
         ]
@@ -685,15 +653,8 @@ def get_subjects():
     
     try:
         pipeline = [
-            {'$lookup': {
-                'from': 'grades',
-                'localField': 'grade_id',
-                'foreignField': '_id',
-                'as': 'grade_info'
-            }},
-            {'$addFields': {
-                'grade_name': {'$arrayElemAt': ['$grade_info.grade_name', 0]}
-            }},
+            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
+            {'$addFields': {'grade_name': {'$arrayElemAt': ['$grade_info.grade_name', 0]}}},
             {'$project': {'grade_info': 0}}
         ]
         
@@ -734,10 +695,7 @@ def create_subject():
         return jsonify({'error': 'Name and grade required'}), 400
     
     try:
-        result = db.subjects.insert_one({
-            'subject_name': name,
-            'grade_id': grade_id
-        })
+        result = db.subjects.insert_one({'subject_name': name, 'grade_id': grade_id})
         return jsonify({'success': True, 'id': str(result.inserted_id)})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -787,10 +745,6 @@ def delete_subject(subject_id):
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-# ============================================
-# TEXTBOOKS API
-# ============================================
 
 @app.route('/api/textbooks', methods=['GET'])
 def get_textbooks():
@@ -850,10 +804,7 @@ def create_textbook():
         return jsonify({'error': 'Textbook name, subject, and grade are required'}), 400
     
     try:
-        existing = db.textbooks.find_one({
-            'textbook_name': textbook_name,
-            'subject_id': subject_id
-        })
+        existing = db.textbooks.find_one({'textbook_name': textbook_name, 'subject_id': subject_id})
         if existing:
             return jsonify({'error': 'Book already exists for this subject'}), 400
         
@@ -935,7 +886,6 @@ def get_subject_textbooks(subject_id):
     
     try:
         query = {'subject_id': subject_id}
-        
         if book_type == 'textbook':
             query['is_reference'] = {'$ne': 1}
         elif book_type == 'reference':
@@ -951,10 +901,6 @@ def get_subject_textbooks(subject_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ============================================
-# CHAPTERS API
-# ============================================
-
 @app.route('/api/chapters', methods=['GET'])
 def get_chapters():
     if 'user' not in session:
@@ -966,7 +912,6 @@ def get_chapters():
     
     try:
         query = {}
-        
         if subject_id:
             query['subject_id'] = subject_id
         
@@ -977,24 +922,9 @@ def get_chapters():
         
         pipeline = [
             {'$match': query},
-            {'$lookup': {
-                'from': 'subjects',
-                'localField': 'subject_id',
-                'foreignField': '_id',
-                'as': 'subject_info'
-            }},
-            {'$lookup': {
-                'from': 'grades',
-                'localField': 'grade_id',
-                'foreignField': '_id',
-                'as': 'grade_info'
-            }},
-            {'$lookup': {
-                'from': 'textbooks',
-                'localField': 'textbook_id',
-                'foreignField': '_id',
-                'as': 'textbook_info'
-            }},
+            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': '_id', 'as': 'subject_info'}},
+            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
+            {'$lookup': {'from': 'textbooks', 'localField': 'textbook_id', 'foreignField': '_id', 'as': 'textbook_info'}},
             {'$addFields': {
                 'subject_name': {'$arrayElemAt': ['$subject_info.subject_name', 0]},
                 'grade_name': {'$arrayElemAt': ['$grade_info.grade_name', 0]},
@@ -1041,10 +971,7 @@ def create_chapter():
         return jsonify({'error': 'Textbook selection is required'}), 400
     
     try:
-        existing = db.chapters.find_one({
-            'subject_id': subject_id,
-            'chapter_name': chapter_name
-        })
+        existing = db.chapters.find_one({'subject_id': subject_id, 'chapter_name': chapter_name})
         if existing:
             return jsonify({'error': 'Chapter already exists for this subject'}), 400
         
@@ -1142,10 +1069,6 @@ def get_subject_chapters(subject_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ============================================
-# CURRICULAR GOALS API
-# ============================================
-
 @app.route('/api/cgs', methods=['GET'])
 def get_cgs():
     if 'user' not in session:
@@ -1158,7 +1081,6 @@ def get_cgs():
     
     try:
         query = {}
-        
         if subject_id:
             query['subject_id'] = subject_id
         if chapter_id:
@@ -1171,24 +1093,9 @@ def get_cgs():
         
         pipeline = [
             {'$match': query},
-            {'$lookup': {
-                'from': 'subjects',
-                'localField': 'subject_id',
-                'foreignField': '_id',
-                'as': 'subject_info'
-            }},
-            {'$lookup': {
-                'from': 'grades',
-                'localField': 'grade_id',
-                'foreignField': '_id',
-                'as': 'grade_info'
-            }},
-            {'$lookup': {
-                'from': 'chapters',
-                'localField': 'chapter_id',
-                'foreignField': '_id',
-                'as': 'chapter_info'
-            }},
+            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': '_id', 'as': 'subject_info'}},
+            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
+            {'$lookup': {'from': 'chapters', 'localField': 'chapter_id', 'foreignField': '_id', 'as': 'chapter_info'}},
             {'$addFields': {
                 'subject_name': {'$arrayElemAt': ['$subject_info.subject_name', 0]},
                 'grade_name': {'$arrayElemAt': ['$grade_info.grade_name', 0]},
@@ -1237,7 +1144,7 @@ def create_cg():
             dup_query['chapter_id'] = None
         
         if db.curricular_goals.find_one(dup_query):
-            return jsonify({'error': f'Curricular Goal "{code}" already exists for this subject and chapter'}), 400
+            return jsonify({'error': f'Curricular Goal "{code}" already exists'}), 400
         
         result = db.curricular_goals.insert_one({
             'cg_code': code,
@@ -1303,10 +1210,6 @@ def delete_cg(cg_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ============================================
-# COMPETENCIES API
-# ============================================
-
 @app.route('/api/competencies', methods=['GET'])
 def get_competencies_api():
     if 'user' not in session:
@@ -1317,16 +1220,8 @@ def get_competencies_api():
     
     try:
         pipeline = [
-            {'$lookup': {
-                'from': 'curricular_goals',
-                'localField': 'cg_id',
-                'foreignField': '_id',
-                'as': 'cg_info'
-            }},
-            {'$addFields': {
-                'cg_code': {'$arrayElemAt': ['$cg_info.cg_code', 0]},
-                'subject_id': {'$arrayElemAt': ['$cg_info.subject_id', 0]}
-            }},
+            {'$lookup': {'from': 'curricular_goals', 'localField': 'cg_id', 'foreignField': '_id', 'as': 'cg_info'}},
+            {'$addFields': {'cg_code': {'$arrayElemAt': ['$cg_info.cg_code', 0]}, 'subject_id': {'$arrayElemAt': ['$cg_info.subject_id', 0]}}},
             {'$project': {'cg_info': 0}},
             {'$match': {'status': 1}}
         ]
@@ -1453,10 +1348,6 @@ def toggle_competency_status(comp_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ============================================
-# SUBJECT GROUPS API
-# ============================================
-
 @app.route('/api/subject-groups', methods=['GET'])
 def get_subject_groups():
     if 'user' not in session:
@@ -1467,7 +1358,6 @@ def get_subject_groups():
     
     try:
         query = {}
-        
         if user_role != 'admin':
             if subject_group:
                 query['group_code'] = subject_group
@@ -1476,18 +1366,8 @@ def get_subject_groups():
         
         pipeline = [
             {'$match': query},
-            {'$lookup': {
-                'from': 'grades',
-                'localField': 'grade_id',
-                'foreignField': '_id',
-                'as': 'grade_info'
-            }},
-            {'$lookup': {
-                'from': 'subjects',
-                'localField': 'subject_id',
-                'foreignField': '_id',
-                'as': 'subject_info'
-            }},
+            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
+            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': '_id', 'as': 'subject_info'}},
             {'$addFields': {
                 'grade_name': {'$arrayElemAt': ['$grade_info.grade_name', 0]},
                 'subject_name': {'$arrayElemAt': ['$subject_info.subject_name', 0]}
@@ -1597,10 +1477,6 @@ def delete_subject_group(group_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ============================================
-# USERS API
-# ============================================
-
 @app.route('/api/users', methods=['GET'])
 def get_users():
     if 'user' not in session:
@@ -1610,16 +1486,8 @@ def get_users():
     
     try:
         pipeline = [
-            {'$lookup': {
-                'from': 'subject_groups',
-                'localField': 'subject_group',
-                'foreignField': 'group_code',
-                'as': 'group_info'
-            }},
-            {'$addFields': {
-                'group_name': {'$arrayElemAt': ['$group_info.group_name', 0]},
-                'group_code': {'$arrayElemAt': ['$group_info.group_code', 0]}
-            }},
+            {'$lookup': {'from': 'subject_groups', 'localField': 'subject_group', 'foreignField': 'group_code', 'as': 'group_info'}},
+            {'$addFields': {'group_name': {'$arrayElemAt': ['$group_info.group_name', 0]}, 'group_code': {'$arrayElemAt': ['$group_info.group_code', 0]}}},
             {'$project': {'group_info': 0}},
             {'$sort': {'created_at': -1}}
         ]
@@ -1661,9 +1529,7 @@ def create_user():
     try:
         hashed_password = generate_password_hash(password)
         
-        # Set permissions based on role
-        perm_re, perm_ra, perm_rc, perm_ap, perm_master = False, False, False, False, False
-        
+        perm_re = perm_ra = perm_rc = perm_ap = perm_master = False
         if role == 'admin':
             perm_re = perm_ra = perm_rc = perm_ap = perm_master = True
         elif role == 'writer':
@@ -1802,10 +1668,6 @@ def get_user_permissions():
         'user_id': session.get('user_id')
     })
 
-# ============================================
-# REVIEWERS & APPROVERS
-# ============================================
-
 @app.route('/api/reviewers', methods=['GET'])
 def get_reviewers():
     if 'user' not in session:
@@ -1819,18 +1681,10 @@ def get_reviewers():
         query = {'_id': {'$ne': ObjectId(current_user_id)}}
         
         if user_role == 'admin':
-            query['$or'] = [
-                {'perm_rc': 1},
-                {'role': 'admin'},
-                {'role': 'reviewer'}
-            ]
+            query['$or'] = [{'perm_rc': 1}, {'role': 'admin'}, {'role': 'reviewer'}]
         else:
             query['$and'] = [
-                {'$or': [
-                    {'perm_rc': 1},
-                    {'role': 'admin'},
-                    {'role': 'reviewer'}
-                ]},
+                {'$or': [{'perm_rc': 1}, {'role': 'admin'}, {'role': 'reviewer'}]},
                 {'subject_group': subject_group}
             ]
         
@@ -1858,18 +1712,10 @@ def get_approvers():
         query = {'_id': {'$ne': ObjectId(current_user_id)}}
         
         if user_role == 'admin':
-            query['$or'] = [
-                {'perm_ap': 1},
-                {'role': 'admin'},
-                {'role': 'approver'}
-            ]
+            query['$or'] = [{'perm_ap': 1}, {'role': 'admin'}, {'role': 'approver'}]
         else:
             query['$and'] = [
-                {'$or': [
-                    {'perm_ap': 1},
-                    {'role': 'admin'},
-                    {'role': 'approver'}
-                ]},
+                {'$or': [{'perm_ap': 1}, {'role': 'admin'}, {'role': 'approver'}]},
                 {'subject_group': subject_group}
             ]
         
@@ -1883,10 +1729,6 @@ def get_approvers():
         return jsonify({'approvers': users})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-# ============================================
-# QUESTION OPERATIONS
-# ============================================
 
 @app.route('/api/master-review-question/<question_id>', methods=['POST'])
 def master_review_question(question_id):
@@ -2060,7 +1902,6 @@ def get_review_questions():
             if perm_ra:
                 permission_filters.append({'status': 'approved'})
             
-            # Always include user's own questions
             permission_filters.append({'created_by': username})
             
             if permission_filters:
@@ -2080,7 +1921,6 @@ def get_review_questions():
                 {'answer': {'$regex': search, '$options': 'i'}}
             ]
         
-        # Build pipeline
         pipeline = [
             {'$match': match},
             {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
@@ -2117,7 +1957,6 @@ def get_review_questions():
             if '_id' in q:
                 del q['_id']
             
-            # Determine permissions
             can_edit = False
             can_review = False
             can_approve = False
@@ -2307,7 +2146,6 @@ def update_question(question_id):
         if not question:
             return jsonify({'error': 'Question not found'}), 404
         
-        # Get additional fields
         chapter_id = data.get('chapter_id')
         cg_id = data.get('cg_id')
         comp_id = data.get('comp_id')
@@ -2451,10 +2289,6 @@ def get_builder_questions():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ============================================
-# PAGE 1 & PAGE 2 DATA
-# ============================================
-
 @app.route('/api/page1-data')
 def get_page1_data():
     if 'user' not in session:
@@ -2464,13 +2298,11 @@ def get_page1_data():
     subject_group = session.get('subject_group')
     
     try:
-        # Get user's subject IDs
         user_subject_ids = []
         if user_role != 'admin' and subject_group:
             groups = db.subject_groups.find({'group_code': subject_group})
             user_subject_ids = [g['subject_id'] for g in groups]
         
-        # Get grades
         if user_role == 'admin':
             grades = list(db.grades.find())
         else:
@@ -2485,7 +2317,6 @@ def get_page1_data():
             else:
                 grades = []
         
-        # Get subjects
         if user_role == 'admin':
             subjects = list(db.subjects.find())
         else:
@@ -2494,7 +2325,6 @@ def get_page1_data():
             else:
                 subjects = []
         
-        # Get CGs
         if user_role == 'admin':
             cgs = list(db.curricular_goals.find())
         else:
@@ -2503,7 +2333,6 @@ def get_page1_data():
             else:
                 cgs = []
         
-        # Get competencies
         if user_role == 'admin':
             competencies = list(db.competencies.find({'status': 1}))
         else:
@@ -2518,13 +2347,9 @@ def get_page1_data():
             else:
                 competencies = []
         
-        # Get question types
         question_types = list(db.question_types.find())
-        
-        # Get cognitive domains
         cognitive_domains = list(db.cognitive_domains.find())
         
-        # Build response
         data = {
             'grades': grades,
             'subjects': subjects,
@@ -2537,7 +2362,6 @@ def get_page1_data():
             'cognitive_domains': cognitive_domains
         }
         
-        # Group subjects by grade
         for subject in subjects:
             grade_id = subject.get('grade_id')
             if grade_id:
@@ -2546,7 +2370,6 @@ def get_page1_data():
                     data['subjects_by_grade'][grade_key] = []
                 data['subjects_by_grade'][grade_key].append(subject)
         
-        # Group CGs by subject
         for cg in cgs:
             subject_id = cg.get('subject_id')
             if subject_id:
@@ -2555,7 +2378,6 @@ def get_page1_data():
                     data['cgs_by_subject'][subject_key] = []
                 data['cgs_by_subject'][subject_key].append(cg)
         
-        # Group competencies by CG
         for comp in competencies:
             cg_id = comp.get('cg_id')
             if cg_id:
@@ -2564,7 +2386,6 @@ def get_page1_data():
                     data['comps_by_cg'][cg_key] = []
                 data['comps_by_cg'][cg_key].append(comp)
         
-        # Clean up ObjectIds
         for grade in data['grades']:
             grade['id'] = str(grade['_id'])
             if '_id' in grade:
@@ -2681,7 +2502,6 @@ def get_knowledge_levels():
     
     try:
         query = {'is_active': True}
-        
         if domain_id:
             query['domain_id'] = ObjectId(domain_id)
         elif difficulty_id:
@@ -2713,10 +2533,6 @@ def get_cognitive_domains():
         return jsonify({'domains': domains})
     except Exception as e:
         return jsonify({'domains': []})
-
-# ============================================
-# QUESTION CRUD OPERATIONS
-# ============================================
 
 @app.route('/api/simple-questions')
 def get_simple_questions():
@@ -2837,14 +2653,12 @@ def create_simple_question():
         username = session.get('user', 'Unknown')
         current_time = datetime.now()
         
-        # Handle ObjectId conversions for lookups
         if comp_id:
             comp = db.competencies.find_one({'_id': ObjectId(comp_id)})
             if not comp:
                 comp_id = None
                 competency_code = None
         
-        # Build the question document
         question_doc = {
             'question_text': question_text,
             'answer': answer,
@@ -2882,7 +2696,6 @@ def create_simple_question():
             'reference_page': reference_page
         }
         
-        # Remove None values to avoid issues
         question_doc = {k: v for k, v in question_doc.items() if v is not None}
         
         result = db.simple_questions.insert_one(question_doc)
@@ -2914,10 +2727,6 @@ def delete_question(question_id):
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-# ============================================
-# IMAGE UPLOADS
-# ============================================
 
 @app.route('/api/upload-question-images', methods=['POST'])
 def upload_question_images():
@@ -2987,10 +2796,6 @@ def serve_question_image(filename):
         return send_file(file_path)
     return jsonify({'error': 'Image not found'}), 404
 
-# ============================================
-# PAPER BLUEPRINTS
-# ============================================
-
 @app.route('/api/paper-blueprints', methods=['GET'])
 def get_paper_blueprints():
     if 'user' not in session:
@@ -3002,7 +2807,6 @@ def get_paper_blueprints():
     
     try:
         match = {}
-        
         if user_role != 'admin':
             match['created_by'] = username
         
@@ -3030,7 +2834,6 @@ def get_paper_blueprints():
             if '_id' in bp:
                 del bp['_id']
             
-            # Parse comma-separated fields
             if bp.get('cg_ids'):
                 try:
                     bp['cg_ids'] = [int(x) for x in bp['cg_ids'].split(',') if x]
@@ -3055,7 +2858,6 @@ def get_paper_blueprints():
             else:
                 bp['question_ids'] = []
             
-            # Parse config
             config_data = {}
             if bp.get('config'):
                 try:
@@ -3094,10 +2896,7 @@ def create_paper_blueprint():
     config = data.get('config', {})
     status = data.get('status', 'draft')
     
-    # Extract cognitive config separately
     cognitive_config = config.get('cognitive', {}) if config else {}
-    
-    # Remove cognitive from main config
     main_config = config.copy() if config else {}
     if 'cognitive' in main_config:
         del main_config['cognitive']
@@ -3148,7 +2947,6 @@ def get_paper_blueprint(blueprint_id):
         if '_id' in bp:
             del bp['_id']
         
-        # Parse fields
         if bp.get('cg_ids'):
             try:
                 bp['cg_ids'] = [int(x) for x in bp['cg_ids'].split(',') if x]
@@ -3173,7 +2971,6 @@ def get_paper_blueprint(blueprint_id):
         else:
             bp['question_ids'] = []
         
-        # Parse config
         config_data = {}
         if bp.get('config'):
             try:
@@ -3211,10 +3008,7 @@ def update_paper_blueprint(blueprint_id):
     config = data.get('config', {})
     status = data.get('status', 'draft')
     
-    # Extract cognitive config separately
     cognitive_config = config.get('cognitive', {}) if config else {}
-    
-    # Remove cognitive from main config
     main_config = config.copy() if config else {}
     if 'cognitive' in main_config:
         del main_config['cognitive']
@@ -3256,10 +3050,6 @@ def delete_paper_blueprint(blueprint_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ============================================
-# UTILITY ENDPOINTS
-# ============================================
-
 @app.route('/api/pending-count')
 def get_pending_count():
     if 'user' not in session:
@@ -3270,7 +3060,6 @@ def get_pending_count():
     
     try:
         match = {'status': {'$in': ['unassigned', 'under_review']}}
-        
         if user_role != 'admin' and subject_group:
             subject_ids = [row['subject_id'] for row in db.subject_groups.find({'group_code': subject_group})]
             if subject_ids:
@@ -3303,46 +3092,24 @@ def debug_questions():
         return jsonify({'error': 'Not authenticated'}), 401
     
     try:
-        # Status counts
-        pipeline = [
-            {'$group': {
-                '_id': '$status',
-                'count': {'$sum': 1}
-            }}
-        ]
+        pipeline = [{'$group': {'_id': '$status', 'count': {'$sum': 1}}}]
         status_counts = list(db.simple_questions.aggregate(pipeline))
         
-        # Sample questions
-        sample_questions = list(db.simple_questions.find(
-            {'status': 'approved'}
-        ).limit(10))
-        
+        sample_questions = list(db.simple_questions.find({'status': 'approved'}).limit(10))
         for q in sample_questions:
             q['id'] = str(q['_id'])
             if '_id' in q:
                 del q['_id']
         
-        # Subjects with questions
         pipeline2 = [
             {'$match': {'status': 'approved'}},
-            {'$group': {
-                '_id': '$subject_id',
-                'approved_count': {'$sum': 1}
-            }},
-            {'$lookup': {
-                'from': 'subjects',
-                'localField': '_id',
-                'foreignField': '_id',
-                'as': 'subject_info'
-            }},
-            {'$addFields': {
-                'subject_name': {'$arrayElemAt': ['$subject_info.subject_name', 0]}
-            }},
+            {'$group': {'_id': '$subject_id', 'approved_count': {'$sum': 1}}},
+            {'$lookup': {'from': 'subjects', 'localField': '_id', 'foreignField': '_id', 'as': 'subject_info'}},
+            {'$addFields': {'subject_name': {'$arrayElemAt': ['$subject_info.subject_name', 0]}}},
             {'$project': {'subject_info': 0}},
             {'$sort': {'approved_count': -1}}
         ]
         subjects_with_questions = list(db.simple_questions.aggregate(pipeline2))
-        
         total_questions = db.simple_questions.count_documents({})
         
         return jsonify({
@@ -3373,7 +3140,6 @@ def debug_cgs():
             {'$sort': {'_id': 1}}
         ]
         cgs = list(db.curricular_goals.aggregate(pipeline))
-        
         comps = list(db.competencies.find())
         
         for cg in cgs:
