@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: cohsem-itms
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app_mongo:app
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.9.18

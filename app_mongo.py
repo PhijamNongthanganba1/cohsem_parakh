@@ -15,7 +15,7 @@ app.secret_key = os.environ.get('SECRET_KEY', 'cohsem_it_secure_key_2026_change_
 
 # --- MongoDB Configuration ---
 # REPLACE WITH YOUR ACTUAL CONNECTION STRING
-MONGODB_URI = os.environ.get('MONGODB_URI', 'mongodb+srv://nongthanganbaphijam_db_user:BG2uPkyRu1L4ov30@YOUR_CLUSTER.mongodb.net/cohsemitms?retryWrites=true&w=majority')
+MONGODB_URI = os.environ.get('MONGODB_URI', 'mongodb+srv://nongthanganbaphijam_db_user:BG2uPkyRu1L4ov30@cluster0.b5arftz.mongodb.net/cohsemitms?retryWrites=true&w=majority')
 app.config["MONGO_URI"] = MONGODB_URI
 mongo = PyMongo(app)
 db = mongo.db
