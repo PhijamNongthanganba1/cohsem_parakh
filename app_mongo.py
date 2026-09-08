@@ -9,16 +9,37 @@ import uuid
 from werkzeug.utils import secure_filename
 from bson import ObjectId
 import traceback
+import ssl
+import certifi
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'cohsem_it_secure_key_2026_change_this_in_production')
 
 # --- MongoDB Configuration ---
-# REPLACE WITH YOUR ACTUAL CONNECTION STRING
+# Hardcoded connection with SSL fix
 MONGODB_URI = 'mongodb+srv://nongthanganbaphijam_db_user:BG2uPkyRu1L4ov30@cluster0.b5arftz.mongodb.net/cohsemitms?retryWrites=true&w=majority'
+
 app.config["MONGO_URI"] = MONGODB_URI
-mongo = PyMongo(app)
-db = mongo.db
+app.config["MONGO_TLS"] = True
+app.config["MONGO_TLS_ALLOW_INVALID_CERTIFICATES"] = True
+
+# Initialize MongoDB with SSL options
+try:
+    mongo = PyMongo(app, tls=True, tlsAllowInvalidCertificates=True)
+    db = mongo.db
+    print("✓ MongoDB connection established")
+except Exception as e:
+    print(f"Error connecting to MongoDB: {e}")
+    # Try fallback connection
+    import pymongo
+    client = pymongo.MongoClient(
+        MONGODB_URI,
+        tls=True,
+        tlsAllowInvalidCertificates=True,
+        serverSelectionTimeoutMS=5000
+    )
+    db = client.get_database()
+    mongo = PyMongo(app, tls=True, tlsAllowInvalidCertificates=True)
 
 # --- File Upload Configuration ---
 UPLOAD_FOLDER = 'static/uploads/questions'
