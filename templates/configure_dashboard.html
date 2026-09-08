@@ -1899,6 +1899,9 @@
             }
         }
 
+        // ============================================
+        // FIXED: openAddModal with proper grade_id handling
+        // ============================================
         function openAddModal(type) {
             if(!isAdmin) return showViewOnly(type, '');
             document.getElementById('editItemId').value = '';
@@ -1911,12 +1914,18 @@
                     break;
                 case 'subject':
                     // Get the grade ID from current selection or first grade
-                    const gradeId = currentSelections.grade ? currentSelections.grade.id : (grades.length > 0 ? grades[0].id : '');
+                    let selectedGradeId = currentSelections.grade ? currentSelections.grade.id : (grades.length > 0 ? grades[0].id : '');
+                    // If selectedGradeId is undefined or null, use first grade
+                    if (!selectedGradeId && grades.length > 0) {
+                        selectedGradeId = grades[0].id;
+                    }
                     fields = `
                         <div class="form-group"><label>Subject Name *</label><input type="text" id="editName" class="form-control" placeholder="e.g., Physics, Chemistry" required></div>
-                        <div class="form-group"><label>Grade *</label><select id="editGradeId" class="form-control" required>
-                            ${grades.map(g => `<option value="${g.id}" ${g.id == gradeId ? 'selected' : ''}>${g.grade_name}</option>`).join('')}
-                        </select></div>
+                        <div class="form-group"><label>Grade *</label>
+                            <select id="editGradeId" class="form-control" required>
+                                ${grades.map(g => `<option value="${g.id}" ${g.id == selectedGradeId ? 'selected' : ''}>${g.grade_name}</option>`).join('')}
+                            </select>
+                        </div>
                     `;
                     break;
                 case 'cg':
@@ -1997,7 +2006,12 @@
                     url = id ? `/api/grades/${id}` : '/api/grades'; 
                     break;
                 case 'subject': 
-                    data = { name: document.getElementById('editName').value, grade_id: document.getElementById('editGradeId').value }; 
+                    const gradeId = document.getElementById('editGradeId').value;
+                    if (!gradeId) {
+                        Swal.fire('Error', 'Please select a grade', 'error');
+                        return;
+                    }
+                    data = { name: document.getElementById('editName').value, grade_id: gradeId }; 
                     url = id ? `/api/subjects/${id}` : '/api/subjects'; 
                     break;
                 case 'cg': 
