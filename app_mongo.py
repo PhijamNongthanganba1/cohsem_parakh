@@ -619,7 +619,7 @@ def update_grade(grade_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/grades/<grade_id>', methods(['DELETE'])
+@app.route('/api/grades/<grade_id>', methods=['DELETE'])
 def delete_grade(grade_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
