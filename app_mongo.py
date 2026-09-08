@@ -117,15 +117,18 @@ def get_grade_id_from_value(value):
             if grade:
                 return grade['_id']
             return None
+        # Try to find by grade_name
         grade = db.grades.find_one({'grade_name': value})
         if grade:
             return grade['_id']
+        # Try to find by string ID
         try:
             grade = db.grades.find_one({'_id': value})
             if grade:
                 return grade['_id']
         except:
             pass
+    # If all fails, try to get first grade
     grade = db.grades.find_one({})
     if grade:
         return grade['_id']
@@ -705,6 +708,7 @@ def get_subjects():
     subject_group = session.get('subject_group')
     
     try:
+        # Fix any subjects with "undefined" grade_id
         first_grade = db.grades.find_one({})
         if first_grade:
             db.subjects.update_many(
