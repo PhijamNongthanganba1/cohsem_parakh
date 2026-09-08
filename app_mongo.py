@@ -18,10 +18,21 @@ print(f"🐍 Python version: {sys.version}")
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'cohsem_it_secure_key_2026_change_this_in_production')
 
-# --- MongoDB Configuration - SRV (WORKING) ---
+# --- MongoDB Configuration ---
 MONGO_URI = 'mongodb+srv://nongthanganbaphijam_db_user:BG2uPkyRu1L4ov30@cluster0.b5arftz.mongodb.net/?retryWrites=true&w=majority'
 
 print(f"🔗 Connecting to MongoDB Atlas...")
+
+# Custom JSON encoder to handle ObjectId
+class MongoJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, ObjectId):
+            return str(obj)
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
+
+app.json_encoder = MongoJSONEncoder
 
 try:
     client = pymongo.MongoClient(
@@ -53,6 +64,29 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # --- Helper Functions ---
+
+def convert_objectid(doc):
+    """Recursively convert ObjectId and datetime to serializable types"""
+    if isinstance(doc, list):
+        return [convert_objectid(item) for item in doc]
+    if isinstance(doc, dict):
+        result = {}
+        for key, value in doc.items():
+            if key == '_id':
+                result[key] = str(value)
+            elif isinstance(value, ObjectId):
+                result[key] = str(value)
+            elif isinstance(value, datetime):
+                result[key] = value.isoformat()
+            elif isinstance(value, list):
+                result[key] = [convert_objectid(item) for item in value]
+            elif isinstance(value, dict):
+                result[key] = convert_objectid(value)
+            else:
+                result[key] = value
+        return result
+    return doc
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -88,7 +122,7 @@ def get_user_subject_ids(username):
         if not user or not user.get('subject_group'):
             return []
         groups = db.subject_groups.find({'group_code': user['subject_group']})
-        return [group['subject_id'] for group in groups]
+        return [str(g['subject_id']) for g in groups]
     except:
         return []
 
@@ -98,7 +132,7 @@ def get_user_grades(username):
         if not user or not user.get('subject_group'):
             return []
         groups = db.subject_groups.find({'group_code': user['subject_group']})
-        return [group['grade_id'] for group in groups]
+        return [str(g['grade_id']) for g in groups]
     except:
         return []
 
@@ -106,7 +140,7 @@ def apply_subject_filter(query, user_role, subject_group, subject_id_column='sub
     if user_role == 'admin':
         return query, []
     if subject_group:
-        subject_ids = [row['subject_id'] for row in db.subject_groups.find({'group_code': subject_group})]
+        subject_ids = [str(row['subject_id']) for row in db.subject_groups.find({'group_code': subject_group})]
         if subject_ids:
             query[subject_id_column] = {'$in': subject_ids}
             return query, subject_ids
@@ -530,15 +564,17 @@ def dashboard_stats():
         ]
         
         if user_role != 'admin' and subject_group:
-            subject_ids = [row['subject_id'] for row in db.subject_groups.find({'group_code': subject_group})]
+            subject_ids = [str(row['subject_id']) for row in db.subject_groups.find({'group_code': subject_group})]
             if subject_ids:
                 pipeline_recent.insert(0, {'$match': {'subject_id': {'$in': subject_ids}}})
             else:
                 pipeline_recent.insert(0, {'$match': {'_id': None}})
         
         recent = list(db.simple_questions.aggregate(pipeline_recent))
+        recent = convert_objectid(recent)
         stats['recent'] = recent
         
+        stats = convert_objectid(stats)
         return jsonify(stats)
     except Exception as e:
         traceback.print_exc()
@@ -554,7 +590,7 @@ def get_grades():
     
     try:
         if user_role == 'admin':
-            grades = list(db.grades.find({}, {'_id': 1, 'grade_name': 1}).sort('_id', 1))
+            grades = list(db.grades.find({}).sort('_id', 1))
         else:
             subject_groups = list(db.subject_groups.find({'group_code': subject_group}))
             grade_ids = list(set([g['grade_id'] for g in subject_groups if g.get('grade_id')]))
@@ -563,10 +599,7 @@ def get_grades():
             else:
                 grades = []
         
-        for g in grades:
-            g['id'] = str(g['_id'])
-            del g['_id']
-        
+        grades = convert_objectid(grades)
         return jsonify({'grades': grades})
     except Exception as e:
         traceback.print_exc()
@@ -662,11 +695,7 @@ def get_subjects():
             else:
                 subjects = []
         
-        for s in subjects:
-            s['id'] = str(s['_id'])
-            s['grade_id'] = str(s['grade_id'])
-            del s['_id']
-        
+        subjects = convert_objectid(subjects)
         return jsonify({'subjects': subjects})
     except Exception as e:
         traceback.print_exc()
@@ -769,11 +798,7 @@ def get_textbooks():
             query['is_reference'] = 1
         
         textbooks = list(db.textbooks.find(query).sort('textbook_name', 1))
-        
-        for t in textbooks:
-            t['id'] = str(t['_id'])
-            del t['_id']
-        
+        textbooks = convert_objectid(textbooks)
         return jsonify({'textbooks': textbooks})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -886,11 +911,7 @@ def get_subject_textbooks(subject_id):
             query['is_reference'] = 1
         
         textbooks = list(db.textbooks.find(query).sort('textbook_name', 1))
-        
-        for t in textbooks:
-            t['id'] = str(t['_id'])
-            del t['_id']
-        
+        textbooks = convert_objectid(textbooks)
         return jsonify({'textbooks': textbooks})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -931,14 +952,7 @@ def get_chapters():
         ]
         
         chapters = list(db.chapters.aggregate(pipeline))
-        
-        for c in chapters:
-            c['id'] = str(c['_id'])
-            c['subject_id'] = str(c['subject_id'])
-            if c.get('textbook_id'):
-                c['textbook_id'] = str(c['textbook_id'])
-            del c['_id']
-        
+        chapters = convert_objectid(chapters)
         return jsonify({'chapters': chapters})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1051,14 +1065,7 @@ def get_subject_chapters(subject_id):
     
     try:
         chapters = list(db.chapters.find({'subject_id': subject_id}).sort('chapter_number', 1))
-        
-        for c in chapters:
-            c['id'] = str(c['_id'])
-            c['subject_id'] = str(c['subject_id'])
-            if c.get('textbook_id'):
-                c['textbook_id'] = str(c['textbook_id'])
-            del c['_id']
-        
+        chapters = convert_objectid(chapters)
         return jsonify({'chapters': chapters})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1100,14 +1107,7 @@ def get_cgs():
         ]
         
         cgs = list(db.curricular_goals.aggregate(pipeline))
-        
-        for cg in cgs:
-            cg['id'] = str(cg['_id'])
-            cg['subject_id'] = str(cg['subject_id'])
-            if cg.get('chapter_id'):
-                cg['chapter_id'] = str(cg['chapter_id'])
-            del cg['_id']
-        
+        cgs = convert_objectid(cgs)
         return jsonify({'cgs': cgs})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1226,12 +1226,7 @@ def get_competencies_api():
                 pipeline.insert(0, {'$match': {'subject_id': {'$in': subject_ids}}})
         
         comps = list(db.competencies.aggregate(pipeline))
-        
-        for c in comps:
-            c['id'] = str(c['_id'])
-            c['cg_id'] = str(c['cg_id'])
-            del c['_id']
-        
+        comps = convert_objectid(comps)
         return jsonify({'competencies': comps})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1370,13 +1365,7 @@ def get_subject_groups():
         ]
         
         groups = list(db.subject_groups.aggregate(pipeline))
-        
-        for g in groups:
-            g['id'] = str(g['_id'])
-            g['grade_id'] = str(g['grade_id'])
-            g['subject_id'] = str(g['subject_id'])
-            del g['_id']
-        
+        groups = convert_objectid(groups)
         return jsonify({'groups': groups})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1487,12 +1476,7 @@ def get_users():
         ]
         
         users = list(db.users.aggregate(pipeline))
-        
-        for u in users:
-            u['id'] = str(u['_id'])
-            if '_id' in u:
-                del u['_id']
-        
+        users = convert_objectid(users)
         return jsonify({'users': users})
     except Exception as e:
         traceback.print_exc()
@@ -1683,12 +1667,7 @@ def get_reviewers():
             ]
         
         users = list(db.users.find(query))
-        
-        for u in users:
-            u['id'] = str(u['_id'])
-            if '_id' in u:
-                del u['_id']
-        
+        users = convert_objectid(users)
         return jsonify({'reviewers': users})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1714,12 +1693,7 @@ def get_approvers():
             ]
         
         users = list(db.users.find(query))
-        
-        for u in users:
-            u['id'] = str(u['_id'])
-            if '_id' in u:
-                del u['_id']
-        
+        users = convert_objectid(users)
         return jsonify({'approvers': users})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1949,7 +1923,6 @@ def get_review_questions():
         
         questions = list(db.simple_questions.aggregate(pipeline))
         
-        formatted_questions = []
         for q in questions:
             q['id'] = str(q['_id'])
             if '_id' in q:
@@ -2005,11 +1978,9 @@ def get_review_questions():
             q['can_master_review'] = can_master_review
             q['is_assigned_to_me'] = is_assigned_reviewer or is_assigned_approver
             q['is_my_question'] = is_my_question
-            
-            formatted_questions.append(q)
         
         return jsonify({
-            'questions': formatted_questions,
+            'questions': questions,
             'permissions': {
                 'RE': perm_re,
                 'RA': perm_ra,
@@ -2277,12 +2248,7 @@ def get_builder_questions():
         ]
         
         questions = list(db.simple_questions.aggregate(pipeline))
-        
-        for q in questions:
-            q['id'] = str(q['_id'])
-            if '_id' in q:
-                del q['_id']
-        
+        questions = convert_objectid(questions)
         return jsonify({'questions': questions})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -2299,14 +2265,14 @@ def get_page1_data():
         user_subject_ids = []
         if user_role != 'admin' and subject_group:
             groups = db.subject_groups.find({'group_code': subject_group})
-            user_subject_ids = [g['subject_id'] for g in groups]
+            user_subject_ids = [str(g['subject_id']) for g in groups]
         
         if user_role == 'admin':
             grades = list(db.grades.find())
         else:
             if user_subject_ids:
                 pipeline = [
-                    {'$match': {'_id': {'$in': user_subject_ids}}},
+                    {'$match': {'_id': {'$in': [ObjectId(id) for id in user_subject_ids]}}},
                     {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
                     {'$addFields': {'grade': {'$arrayElemAt': ['$grade_info', 0]}}},
                     {'$group': {'_id': '$grade._id', 'grade_name': {'$first': '$grade.grade_name'}}}
@@ -2319,7 +2285,7 @@ def get_page1_data():
             subjects = list(db.subjects.find())
         else:
             if user_subject_ids:
-                subjects = list(db.subjects.find({'_id': {'$in': user_subject_ids}}))
+                subjects = list(db.subjects.find({'_id': {'$in': [ObjectId(id) for id in user_subject_ids]}}))
             else:
                 subjects = []
         
@@ -2384,39 +2350,7 @@ def get_page1_data():
                     data['comps_by_cg'][cg_key] = []
                 data['comps_by_cg'][cg_key].append(comp)
         
-        for grade in data['grades']:
-            grade['id'] = str(grade['_id'])
-            if '_id' in grade:
-                del grade['_id']
-        
-        for subject in data['subjects']:
-            subject['id'] = str(subject['_id'])
-            subject['grade_id'] = str(subject['grade_id'])
-            if '_id' in subject:
-                del subject['_id']
-        
-        for cg in data['cgs']:
-            cg['id'] = str(cg['_id'])
-            cg['subject_id'] = str(cg['subject_id'])
-            if '_id' in cg:
-                del cg['_id']
-        
-        for comp in data['competencies']:
-            comp['id'] = str(comp['_id'])
-            comp['cg_id'] = str(comp['cg_id'])
-            if '_id' in comp:
-                del comp['_id']
-        
-        for qt in data['question_types']:
-            qt['id'] = str(qt['_id'])
-            if '_id' in qt:
-                del qt['_id']
-        
-        for cd in data['cognitive_domains']:
-            cd['id'] = str(cd['_id'])
-            if '_id' in cd:
-                del cd['_id']
-        
+        data = convert_objectid(data)
         return jsonify(data)
     except Exception as e:
         traceback.print_exc()
@@ -2434,16 +2368,10 @@ def get_page2_data():
         if comp_id:
             comp = db.competencies.find_one({'_id': ObjectId(comp_id)})
             if comp:
-                comp['id'] = str(comp['_id'])
-                if '_id' in comp:
-                    del comp['_id']
-                comp_data = comp
+                comp_data = convert_objectid(comp)
         
         domains = list(db.cognitive_domains.find())
-        for d in domains:
-            d['id'] = str(d['_id'])
-            if '_id' in d:
-                del d['_id']
+        domains = convert_objectid(domains)
         
         if not domains:
             domains = [
@@ -2453,16 +2381,10 @@ def get_page2_data():
             ]
         
         question_types = list(db.question_types.find())
-        for qt in question_types:
-            qt['id'] = str(qt['_id'])
-            if '_id' in qt:
-                del qt['_id']
+        question_types = convert_objectid(question_types)
         
         difficulty_levels = list(db.difficulty_levels.find())
-        for dl in difficulty_levels:
-            dl['id'] = str(dl['_id'])
-            if '_id' in dl:
-                del dl['_id']
+        difficulty_levels = convert_objectid(difficulty_levels)
         
         if not difficulty_levels:
             difficulty_levels = [
@@ -2506,11 +2428,29 @@ def get_knowledge_levels():
             query['difficulty_id'] = ObjectId(difficulty_id)
         
         levels = list(db.knowledge_levels.find(query))
+        levels = convert_objectid(levels)
         
-        for l in levels:
-            l['id'] = str(l['_id'])
-            if '_id' in l:
-                del l['_id']
+        if not levels:
+            default_levels = [
+                {'id': 1, 'level_name': 'Knowledge', 'description': 'Basic recall of information and facts'},
+                {'id': 2, 'level_name': 'Remembering', 'description': 'Retrieving knowledge from memory'},
+                {'id': 3, 'level_name': 'Understanding', 'description': 'Constructing meaning from information'},
+                {'id': 4, 'level_name': 'Comprehension', 'description': 'Grasping the meaning of information'},
+                {'id': 5, 'level_name': 'Application', 'description': 'Apply knowledge to new situations'},
+                {'id': 6, 'level_name': 'Analysis', 'description': 'Break down information into parts'},
+                {'id': 7, 'level_name': 'Synthesis', 'description': 'Combine elements to form a new whole'},
+                {'id': 8, 'level_name': 'Empathy', 'description': "Understanding others' perspectives and feelings"},
+                {'id': 9, 'level_name': 'Interpretation', 'description': 'Explaining and interpreting information'},
+                {'id': 10, 'level_name': 'Evaluation', 'description': 'Make judgments based on criteria and standards'},
+                {'id': 11, 'level_name': 'Creation', 'description': 'Generate new ideas and products'},
+                {'id': 12, 'level_name': 'Critical Thinking', 'description': 'Deep analysis and evaluation of information'},
+                {'id': 13, 'level_name': 'Innovation', 'description': 'Novel approaches and solutions to problems'},
+                {'id': 14, 'level_name': 'Design Thinking', 'description': 'Human-centered problem solving approach'},
+                {'id': 15, 'level_name': 'Reflection', 'description': 'Thoughtful consideration and self-assessment'}
+            ]
+            if domain_id:
+                return jsonify({'knowledge_levels': default_levels})
+            return jsonify({'knowledge_levels': default_levels})
         
         return jsonify({'knowledge_levels': levels})
     except Exception as e:
@@ -2523,10 +2463,14 @@ def get_cognitive_domains():
     
     try:
         domains = list(db.cognitive_domains.find())
-        for d in domains:
-            d['id'] = str(d['_id'])
-            if '_id' in d:
-                del d['_id']
+        domains = convert_objectid(domains)
+        
+        if not domains:
+            domains = [
+                {'id': 1, 'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
+                {'id': 2, 'domain_name': 'Sensitivity', 'description': 'Sensitivity to applications and real-world connections'},
+                {'id': 3, 'domain_name': 'Creativity', 'description': 'Creative thinking and problem solving'}
+            ]
         
         return jsonify({'domains': domains})
     except Exception as e:
@@ -2546,7 +2490,7 @@ def get_simple_questions():
         match = {'created_by': username}
         
         if user_role != 'admin' and subject_group:
-            subject_ids = [row['subject_id'] for row in db.subject_groups.find({'group_code': subject_group})]
+            subject_ids = [str(row['subject_id']) for row in db.subject_groups.find({'group_code': subject_group})]
             if subject_ids:
                 match['subject_id'] = {'$in': subject_ids}
         
@@ -2554,11 +2498,9 @@ def get_simple_questions():
             match['comp_id'] = comp_id
         
         questions = list(db.simple_questions.find(match).sort('_id', -1).limit(50))
+        questions = convert_objectid(questions)
         
         for q in questions:
-            q['id'] = str(q['_id'])
-            if '_id' in q:
-                del q['_id']
             if q.get('images'):
                 try:
                     q['images'] = json.loads(q['images'])
@@ -2813,7 +2755,7 @@ def get_paper_blueprints():
             match['created_by'] = username
         
         if user_role != 'admin' and subject_group:
-            subject_ids = [row['subject_id'] for row in db.subject_groups.find({'group_code': subject_group})]
+            subject_ids = [str(row['subject_id']) for row in db.subject_groups.find({'group_code': subject_group})]
             if subject_ids:
                 match['subject_id'] = {'$in': subject_ids}
         
@@ -2830,12 +2772,9 @@ def get_paper_blueprints():
         ]
         
         blueprints = list(db.paper_blueprints.aggregate(pipeline))
+        blueprints = convert_objectid(blueprints)
         
         for bp in blueprints:
-            bp['id'] = str(bp['_id'])
-            if '_id' in bp:
-                del bp['_id']
-            
             if bp.get('cg_ids'):
                 try:
                     bp['cg_ids'] = [int(x) for x in bp['cg_ids'].split(',') if x]
@@ -2944,10 +2883,7 @@ def get_paper_blueprint(blueprint_id):
         if not blueprint:
             return jsonify({'error': 'Blueprint not found'}), 404
         
-        bp = blueprint[0]
-        bp['id'] = str(bp['_id'])
-        if '_id' in bp:
-            del bp['_id']
+        bp = convert_objectid(blueprint[0])
         
         if bp.get('cg_ids'):
             try:
@@ -3067,7 +3003,7 @@ def get_pending_count():
     try:
         match = {'status': {'$in': ['unassigned', 'under_review']}}
         if user_role != 'admin' and subject_group:
-            subject_ids = [row['subject_id'] for row in db.subject_groups.find({'group_code': subject_group})]
+            subject_ids = [str(row['subject_id']) for row in db.subject_groups.find({'group_code': subject_group})]
             if subject_ids:
                 match['subject_id'] = {'$in': subject_ids}
         
@@ -3100,12 +3036,10 @@ def debug_questions():
     try:
         pipeline = [{'$group': {'_id': '$status', 'count': {'$sum': 1}}}]
         status_counts = list(db.simple_questions.aggregate(pipeline))
+        status_counts = convert_objectid(status_counts)
         
         sample_questions = list(db.simple_questions.find({'status': 'approved'}).limit(10))
-        for q in sample_questions:
-            q['id'] = str(q['_id'])
-            if '_id' in q:
-                del q['_id']
+        sample_questions = convert_objectid(sample_questions)
         
         pipeline2 = [
             {'$match': {'status': 'approved'}},
@@ -3116,6 +3050,8 @@ def debug_questions():
             {'$sort': {'approved_count': -1}}
         ]
         subjects_with_questions = list(db.simple_questions.aggregate(pipeline2))
+        subjects_with_questions = convert_objectid(subjects_with_questions)
+        
         total_questions = db.simple_questions.count_documents({})
         
         return jsonify({
@@ -3146,17 +3082,10 @@ def debug_cgs():
             {'$sort': {'_id': 1}}
         ]
         cgs = list(db.curricular_goals.aggregate(pipeline))
+        cgs = convert_objectid(cgs)
+        
         comps = list(db.competencies.find())
-        
-        for cg in cgs:
-            cg['id'] = str(cg['_id'])
-            if '_id' in cg:
-                del cg['_id']
-        
-        for comp in comps:
-            comp['id'] = str(comp['_id'])
-            if '_id' in comp:
-                del comp['_id']
+        comps = convert_objectid(comps)
         
         return jsonify({
             'curricular_goals': cgs,
