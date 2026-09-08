@@ -11,30 +11,30 @@ from bson import ObjectId
 import traceback
 import pymongo
 import sys
+import ssl
 
 print(f"🐍 Python version: {sys.version}")
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'cohsem_it_secure_key_2026_change_this_in_production')
 
-# --- HARDCODE MongoDB Connection ---
-MONGO_URI = 'mongodb+srv://nongthanganbaphijam_db_user:BG2uPkyRu1L4ov30@cluster0.b5arftz.mongodb.net/?retryWrites=true&w=majority'
+# --- MongoDB Configuration - NON-SRV (FIXED) ---
+MONGO_URI = 'mongodb://nongthanganbaphijam_db_user:BG2uPkyRu1L4ov30@cluster0.b5arftz.mongodb.net:27017/cohsemitms?ssl=true&replicaSet=ac-rirl4zv-shard-0&authSource=admin&retryWrites=true&w=majority'
 
-print(f"🔗 Connecting to MongoDB...")
+print(f"🔗 Connecting to MongoDB Atlas...")
 
-# Direct connection - bypass Flask-PyMongo issues
 try:
     client = pymongo.MongoClient(
         MONGO_URI,
-        serverSelectionTimeoutMS=10000,
-        tls=False,
-        ssl=False,
+        serverSelectionTimeoutMS=30000,
+        ssl=True,
+        ssl_cert_reqs=ssl.CERT_NONE,
         tlsAllowInvalidCertificates=True,
         tlsAllowInvalidHostnames=True
     )
     client.admin.command('ping')
     db = client['cohsemitms']
-    print("✅ MongoDB connected successfully!")
+    print("✅ MongoDB Atlas connected successfully!")
     
     app.config["MONGO_URI"] = MONGO_URI
     mongo = PyMongo(app)
@@ -42,14 +42,9 @@ try:
     mongo.cx = client
     
 except Exception as e:
-    print(f"❌ Connection failed: {e}")
-    client = pymongo.MongoClient('mongodb://localhost:27017/')
-    db = client['cohsemitms']
-    app.config["MONGO_URI"] = 'mongodb://localhost:27017/'
-    mongo = PyMongo(app)
-    mongo.db = db
-    mongo.cx = client
-    print("⚠️ Using dummy database connection")
+    print(f"❌ MongoDB connection failed: {e}")
+    print("Please check: 1) IP whitelist 2) Username/password 3) Connection string")
+    sys.exit(1)
 
 # --- File Upload Configuration ---
 UPLOAD_FOLDER = 'static/uploads/questions'
@@ -233,6 +228,7 @@ def dashboard_login():
         
         try:
             user = db.users.find_one({'username': username})
+            
             if not user:
                 flash('Invalid username or password!', 'error')
                 return render_template('dashboard_login.html')
@@ -623,7 +619,7 @@ def update_grade(grade_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/grades/<grade_id>', methods=['DELETE'])
+@app.route('/api/grades/<grade_id>', methods(['DELETE'])
 def delete_grade(grade_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -1699,7 +1695,7 @@ def get_reviewers():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/approvers', methods=['GET'])
+@app.route('/api/approvers', methods(['GET'])
 def get_approvers():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -1729,6 +1725,10 @@ def get_approvers():
         return jsonify({'approvers': users})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# ============================================
+# QUESTION REVIEW OPERATIONS
+# ============================================
 
 @app.route('/api/master-review-question/<question_id>', methods=['POST'])
 def master_review_question(question_id):
@@ -2796,6 +2796,10 @@ def serve_question_image(filename):
         return send_file(file_path)
     return jsonify({'error': 'Image not found'}), 404
 
+# ============================================
+# PAPER BLUEPRINTS
+# ============================================
+
 @app.route('/api/paper-blueprints', methods=['GET'])
 def get_paper_blueprints():
     if 'user' not in session:
@@ -3049,6 +3053,10 @@ def delete_paper_blueprint(blueprint_id):
         return jsonify({'success': True, 'message': 'Blueprint deleted successfully'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# ============================================
+# UTILITY ENDPOINTS
+# ============================================
 
 @app.route('/api/pending-count')
 def get_pending_count():
