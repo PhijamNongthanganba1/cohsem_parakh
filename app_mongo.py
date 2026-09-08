@@ -109,13 +109,6 @@ def has_actual_content(html_content):
         return True
     return False
 
-def get_question_text_safe(html_content):
-    if not html_content:
-        return ''
-    if has_actual_content(html_content):
-        return strip_html_tags(html_content)
-    return ''
-
 def get_user_subject_ids(username):
     try:
         user = db.users.find_one({'username': username})
@@ -688,7 +681,11 @@ def get_subjects():
         if user_role == 'admin':
             subjects = list(db.subjects.aggregate(pipeline))
         else:
-            subject_ids = [row['subject_id'] for row in db.subject_groups.find({'group_code': subject_group})]
+            subject_ids = []
+            if subject_group:
+                groups = db.subject_groups.find({'group_code': subject_group})
+                subject_ids = [g['subject_id'] for g in groups]
+            
             if subject_ids:
                 pipeline.insert(0, {'$match': {'_id': {'$in': subject_ids}}})
                 subjects = list(db.subjects.aggregate(pipeline))
@@ -718,7 +715,14 @@ def create_subject():
         return jsonify({'error': 'Name and grade required'}), 400
     
     try:
-        result = db.subjects.insert_one({'subject_name': name, 'grade_id': grade_id})
+        # Convert grade_id to ObjectId if it's a string
+        if isinstance(grade_id, str):
+            grade_id = ObjectId(grade_id)
+        
+        result = db.subjects.insert_one({
+            'subject_name': name, 
+            'grade_id': grade_id
+        })
         return jsonify({'success': True, 'id': str(result.inserted_id)})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -739,6 +743,9 @@ def update_subject(subject_id):
         return jsonify({'error': 'Name and grade required'}), 400
     
     try:
+        if isinstance(grade_id, str):
+            grade_id = ObjectId(grade_id)
+        
         result = db.subjects.update_one(
             {'_id': ObjectId(subject_id)},
             {'$set': {'subject_name': name, 'grade_id': grade_id}}
@@ -823,6 +830,12 @@ def create_textbook():
         return jsonify({'error': 'Textbook name, subject, and grade are required'}), 400
     
     try:
+        # Convert IDs to ObjectId
+        if isinstance(subject_id, str):
+            subject_id = ObjectId(subject_id)
+        if isinstance(grade_id, str):
+            grade_id = ObjectId(grade_id)
+        
         existing = db.textbooks.find_one({'textbook_name': textbook_name, 'subject_id': subject_id})
         if existing:
             return jsonify({'error': 'Book already exists for this subject'}), 400
@@ -859,6 +872,11 @@ def update_textbook(textbook_id):
         return jsonify({'error': 'Textbook name, subject, and grade are required'}), 400
     
     try:
+        if isinstance(subject_id, str):
+            subject_id = ObjectId(subject_id)
+        if isinstance(grade_id, str):
+            grade_id = ObjectId(grade_id)
+        
         result = db.textbooks.update_one(
             {'_id': ObjectId(textbook_id)},
             {'$set': {
@@ -979,11 +997,17 @@ def create_chapter():
         return jsonify({'error': 'Textbook selection is required'}), 400
     
     try:
+        # Convert IDs to ObjectId
+        if isinstance(subject_id, str):
+            subject_id = ObjectId(subject_id)
+        if isinstance(textbook_id, str):
+            textbook_id = ObjectId(textbook_id)
+        
         existing = db.chapters.find_one({'subject_id': subject_id, 'chapter_name': chapter_name})
         if existing:
             return jsonify({'error': 'Chapter already exists for this subject'}), 400
         
-        subject = db.subjects.find_one({'_id': ObjectId(subject_id)})
+        subject = db.subjects.find_one({'_id': subject_id})
         grade_id = subject.get('grade_id') if subject else None
         
         result = db.chapters.insert_one({
@@ -1021,6 +1045,11 @@ def update_chapter(chapter_id):
         return jsonify({'error': 'Textbook selection is required'}), 400
     
     try:
+        if isinstance(subject_id, str):
+            subject_id = ObjectId(subject_id)
+        if isinstance(textbook_id, str):
+            textbook_id = ObjectId(textbook_id)
+        
         result = db.chapters.update_one(
             {'_id': ObjectId(chapter_id)},
             {'$set': {
@@ -1131,6 +1160,11 @@ def create_cg():
         return jsonify({'error': 'Code and subject required'}), 400
     
     try:
+        if isinstance(subject_id, str):
+            subject_id = ObjectId(subject_id)
+        if chapter_id and isinstance(chapter_id, str):
+            chapter_id = ObjectId(chapter_id)
+        
         dup_query = {'cg_code': code, 'subject_id': subject_id}
         if chapter_id:
             dup_query['chapter_id'] = chapter_id
@@ -1169,6 +1203,11 @@ def update_cg(cg_id):
         return jsonify({'error': 'Code and subject required'}), 400
     
     try:
+        if isinstance(subject_id, str):
+            subject_id = ObjectId(subject_id)
+        if chapter_id and isinstance(chapter_id, str):
+            chapter_id = ObjectId(chapter_id)
+        
         result = db.curricular_goals.update_one(
             {'_id': ObjectId(cg_id)},
             {'$set': {
@@ -1250,6 +1289,9 @@ def create_competency():
         return jsonify({'error': 'Code and CG required'}), 400
     
     try:
+        if isinstance(cg_id, str):
+            cg_id = ObjectId(cg_id)
+        
         result = db.competencies.insert_one({
             'comp_code': code,
             'comp_description': description,
@@ -1279,6 +1321,9 @@ def update_competency(comp_id):
         return jsonify({'error': 'Code and CG required'}), 400
     
     try:
+        if isinstance(cg_id, str):
+            cg_id = ObjectId(cg_id)
+        
         result = db.competencies.update_one(
             {'_id': ObjectId(comp_id)},
             {'$set': {
@@ -1389,6 +1434,11 @@ def create_subject_group():
         return jsonify({'error': 'All fields are required'}), 400
     
     try:
+        if isinstance(grade_id, str):
+            grade_id = ObjectId(grade_id)
+        if isinstance(subject_id, str):
+            subject_id = ObjectId(subject_id)
+        
         existing = db.subject_groups.find_one({'group_code': group_code})
         if existing:
             return jsonify({'error': 'Group code already exists'}), 400
@@ -1420,6 +1470,11 @@ def update_subject_group(group_id):
     subject_id = data.get('subject_id')
     
     try:
+        if isinstance(grade_id, str):
+            grade_id = ObjectId(grade_id)
+        if isinstance(subject_id, str):
+            subject_id = ObjectId(subject_id)
+        
         result = db.subject_groups.update_one(
             {'_id': ObjectId(group_id)},
             {'$set': {
@@ -2262,95 +2317,96 @@ def get_page1_data():
     subject_group = session.get('subject_group')
     
     try:
-        user_subject_ids = []
-        if user_role != 'admin' and subject_group:
-            groups = db.subject_groups.find({'group_code': subject_group})
-            user_subject_ids = [str(g['subject_id']) for g in groups]
-        
-        if user_role == 'admin':
-            grades = list(db.grades.find())
-        else:
-            if user_subject_ids:
-                pipeline = [
-                    {'$match': {'_id': {'$in': [ObjectId(id) for id in user_subject_ids]}}},
-                    {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
-                    {'$addFields': {'grade': {'$arrayElemAt': ['$grade_info', 0]}}},
-                    {'$group': {'_id': '$grade._id', 'grade_name': {'$first': '$grade.grade_name'}}}
-                ]
-                grades = list(db.subjects.aggregate(pipeline))
-            else:
-                grades = []
-        
-        if user_role == 'admin':
-            subjects = list(db.subjects.find())
-        else:
-            if user_subject_ids:
-                subjects = list(db.subjects.find({'_id': {'$in': [ObjectId(id) for id in user_subject_ids]}}))
-            else:
-                subjects = []
-        
-        if user_role == 'admin':
-            cgs = list(db.curricular_goals.find())
-        else:
-            if user_subject_ids:
-                cgs = list(db.curricular_goals.find({'subject_id': {'$in': user_subject_ids}}))
-            else:
-                cgs = []
-        
-        if user_role == 'admin':
-            competencies = list(db.competencies.find({'status': 1}))
-        else:
-            if user_subject_ids:
-                pipeline = [
-                    {'$lookup': {'from': 'curricular_goals', 'localField': 'cg_id', 'foreignField': '_id', 'as': 'cg_info'}},
-                    {'$addFields': {'subject_id': {'$arrayElemAt': ['$cg_info.subject_id', 0]}}},
-                    {'$match': {'subject_id': {'$in': user_subject_ids}, 'status': 1}},
-                    {'$project': {'cg_info': 0}}
-                ]
-                competencies = list(db.competencies.aggregate(pipeline))
-            else:
-                competencies = []
-        
+        # Get all data from collections
+        grades = list(db.grades.find())
+        subjects = list(db.subjects.find())
+        cgs = list(db.curricular_goals.find())
+        competencies = list(db.competencies.find({'status': 1}))
         question_types = list(db.question_types.find())
         cognitive_domains = list(db.cognitive_domains.find())
         
+        # Build response structure
         data = {
-            'grades': grades,
-            'subjects': subjects,
-            'cgs': cgs,
-            'competencies': competencies,
+            'grades': [],
+            'subjects': [],
+            'cgs': [],
+            'competencies': [],
             'subjects_by_grade': {},
             'cgs_by_subject': {},
             'comps_by_cg': {},
-            'question_types': question_types,
-            'cognitive_domains': cognitive_domains
+            'question_types': [],
+            'cognitive_domains': []
         }
         
-        for subject in subjects:
-            grade_id = subject.get('grade_id')
-            if grade_id:
-                grade_key = str(grade_id)
-                if grade_key not in data['subjects_by_grade']:
-                    data['subjects_by_grade'][grade_key] = []
-                data['subjects_by_grade'][grade_key].append(subject)
+        # Process grades
+        for g in grades:
+            g['id'] = str(g['_id'])
+            if '_id' in g:
+                del g['_id']
+            data['grades'].append(g)
         
+        # Process subjects
+        for s in subjects:
+            s['id'] = str(s['_id'])
+            grade_id_str = str(s['grade_id']) if isinstance(s['grade_id'], ObjectId) else str(s['grade_id'])
+            s['grade_id'] = grade_id_str
+            
+            if '_id' in s:
+                del s['_id']
+            
+            # Add to subjects_by_grade
+            if grade_id_str not in data['subjects_by_grade']:
+                data['subjects_by_grade'][grade_id_str] = []
+            data['subjects_by_grade'][grade_id_str].append(s)
+            data['subjects'].append(s)
+        
+        # Process CGs
         for cg in cgs:
-            subject_id = cg.get('subject_id')
-            if subject_id:
-                subject_key = str(subject_id)
-                if subject_key not in data['cgs_by_subject']:
-                    data['cgs_by_subject'][subject_key] = []
-                data['cgs_by_subject'][subject_key].append(cg)
+            cg['id'] = str(cg['_id'])
+            subject_id_str = str(cg['subject_id']) if isinstance(cg['subject_id'], ObjectId) else str(cg['subject_id'])
+            cg['subject_id'] = subject_id_str
+            
+            if cg.get('chapter_id'):
+                cg['chapter_id'] = str(cg['chapter_id']) if isinstance(cg['chapter_id'], ObjectId) else str(cg['chapter_id'])
+            
+            if '_id' in cg:
+                del cg['_id']
+            
+            # Add to cgs_by_subject
+            if subject_id_str not in data['cgs_by_subject']:
+                data['cgs_by_subject'][subject_id_str] = []
+            data['cgs_by_subject'][subject_id_str].append(cg)
+            data['cgs'].append(cg)
         
+        # Process competencies
         for comp in competencies:
-            cg_id = comp.get('cg_id')
-            if cg_id:
-                cg_key = str(cg_id)
-                if cg_key not in data['comps_by_cg']:
-                    data['comps_by_cg'][cg_key] = []
-                data['comps_by_cg'][cg_key].append(comp)
+            comp['id'] = str(comp['_id'])
+            cg_id_str = str(comp['cg_id']) if isinstance(comp['cg_id'], ObjectId) else str(comp['cg_id'])
+            comp['cg_id'] = cg_id_str
+            
+            if '_id' in comp:
+                del comp['_id']
+            
+            # Add to comps_by_cg
+            if cg_id_str not in data['comps_by_cg']:
+                data['comps_by_cg'][cg_id_str] = []
+            data['comps_by_cg'][cg_id_str].append(comp)
+            data['competencies'].append(comp)
         
-        data = convert_objectid(data)
+        # Process question types
+        for qt in question_types:
+            qt['id'] = str(qt['_id'])
+            if '_id' in qt:
+                del qt['_id']
+            data['question_types'].append(qt)
+        
+        # Process cognitive domains
+        for cd in cognitive_domains:
+            cd['id'] = str(cd['_id'])
+            if '_id' in cd:
+                del cd['_id']
+            data['cognitive_domains'].append(cd)
+        
         return jsonify(data)
     except Exception as e:
         traceback.print_exc()
