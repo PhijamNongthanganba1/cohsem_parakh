@@ -52,7 +52,6 @@ try:
     
 except Exception as e:
     print(f"❌ MongoDB connection failed: {e}")
-    print("Please check: 1) IP whitelist 2) Username/password 3) Connection string")
     sys.exit(1)
 
 # --- File Upload Configuration ---
@@ -65,15 +64,16 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
 # ============================================
-# AUTO-INCREMENT ID HELPERS FOR MONGODB
+# AUTO-INCREMENT ID HELPERS
 # ============================================
 
 def init_counters():
     """Initialize counters collection for auto-increment integer IDs"""
     try:
-        # Check if counters collection exists
+        # Ensure counters collection exists
         if 'counters' not in db.list_collection_names():
             db.create_collection('counters')
+            print("✓ Created counters collection")
         
         # Initialize counters for each collection
         collections = ['grades', 'subjects', 'textbooks', 'chapters', 
@@ -85,35 +85,68 @@ def init_counters():
         for coll in collections:
             if db.counters.find_one({'_id': coll}) is None:
                 db.counters.insert_one({'_id': coll, 'seq': 0})
-        print("✓ Counters initialized")
+                print(f"✓ Initialized counter for {coll}")
+        
+        # Update counters based on existing data
+        for coll in collections:
+            if db[coll].count_documents({}) > 0:
+                max_doc = db[coll].find_one(sort=[('_id', -1)])
+                if max_doc and max_doc.get('_id') and isinstance(max_doc['_id'], int):
+                    db.counters.update_one(
+                        {'_id': coll},
+                        {'$set': {'seq': max_doc['_id']}},
+                        upsert=True
+                    )
+        
+        print("✅ Counters initialized successfully")
+        return True
     except Exception as e:
         print(f"⚠️ Counter initialization error: {e}")
+        return False
 
 def get_next_sequence(collection_name):
     """Get next auto-increment ID for a collection"""
     try:
+        # Ensure counters collection exists
+        if 'counters' not in db.list_collection_names():
+            db.create_collection('counters')
+        
+        # Ensure counter exists
+        if db.counters.find_one({'_id': collection_name}) is None:
+            db.counters.insert_one({'_id': collection_name, 'seq': 0})
+        
+        # Get and increment sequence
         result = db.counters.find_one_and_update(
             {'_id': collection_name},
             {'$inc': {'seq': 1}},
             return_document=True,
             upsert=True
         )
-        return result['seq']
+        
+        if result and 'seq' in result:
+            return result['seq']
+        
+        # Fallback: get max ID + 1
+        collection = db[collection_name]
+        max_doc = collection.find_one({}, sort=[('_id', -1)])
+        if max_doc and max_doc.get('_id') and isinstance(max_doc['_id'], int):
+            return max_doc['_id'] + 1
+        
+        return 1
     except Exception as e:
-        print(f"Error getting sequence for {collection_name}: {e}")
-        return None
+        print(f"⚠️ Error getting sequence for {collection_name}: {e}")
+        # Fallback: get max ID + 1
+        try:
+            collection = db[collection_name]
+            max_doc = collection.find_one({}, sort=[('_id', -1)])
+            if max_doc and max_doc.get('_id') and isinstance(max_doc['_id'], int):
+                return max_doc['_id'] + 1
+        except:
+            pass
+        return 1
 
-def generate_int_id(collection_name, custom_id=None):
+def generate_int_id(collection_name):
     """Generate an integer ID for a document"""
-    if custom_id is not None:
-        # If custom ID provided, update counter to at least that value
-        counter = db.counters.find_one({'_id': collection_name})
-        if counter and counter.get('seq', 0) < custom_id:
-            db.counters.update_one(
-                {'_id': collection_name},
-                {'$set': {'seq': custom_id}}
-            )
-        return custom_id
     return get_next_sequence(collection_name)
 
 
@@ -122,16 +155,18 @@ def generate_int_id(collection_name, custom_id=None):
 # ============================================
 
 def convert_objectid(doc):
-    """Convert MongoDB documents to serializable format (handles int IDs)"""
+    """Convert MongoDB documents to serializable format"""
     if isinstance(doc, list):
         return [convert_objectid(item) for item in doc]
     if isinstance(doc, dict):
         result = {}
         for key, value in doc.items():
             if key == '_id':
-                result[key] = value  # Already integer
+                result[key] = value
             elif isinstance(value, datetime):
                 result[key] = value.isoformat()
+            elif isinstance(value, ObjectId):
+                result[key] = str(value)
             elif isinstance(value, list):
                 result[key] = [convert_objectid(item) for item in value]
             elif isinstance(value, dict):
@@ -155,12 +190,6 @@ def safe_int_id(value):
             return int(value)
         except ValueError:
             return None
-    if isinstance(value, ObjectId):
-        # If somehow an ObjectId is passed, convert to int if possible
-        try:
-            return int(str(value)[-6:], 16)  # Last 6 hex chars to int
-        except:
-            return None
     return None
 
 def get_grade_id_from_value(value):
@@ -172,11 +201,9 @@ def get_grade_id_from_value(value):
         return None
     
     if isinstance(value, int):
-        # Check if grade exists
         grade = db.grades.find_one({'_id': value})
         if grade:
             return value
-        # Fallback to first grade
         grade = db.grades.find_one({})
         return grade['_id'] if grade else None
     
@@ -188,12 +215,10 @@ def get_grade_id_from_value(value):
                 return grade['_id']
             return None
         
-        # Try to find by grade_name
         grade = db.grades.find_one({'grade_name': value})
         if grade:
             return grade['_id']
         
-        # Try to find by integer ID
         try:
             int_val = int(value)
             grade = db.grades.find_one({'_id': int_val})
@@ -201,13 +226,7 @@ def get_grade_id_from_value(value):
                 return int_val
         except ValueError:
             pass
-        
-        # Try regex match on grade_name
-        grade = db.grades.find_one({'grade_name': {'$regex': value, '$options': 'i'}})
-        if grade:
-            return grade['_id']
     
-    # If all fails, try to get first grade
     grade = db.grades.find_one({})
     if grade:
         return grade['_id']
@@ -241,7 +260,7 @@ def get_user_subject_ids(username):
         if not user or not user.get('subject_group'):
             return []
         groups = db.subject_groups.find({'group_code': user['subject_group']})
-        return [str(g['subject_id']) for g in groups]
+        return [g['subject_id'] for g in groups]
     except:
         return []
 
@@ -251,7 +270,7 @@ def get_user_grades(username):
         if not user or not user.get('subject_group'):
             return []
         groups = db.subject_groups.find({'group_code': user['subject_group']})
-        return [str(g['grade_id']) for g in groups]
+        return [g['grade_id'] for g in groups]
     except:
         return []
 
@@ -262,10 +281,10 @@ def get_user_grades(username):
 
 def init_db():
     try:
-        # Initialize counters first
+        # Initialize counters
         init_counters()
         
-        # Insert default cognitive domains with integer IDs
+        # Insert default cognitive domains
         if db.cognitive_domains.count_documents({}) == 0:
             domains_data = [
                 (1, 'Awareness', 'Basic awareness of concepts and information'),
@@ -278,11 +297,10 @@ def init_db():
                     'domain_name': domain_name,
                     'description': description
                 })
-            # Update counter
             db.counters.update_one({'_id': 'cognitive_domains'}, {'$set': {'seq': 3}}, upsert=True)
             print("✓ Inserted default cognitive domains")
         
-        # Insert default difficulty levels with integer IDs
+        # Insert default difficulty levels
         if db.difficulty_levels.count_documents({}) == 0:
             difficulty_data = [
                 (1, 'Easy'),
@@ -297,11 +315,10 @@ def init_db():
             db.counters.update_one({'_id': 'difficulty_levels'}, {'$set': {'seq': 3}}, upsert=True)
             print("✓ Inserted default difficulty levels")
         
-        # Get domain and difficulty IDs
         domains = {doc['domain_name']: doc['_id'] for doc in db.cognitive_domains.find()}
         difficulties = {doc['level_name']: doc['_id'] for doc in db.difficulty_levels.find()}
         
-        # Insert default knowledge levels with integer IDs
+        # Insert default knowledge levels
         if db.knowledge_levels.count_documents({}) == 0:
             knowledge_levels = [
                 (1, 'Knowledge', 'Basic recall of information and facts', domains.get('Awareness'), difficulties.get('Easy')),
@@ -332,7 +349,7 @@ def init_db():
             db.counters.update_one({'_id': 'knowledge_levels'}, {'$set': {'seq': 15}}, upsert=True)
             print("✓ Inserted default knowledge levels")
         
-        # Insert default question types with integer IDs
+        # Insert default question types
         if db.question_types.count_documents({}) == 0:
             question_types = [
                 (1, 'Objective', domains.get('Awareness')),
@@ -350,7 +367,7 @@ def init_db():
             db.counters.update_one({'_id': 'question_types'}, {'$set': {'seq': 5}}, upsert=True)
             print("✓ Inserted default question types")
         
-        # Create default admin user with integer ID
+        # Create default admin user
         if db.users.count_documents({}) == 0:
             ADMIN_USERNAME = "admin"
             ADMIN_PASSWORD = "admin123"
@@ -371,46 +388,14 @@ def init_db():
                 'perm_master': True,
                 'created_at': datetime.now()
             })
-            print("✓ Created default admin user")
-        
-        # Fix any existing subjects with invalid grade_id
-        print("🔧 Fixing existing subjects with invalid grade_id...")
-        first_grade = db.grades.find_one({})
-        if first_grade:
-            grade_id = first_grade['_id']
-            # Fix subjects with string IDs or invalid values
-            db.subjects.update_many(
-                {'$or': [
-                    {'grade_id': {'$type': 'string'}},
-                    {'grade_id': 'undefined'},
-                    {'grade_id': 'null'},
-                    {'grade_id': ''},
-                    {'grade_id': {'$exists': False}}
-                ]},
-                {'$set': {'grade_id': grade_id}}
-            )
-            print(f"✓ Fixed subjects with invalid grade_id")
-        
-        # Update counter for existing collections
-        for coll_name in ['grades', 'subjects', 'textbooks', 'chapters', 
-                         'curricular_goals', 'competencies', 'subject_groups', 
-                         'simple_questions', 'paper_blueprints']:
-            if db[coll_name].count_documents({}) > 0:
-                max_id = db[coll_name].find_one(sort=[('_id', -1)])
-                if max_id and max_id.get('_id'):
-                    current_max = max_id['_id']
-                    if isinstance(current_max, int):
-                        db.counters.update_one(
-                            {'_id': coll_name},
-                            {'$set': {'seq': current_max}},
-                            upsert=True
-                        )
+            print(f"✓ Created default admin user with ID: {admin_id}")
         
         print("✅ Database initialization complete")
     except Exception as e:
         print(f"⚠️ Database initialization error: {e}")
         traceback.print_exc()
 
+# Initialize database
 with app.app_context():
     init_db()
 
@@ -445,7 +430,7 @@ def dashboard_login():
             
             if check_password_hash(user['password'], password):
                 session['user'] = user['username']
-                session['user_id'] = user['_id']  # Now integer
+                session['user_id'] = user['_id']
                 session['user_role'] = user.get('role', 'writer')
                 session['subject_group'] = user.get('subject_group')
                 session['group_role'] = user.get('group_role', 'member')
@@ -462,6 +447,7 @@ def dashboard_login():
                 return render_template('dashboard_login.html')
         except Exception as e:
             print(f"❌ Login error: {e}")
+            traceback.print_exc()
             flash(f'Login error: {str(e)}', 'error')
             return render_template('dashboard_login.html')
 
@@ -507,6 +493,8 @@ def dashboard_register():
             flash('Account created successfully! You can now login.', 'success')
             return redirect(url_for('dashboard_login'))
         except Exception as e:
+            print(f"❌ Registration error: {e}")
+            traceback.print_exc()
             flash(f'Registration failed: {str(e)}', 'error')
             return render_template('dashboard_register.html')
     return render_template('dashboard_register.html')
@@ -667,14 +655,14 @@ def dashboard_stats():
     
     try:
         all_subjects = list(db.subjects.find())
-        subjects_dict = {s['_id']: s for s in all_subjects}  # Using int keys
+        subjects_dict = {s['_id']: s for s in all_subjects}
         
         all_grades = list(db.grades.find())
         
         stats = {}
         
         for grade in all_grades:
-            grade_id = grade['_id']  # Now integer
+            grade_id = grade['_id']
             grade_name = grade['grade_name']
             
             pipeline = [
@@ -736,7 +724,6 @@ def dashboard_stats():
                 'grade_id': grade_id
             }
         
-        # Recent questions
         pipeline_recent = [
             {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
             {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': '_id', 'as': 'subject_info'}},
@@ -761,11 +748,6 @@ def dashboard_stats():
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
-
-
-# ============================================
-# GRADE ENDPOINTS
-# ============================================
 
 @app.route('/api/grades', methods=['GET'])
 def get_grades():
@@ -861,11 +843,6 @@ def delete_grade(grade_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# ============================================
-# SUBJECT ENDPOINTS
-# ============================================
-
 @app.route('/api/subjects', methods=['GET'])
 def get_subjects():
     if 'user' not in session:
@@ -875,7 +852,6 @@ def get_subjects():
     subject_group = session.get('subject_group')
     
     try:
-        # Fix any subjects with invalid grade_id
         first_grade = db.grades.find_one({})
         if first_grade:
             grade_id = first_grade['_id']
@@ -933,13 +909,11 @@ def create_subject():
         return jsonify({'error': 'Subject name is required'}), 400
     
     try:
-        # Get grade_id from value - handles undefined gracefully
         grade_id_obj = get_grade_id_from_value(grade_id)
         
         if grade_id_obj is None:
             return jsonify({'error': 'No grades available. Please create a grade first.'}), 400
         
-        # Check if subject already exists for this grade
         existing = db.subjects.find_one({
             'subject_name': name,
             'grade_id': grade_id_obj
@@ -949,7 +923,7 @@ def create_subject():
             return jsonify({'error': f'Subject "{name}" already exists for this grade'}), 400
         
         subject_id = generate_int_id('subjects')
-        result = db.subjects.insert_one({
+        db.subjects.insert_one({
             '_id': subject_id,
             'subject_name': name, 
             'grade_id': grade_id_obj
@@ -1010,11 +984,6 @@ def delete_subject(subject_id):
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
-# ============================================
-# TEXTBOOK ENDPOINTS
-# ============================================
 
 @app.route('/api/textbooks', methods=['GET'])
 def get_textbooks():
@@ -1083,7 +1052,7 @@ def create_textbook():
             return jsonify({'error': 'Book already exists for this subject'}), 400
         
         textbook_id = generate_int_id('textbooks')
-        result = db.textbooks.insert_one({
+        db.textbooks.insert_one({
             '_id': textbook_id,
             'textbook_name': textbook_name,
             'subject_id': subject_id_obj,
@@ -1181,11 +1150,6 @@ def get_subject_textbooks(subject_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# ============================================
-# CHAPTER ENDPOINTS
-# ============================================
-
 @app.route('/api/chapters', methods=['GET'])
 def get_chapters():
     if 'user' not in session:
@@ -1265,7 +1229,7 @@ def create_chapter():
         grade_id = subject.get('grade_id') if subject else None
         
         chapter_id = generate_int_id('chapters')
-        result = db.chapters.insert_one({
+        db.chapters.insert_one({
             '_id': chapter_id,
             'subject_id': subject_id_obj,
             'chapter_name': chapter_name,
@@ -1358,11 +1322,6 @@ def get_subject_chapters(subject_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# ============================================
-# CURRICULAR GOALS (CG) ENDPOINTS
-# ============================================
-
 @app.route('/api/cgs', methods=['GET'])
 def get_cgs():
     if 'user' not in session:
@@ -1440,7 +1399,7 @@ def create_cg():
             return jsonify({'error': f'Curricular Goal "{code}" already exists'}), 400
         
         cg_id = generate_int_id('curricular_goals')
-        result = db.curricular_goals.insert_one({
+        db.curricular_goals.insert_one({
             '_id': cg_id,
             'cg_code': code,
             'cg_description': description,
@@ -1511,11 +1470,6 @@ def delete_cg(cg_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# ============================================
-# COMPETENCY ENDPOINTS
-# ============================================
-
 @app.route('/api/competencies', methods=['GET'])
 def get_competencies_api():
     if 'user' not in session:
@@ -1567,7 +1521,7 @@ def create_competency():
             return jsonify({'error': 'Invalid cg_id'}), 400
         
         comp_id = generate_int_id('competencies')
-        result = db.competencies.insert_one({
+        db.competencies.insert_one({
             '_id': comp_id,
             'comp_code': code,
             'comp_description': description,
@@ -1659,11 +1613,6 @@ def toggle_competency_status(comp_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# ============================================
-# SUBJECT GROUPS ENDPOINTS
-# ============================================
-
 @app.route('/api/subject-groups', methods=['GET'])
 def get_subject_groups():
     if 'user' not in session:
@@ -1729,7 +1678,7 @@ def create_subject_group():
             return jsonify({'error': 'Group code already exists'}), 400
         
         group_id = generate_int_id('subject_groups')
-        result = db.subject_groups.insert_one({
+        db.subject_groups.insert_one({
             '_id': group_id,
             'group_code': group_code,
             'group_name': group_name,
@@ -1805,11 +1754,6 @@ def delete_subject_group(group_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# ============================================
-# USER MANAGEMENT ENDPOINTS
-# ============================================
-
 @app.route('/api/users', methods=['GET'])
 def get_users():
     if 'user' not in session:
@@ -1872,7 +1816,7 @@ def create_user():
             perm_ra = True
         
         user_id = generate_int_id('users')
-        result = db.users.insert_one({
+        db.users.insert_one({
             '_id': user_id,
             'username': username,
             'password': hashed_password,
@@ -1979,11 +1923,6 @@ def delete_user(user_id):
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-
-# ============================================
-# PERMISSIONS & HELPERS
-# ============================================
-
 @app.route('/api/user-permissions')
 def get_user_permissions():
     if 'user' not in session:
@@ -2054,11 +1993,6 @@ def get_approvers():
         return jsonify({'approvers': users})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
-# ============================================
-# QUESTION REVIEW OPERATIONS
-# ============================================
 
 @app.route('/api/master-review-question/<int:question_id>', methods=['POST'])
 def master_review_question(question_id):
@@ -2527,11 +2461,6 @@ def update_question(question_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# ============================================
-# BUILDER QUESTIONS ENDPOINTS
-# ============================================
-
 @app.route('/api/builder-questions', methods=['GET'])
 def get_builder_questions():
     if 'user' not in session:
@@ -2636,11 +2565,6 @@ def get_builder_questions():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# ============================================
-# PAGE DATA ENDPOINTS
-# ============================================
-
 @app.route('/api/page1-data')
 def get_page1_data():
     if 'user' not in session:
@@ -2650,7 +2574,6 @@ def get_page1_data():
     subject_group = session.get('subject_group')
     
     try:
-        # Fix any subjects with invalid grade_id
         first_grade = db.grades.find_one({})
         if first_grade:
             db.subjects.update_many(
@@ -2804,11 +2727,6 @@ def get_page2_data():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# ============================================
-# KNOWLEDGE LEVELS & COGNITIVE DOMAINS
-# ============================================
-
 @app.route('/api/knowledge-levels', methods=['GET'])
 def get_knowledge_levels():
     if 'user' not in session:
@@ -2872,11 +2790,6 @@ def get_cognitive_domains():
         return jsonify({'domains': domains})
     except Exception as e:
         return jsonify({'domains': []})
-
-
-# ============================================
-# SIMPLE QUESTIONS ENDPOINTS
-# ============================================
 
 @app.route('/api/simple-questions')
 def get_simple_questions():
@@ -3044,7 +2957,7 @@ def create_simple_question():
         question_id = generate_int_id('simple_questions')
         question_doc['_id'] = question_id
         
-        result = db.simple_questions.insert_one(question_doc)
+        db.simple_questions.insert_one(question_doc)
         
         return jsonify({
             'success': True, 
@@ -3073,11 +2986,6 @@ def delete_question(question_id):
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
-# ============================================
-# IMAGE UPLOAD ENDPOINTS
-# ============================================
 
 @app.route('/api/upload-question-images', methods=['POST'])
 def upload_question_images():
@@ -3146,11 +3054,6 @@ def serve_question_image(filename):
     if os.path.exists(file_path):
         return send_file(file_path)
     return jsonify({'error': 'Image not found'}), 404
-
-
-# ============================================
-# PAPER BLUEPRINTS
-# ============================================
 
 @app.route('/api/paper-blueprints', methods=['GET'])
 def get_paper_blueprints():
@@ -3256,7 +3159,7 @@ def create_paper_blueprint():
     
     try:
         blueprint_id = generate_int_id('paper_blueprints')
-        result = db.paper_blueprints.insert_one({
+        db.paper_blueprints.insert_one({
             '_id': blueprint_id,
             'name': name,
             'grade_id': safe_int_id(grade_id),
@@ -3402,11 +3305,6 @@ def delete_paper_blueprint(blueprint_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# ============================================
-# UTILITY ENDPOINTS
-# ============================================
-
 @app.route('/api/pending-count')
 def get_pending_count():
     if 'user' not in session:
@@ -3510,7 +3408,6 @@ def debug_cgs():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=False, port=5000)
