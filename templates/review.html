@@ -214,6 +214,120 @@
         }
         tr:hover { background: rgba(255,255,255,0.03); }
 
+        /* ===== FIX: HTML Content Rendering Styles ===== */
+        .question-content-html {
+            max-width: 250px;
+            max-height: 80px;
+            overflow: auto;
+            font-size: 12px;
+            line-height: 1.4;
+            color: rgba(255,255,255,0.85);
+            padding: 2px 0;
+        }
+        .question-content-html::-webkit-scrollbar {
+            width: 3px;
+            height: 3px;
+        }
+        .question-content-html::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+        }
+        .question-content-html::-webkit-scrollbar-thumb {
+            background: #3498db;
+            border-radius: 10px;
+        }
+        .question-content-html p {
+            margin: 0 0 4px 0;
+            color: rgba(255,255,255,0.85);
+        }
+        .question-content-html strong {
+            color: #f39c12;
+        }
+        .question-content-html em {
+            color: #2ecc71;
+        }
+        .question-content-html u {
+            color: #e74c3c;
+        }
+        .question-content-html ul, .question-content-html ol {
+            padding-left: 16px;
+            margin: 2px 0;
+        }
+        .question-content-html li {
+            color: rgba(255,255,255,0.85);
+        }
+        .question-content-html blockquote {
+            border-left: 2px solid #3498db;
+            padding-left: 8px;
+            margin: 2px 0;
+            color: rgba(255,255,255,0.7);
+        }
+        .question-content-html code {
+            background: rgba(0,0,0,0.3);
+            padding: 1px 4px;
+            border-radius: 3px;
+            color: #e74c3c;
+            font-size: 11px;
+        }
+        .question-content-html img {
+            max-width: 60px;
+            max-height: 60px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+        }
+        .question-content-html a {
+            color: #3498db;
+        }
+        .question-content-html h1, .question-content-html h2, .question-content-html h3 {
+            color: white;
+            font-size: 13px;
+            margin: 2px 0;
+        }
+
+        .answer-content-html {
+            max-width: 180px;
+            max-height: 60px;
+            overflow: auto;
+            font-size: 12px;
+            line-height: 1.3;
+            color: rgba(255,255,255,0.7);
+            padding: 2px 0;
+        }
+        .answer-content-html::-webkit-scrollbar {
+            width: 3px;
+            height: 3px;
+        }
+        .answer-content-html::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+        }
+        .answer-content-html::-webkit-scrollbar-thumb {
+            background: #2ecc71;
+            border-radius: 10px;
+        }
+        .answer-content-html p {
+            margin: 0 0 2px 0;
+            color: rgba(255,255,255,0.7);
+        }
+        .answer-content-html strong {
+            color: #2ecc71;
+        }
+        .answer-content-html img {
+            max-width: 40px;
+            max-height: 40px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+        }
+        .answer-content-html ul, .answer-content-html ol {
+            padding-left: 16px;
+            margin: 2px 0;
+        }
+        .answer-content-html li {
+            color: rgba(255,255,255,0.7);
+        }
+
         .badge {
             padding: 2px 10px;
             border-radius: 12px;
@@ -231,55 +345,6 @@
         .badge-rejected { background: rgba(231,76,60,0.2); color: #f1948a; }
         .badge-rework { background: rgba(243,156,18,0.2); color: #f7dc6f; }
         .badge-source { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5); }
-
-        .question-text {
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            display: block;
-        }
-        .answer-text {
-            max-width: 150px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            display: block;
-            color: rgba(255,255,255,0.5);
-        }
-
-        .action-group {
-            display: flex;
-            gap: 3px;
-            flex-wrap: wrap;
-        }
-        .action-icon {
-            width: 26px;
-            height: 26px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 11px;
-            transition: all 0.2s ease;
-        }
-        .action-icon:disabled { opacity: 0.25; cursor: not-allowed; }
-        .action-icon:not(:disabled):hover { transform: scale(1.05); }
-        .icon-edit { background: #f39c12; }
-        .icon-edit:hover:not(:disabled) { background: #e67e22; }
-        .icon-delete { background: #e74c3c; }
-        .icon-delete:hover:not(:disabled) { background: #c0392b; }
-        .icon-assign { background: #8e44ad; }
-        .icon-assign:hover:not(:disabled) { background: #7d3c98; }
-        .icon-approve { background: #27ae60; }
-        .icon-approve:hover:not(:disabled) { background: #229954; }
-        .icon-rework { background: #f39c12; }
-        .icon-rework:hover:not(:disabled) { background: #e67e22; }
-        .icon-view { background: #3498db; }
-        .icon-view:hover:not(:disabled) { background: #2980b9; }
 
         .no-data {
             text-align: center;
@@ -374,6 +439,24 @@
         .readonly-box .label { font-weight: 600; color: rgba(255,255,255,0.3); font-size: 10px; text-transform: uppercase; }
         .readonly-box .value { color: #e8edf5; font-size: 13px; margin-top: 2px; }
 
+        .question-preview-small {
+            max-height: 80px;
+            overflow: auto;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .question-preview-small::-webkit-scrollbar {
+            width: 3px;
+        }
+        .question-preview-small::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+        }
+        .question-preview-small::-webkit-scrollbar-thumb {
+            background: #3498db;
+            border-radius: 10px;
+        }
+
         @media (max-width: 1024px) {
             .stats-grid { grid-template-columns: repeat(3, 1fr); }
         }
@@ -385,7 +468,8 @@
             .tab-btn { padding: 8px 12px; font-size: 12px; white-space: normal; }
             .tab-content { padding: 10px; }
             th, td { padding: 4px 6px; font-size: 11px; }
-            .question-text, .answer-text { max-width: 80px; }
+            .question-content-html { max-width: 120px; max-height: 60px; }
+            .answer-content-html { max-width: 100px; max-height: 50px; }
         }
         @media (max-width: 480px) {
             .stats-grid { grid-template-columns: 1fr 1fr; }
@@ -454,7 +538,7 @@
         <div class="modal-content">
             <div class="modal-header master"><h3><i class="fas fa-user-check"></i> Assign to Reviewer</h3><button class="close-btn" onclick="closeModal('masterReviewModal')">&times;</button></div>
             <div class="modal-body">
-                <div class="readonly-box"><div class="label">Question</div><div class="value" id="masterReviewQuestionDisplay"></div></div>
+                <div class="readonly-box"><div class="label">Question</div><div class="value question-preview-small" id="masterReviewQuestionDisplay"></div></div>
                 <div class="readonly-box" style="border-left-color:#8e44ad;"><div class="label">Subject Group</div><div class="value" id="masterReviewGroupDisplay">Loading...</div></div>
                 <label>Reviewer *</label>
                 <select id="reviewerSelect" class="form-control"><option value="">-- Select Reviewer --</option></select>
@@ -472,7 +556,7 @@
         <div class="modal-content">
             <div class="modal-header review"><h3><i class="fas fa-user-check"></i> Assign to Approver</h3><button class="close-btn" onclick="closeModal('reviewModal')">&times;</button></div>
             <div class="modal-body">
-                <div class="readonly-box"><div class="label">Question</div><div class="value" id="reviewQuestionDisplay"></div></div>
+                <div class="readonly-box"><div class="label">Question</div><div class="value question-preview-small" id="reviewQuestionDisplay"></div></div>
                 <div class="readonly-box" style="border-left-color:#00bcd4;"><div class="label">Subject Group</div><div class="value" id="reviewGroupDisplay">Loading...</div></div>
                 <label>Approver *</label>
                 <select id="approverSelect" class="form-control"><option value="">-- Select Approver --</option></select>
@@ -490,8 +574,8 @@
         <div class="modal-content">
             <div class="modal-header approve"><h3><i class="fas fa-check-circle"></i> Approve</h3><button class="close-btn" onclick="closeModal('approveModal')">&times;</button></div>
             <div class="modal-body">
-                <div class="readonly-box"><div class="label">Question</div><div class="value" id="approveQuestionDisplay"></div></div>
-                <div class="readonly-box" style="border-left-color:#00bcd4;"><div class="label">Answer</div><div class="value" id="approveAnswerDisplay"></div></div>
+                <div class="readonly-box"><div class="label">Question</div><div class="value question-preview-small" id="approveQuestionDisplay"></div></div>
+                <div class="readonly-box" style="border-left-color:#00bcd4;"><div class="label">Answer</div><div class="value question-preview-small" id="approveAnswerDisplay"></div></div>
                 <label>Comment</label>
                 <textarea id="approveComment" rows="2" placeholder="Optional..."></textarea>
             </div>
@@ -507,8 +591,8 @@
             <div class="modal-header rework"><h3><i class="fas fa-redo"></i> Rework</h3><button class="close-btn" onclick="closeModal('reworkModal')">&times;</button></div>
             <div class="modal-body">
                 <div id="reworkReasonDisplay" style="background:rgba(243,156,18,0.1);padding:8px 12px;border-radius:6px;margin-bottom:10px;border-left:3px solid #f39c12;font-size:12px;display:none;"></div>
-                <div class="readonly-box"><div class="label">Question</div><div class="value" id="reworkQuestionDisplay"></div></div>
-                <div class="readonly-box" style="border-left-color:#00bcd4;"><div class="label">Answer</div><div class="value" id="reworkAnswerDisplay"></div></div>
+                <div class="readonly-box"><div class="label">Question</div><div class="value question-preview-small" id="reworkQuestionDisplay"></div></div>
+                <div class="readonly-box" style="border-left-color:#00bcd4;"><div class="label">Answer</div><div class="value question-preview-small" id="reworkAnswerDisplay"></div></div>
                 <label>Rework Comment *</label>
                 <textarea id="reworkComment" rows="2" placeholder="Explain why..."></textarea>
             </div>
@@ -516,6 +600,13 @@
                 <button class="btn btn-danger btn-sm" onclick="closeModal('reworkModal')">Cancel</button>
                 <button class="btn btn-warning btn-sm" onclick="submitRework()"><i class="fas fa-redo"></i> Send</button>
             </div>
+        </div>
+    </div>
+
+    <div class="modal" id="imageModal" onclick="closeImageModal()">
+        <div class="modal-content" style="max-width:90%;max-height:90%;background:transparent;border:none;display:flex;justify-content:center;align-items:center;" onclick="event.stopPropagation();">
+            <img id="modalImage" style="max-width:100%;max-height:90vh;border-radius:8px;border:2px solid rgba(255,255,255,0.2);">
+            <button class="close-btn" style="position:absolute;top:20px;right:35px;font-size:40px;background:none;border:none;color:white;cursor:pointer;" onclick="closeImageModal()">&times;</button>
         </div>
     </div>
 
@@ -561,6 +652,32 @@
             return d.innerHTML; 
         }
         
+        // ====== FIX: Render HTML content safely for display ======
+        function renderHtmlContent(html) {
+            if (!html) return '';
+            return html;
+        }
+
+        // ====== FIX: Get plain text for tooltips ======
+        function getPlainText(html) {
+            if (!html) return '';
+            const temp = document.createElement('div');
+            temp.innerHTML = html;
+            return temp.textContent || temp.innerText || '';
+        }
+
+        // ====== FIX: Truncate HTML content for display ======
+        function truncateHtml(html, maxLength) {
+            if (!html) return '';
+            const plain = getPlainText(html);
+            if (plain.length <= maxLength) return html;
+            // Find a good breaking point
+            let truncated = plain.substring(0, maxLength);
+            const lastSpace = truncated.lastIndexOf(' ');
+            if (lastSpace > 0) truncated = truncated.substring(0, lastSpace);
+            return truncated + '...';
+        }
+
         function getStatusClass(s) {
             const map = {
                 'unassigned': 'badge-unassigned',
@@ -587,6 +704,17 @@
 
         function closeModal(id) { 
             document.getElementById(id).classList.remove('active'); 
+        }
+
+        function showImageModal(imageUrl) {
+            const modal = document.getElementById('imageModal');
+            const img = document.getElementById('modalImage');
+            modal.style.display = 'flex';
+            img.src = imageUrl;
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').style.display = 'none';
         }
 
         // ============================================
@@ -623,14 +751,12 @@
             const sel = document.getElementById('reviewerSelect');
             sel.innerHTML = '<option value="">-- Select Reviewer --</option>';
             
-            // First try to filter by subject group
             let filtered = reviewers;
             if (questionGroup && questionGroup !== 'No group' && questionGroup !== 'Loading...') {
                 filtered = reviewers.filter(r => r.subject_group === questionGroup);
                 console.log(`🔍 Filtering reviewers by group: ${questionGroup}, found ${filtered.length}`);
             }
             
-            // If no reviewers in the group, show all reviewers
             if (filtered.length === 0) {
                 filtered = reviewers;
                 console.log(`📊 No reviewers in group, showing all ${filtered.length} reviewers`);
@@ -651,14 +777,12 @@
             const sel = document.getElementById('approverSelect');
             sel.innerHTML = '<option value="">-- Select Approver --</option>';
             
-            // First try to filter by subject group
             let filtered = approvers;
             if (questionGroup && questionGroup !== 'No group' && questionGroup !== 'Loading...') {
                 filtered = approvers.filter(a => a.subject_group === questionGroup);
                 console.log(`🔍 Filtering approvers by group: ${questionGroup}, found ${filtered.length}`);
             }
             
-            // If no approvers in the group, show all approvers
             if (filtered.length === 0) {
                 filtered = approvers;
                 console.log(`📊 No approvers in group, showing all ${filtered.length} approvers`);
@@ -792,16 +916,10 @@
             const search = document.getElementById('searchInput').value.toLowerCase().trim();
 
             return allQuestions.filter(q => {
-                // Grade filter
                 if (gradeVal && q.grade_id != gradeVal) return false;
-                
-                // Subject filter
                 if (subjectVal && q.subject_id != subjectVal) return false;
-                
-                // Status filter
                 if (statusVal && (q.status||'unassigned') !== statusVal) return false;
                 
-                // Search filter - search in question text and answer
                 if (search) {
                     const qText = (q.question_text || q.question || '').toLowerCase();
                     const ans = (q.answer || '').toLowerCase();
@@ -899,8 +1017,8 @@
                                 <thead>
                                     <tr>
                                         <th style="width:20px;">#</th>
-                                        <th style="min-width:120px;">Question</th>
-                                        <th style="min-width:80px;">Answer</th>
+                                        <th style="min-width:200px;">Question</th>
+                                        <th style="min-width:120px;">Answer</th>
                                         <th>Grade</th>
                                         <th>Subject</th>
                                         <th>Status</th>
@@ -918,7 +1036,7 @@
         }
 
         // ============================================
-        // TABLE ROW RENDERER
+        // TABLE ROW RENDERER - FIXED to show HTML content
         // ============================================
         function renderTableRow(q, showAssign, isAdmin) {
             const status = q.status || 'unassigned';
@@ -955,12 +1073,26 @@
 
             const questionText = q.question_text || q.question || '';
             const answerText = q.answer || '';
+            
+            // ====== FIX: Use HTML rendering instead of escapeHtml ======
+            // Get plain text for tooltip
+            const questionPlain = getPlainText(questionText);
+            const answerPlain = getPlainText(answerText);
+            
+            // Truncate for display - show HTML but with scroll
+            const questionDisplay = questionText ? 
+                `<div class="question-content-html">${renderHtmlContent(questionText)}</div>` : 
+                '<em style="color:rgba(255,255,255,0.2);">Empty</em>';
+            
+            const answerDisplay = answerText ? 
+                `<div class="answer-content-html">${renderHtmlContent(answerText)}</div>` : 
+                '<em style="color:rgba(255,255,255,0.2);">Empty</em>';
 
             return `
                 <tr>
                     <td style="color:rgba(255,255,255,0.2);font-size:10px;">${q.id}</td>
-                    <td><span class="question-text" title="${escapeHtml(questionText)}">${escapeHtml(questionText)}</span></td>
-                    <td><span class="answer-text" title="${escapeHtml(answerText)}">${escapeHtml(answerText)}</span></td>
+                    <td title="${escapeHtml(questionPlain)}">${questionDisplay}</td>
+                    <td title="${escapeHtml(answerPlain)}">${answerDisplay}</td>
                     <td><span class="badge badge-grade">${escapeHtml(gradeName)}</span></td>
                     <td><span class="badge badge-subject">${escapeHtml(subjectName)}</span></td>
                     <td><span class="badge ${getStatusClass(status)}">${getStatusText(status)}</span></td>
@@ -1011,15 +1143,12 @@
             const q = allQuestions.find(x => x.id === id);
             if (q) {
                 const questionText = q.question_text || q.question || '';
-                document.getElementById('masterReviewQuestionDisplay').textContent = questionText;
+                document.getElementById('masterReviewQuestionDisplay').innerHTML = renderHtmlContent(questionText);
                 
-                // Get the subject group - try multiple sources
                 let group = q.subject_group || q.user_group || currentSubjectGroup || 'No group';
                 document.getElementById('masterReviewGroupDisplay').textContent = group;
                 
                 console.log(`🔍 Opening master review for question ${id}, group: ${group}`);
-                
-                // Populate reviewers filtered by group
                 populateReviewerSelect(group);
             }
             document.getElementById('masterReviewComment').value = '';
@@ -1062,15 +1191,12 @@
             const q = allQuestions.find(x => x.id === id);
             if (q) {
                 const questionText = q.question_text || q.question || '';
-                document.getElementById('reviewQuestionDisplay').textContent = questionText;
+                document.getElementById('reviewQuestionDisplay').innerHTML = renderHtmlContent(questionText);
                 
-                // Get the subject group - try multiple sources
                 let group = q.subject_group || q.user_group || currentSubjectGroup || 'No group';
                 document.getElementById('reviewGroupDisplay').textContent = group;
                 
                 console.log(`🔍 Opening review for question ${id}, group: ${group}`);
-                
-                // Populate approvers filtered by group
                 populateApproverSelect(group);
             }
             document.getElementById('reviewComment').value = '';
@@ -1114,8 +1240,8 @@
             if (q) {
                 const questionText = q.question_text || q.question || '';
                 const answerText = q.answer || '';
-                document.getElementById('approveQuestionDisplay').textContent = questionText;
-                document.getElementById('approveAnswerDisplay').textContent = answerText;
+                document.getElementById('approveQuestionDisplay').innerHTML = renderHtmlContent(questionText);
+                document.getElementById('approveAnswerDisplay').innerHTML = renderHtmlContent(answerText);
             }
             document.getElementById('approveComment').value = '';
             document.getElementById('approveModal').classList.add('active');
@@ -1156,8 +1282,8 @@
             }
             const questionText = q.question_text || q.question || '';
             const answerText = q.answer || '';
-            document.getElementById('reworkQuestionDisplay').textContent = questionText;
-            document.getElementById('reworkAnswerDisplay').textContent = answerText;
+            document.getElementById('reworkQuestionDisplay').innerHTML = renderHtmlContent(questionText);
+            document.getElementById('reworkAnswerDisplay').innerHTML = renderHtmlContent(answerText);
             document.getElementById('reworkComment').value = '';
             document.getElementById('reworkModal').classList.add('active');
         }
