@@ -3705,6 +3705,40 @@ def debug_user(username):
         'has_master_perm': user.get('perm_master') == True or user.get('role') in ['master', 'admin']
     })
 
+
+
+
+@app.route('/api/question/<int:question_id>', methods=['GET'])
+def get_question(question_id):
+    """Get a single question for editing"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    try:
+        question = db.simple_questions.find_one({'id': question_id})
+        if not question:
+            return jsonify({'error': 'Question not found'}), 404
+        
+        # Check permissions
+        username = session.get('user', '')
+        user_role = session.get('user_role', 'writer')
+        perm_re = session.get('perm_re', False)
+        
+        if user_role != 'admin' and not perm_re:
+            return jsonify({'error': 'Permission denied'}), 403
+        
+        # Convert to frontend format
+        question = convert_doc(question)
+        
+        return jsonify({'question': question})
+    except Exception as e:
+        print(f"❌ Error in get_question: {e}")
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+
+    
 @app.route('/api/debug/questions')
 def debug_questions():
     """Debug endpoint to check questions"""

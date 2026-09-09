@@ -214,7 +214,58 @@
         }
         tr:hover { background: rgba(255,255,255,0.03); }
 
-        /* ===== FIX: HTML Content Rendering Styles ===== */
+        .action-group {
+            display: flex;
+            gap: 3px;
+            flex-wrap: wrap;
+        }
+        .action-icon {
+            width: 26px;
+            height: 26px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 11px;
+            transition: all 0.2s ease;
+        }
+        .action-icon:disabled { opacity: 0.25; cursor: not-allowed; }
+        .action-icon:not(:disabled):hover { transform: scale(1.05); }
+        .icon-edit { background: #f39c12; }
+        .icon-edit:hover:not(:disabled) { background: #e67e22; }
+        .icon-delete { background: #e74c3c; }
+        .icon-delete:hover:not(:disabled) { background: #c0392b; }
+        .icon-assign { background: #8e44ad; }
+        .icon-assign:hover:not(:disabled) { background: #7d3c98; }
+        .icon-approve { background: #27ae60; }
+        .icon-approve:hover:not(:disabled) { background: #229954; }
+        .icon-rework { background: #f39c12; }
+        .icon-rework:hover:not(:disabled) { background: #e67e22; }
+        .icon-view { background: #3498db; }
+        .icon-view:hover:not(:disabled) { background: #2980b9; }
+
+        .badge {
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+            display: inline-block;
+        }
+        .badge-grade { background: rgba(52,152,219,0.2); color: #85c1e9; }
+        .badge-subject { background: rgba(142,68,173,0.2); color: #bb8fce; }
+        .badge-unassigned { background: rgba(149,165,166,0.2); color: #bdc3c7; }
+        .badge-under-review { background: rgba(243,156,18,0.2); color: #f7dc6f; }
+        .badge-reviewed { background: rgba(0,188,212,0.2); color: #76d7c4; }
+        .badge-approved { background: rgba(39,174,96,0.2); color: #82e0aa; }
+        .badge-rejected { background: rgba(231,76,60,0.2); color: #f1948a; }
+        .badge-rework { background: rgba(243,156,18,0.2); color: #f7dc6f; }
+        .badge-source { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5); }
+
+        /* HTML Content Rendering */
         .question-content-html {
             max-width: 250px;
             max-height: 80px;
@@ -328,42 +379,11 @@
             color: rgba(255,255,255,0.7);
         }
 
-        .badge {
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: 600;
-            white-space: nowrap;
-            display: inline-block;
-        }
-        .badge-grade { background: rgba(52,152,219,0.2); color: #85c1e9; }
-        .badge-subject { background: rgba(142,68,173,0.2); color: #bb8fce; }
-        .badge-unassigned { background: rgba(149,165,166,0.2); color: #bdc3c7; }
-        .badge-under-review { background: rgba(243,156,18,0.2); color: #f7dc6f; }
-        .badge-reviewed { background: rgba(0,188,212,0.2); color: #76d7c4; }
-        .badge-approved { background: rgba(39,174,96,0.2); color: #82e0aa; }
-        .badge-rejected { background: rgba(231,76,60,0.2); color: #f1948a; }
-        .badge-rework { background: rgba(243,156,18,0.2); color: #f7dc6f; }
-        .badge-source { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5); }
-
         .no-data {
             text-align: center;
             padding: 30px;
             color: rgba(255,255,255,0.3);
             font-size: 13px;
-        }
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: rgba(255,255,255,0.3);
-        }
-        .loading i {
-            font-size: 24px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
 
         .modal {
@@ -381,7 +401,7 @@
             background: #1a2a4a;
             border-radius: 10px;
             width: 92%;
-            max-width: 480px;
+            max-width: 500px;
             max-height: 90vh;
             overflow-y: auto;
             border: 1px solid rgba(255,255,255,0.08);
@@ -457,6 +477,76 @@
             border-radius: 10px;
         }
 
+        /* Edit Modal Styles */
+        .edit-modal-content {
+            max-width: 600px;
+        }
+        .edit-modal-content .ql-editor-content {
+            color: #e8edf5 !important;
+        }
+        .edit-modal-content .ql-editor-content p {
+            color: #e8edf5 !important;
+        }
+        .edit-modal-content .ql-editor-content strong {
+            color: #f39c12 !important;
+        }
+        .edit-modal-content .ql-editor-content em {
+            color: #2ecc71 !important;
+        }
+        .edit-modal-content .ql-editor-content ul,
+        .edit-modal-content .ql-editor-content ol {
+            color: #e8edf5 !important;
+            padding-left: 20px;
+        }
+        .edit-modal-content .ql-editor-content li {
+            color: #e8edf5 !important;
+        }
+        .edit-modal-content .ql-editor-content blockquote {
+            border-left: 2px solid #3498db;
+            padding-left: 12px;
+            color: rgba(255,255,255,0.7) !important;
+        }
+        .edit-modal-content .ql-editor-content img {
+            max-width: 100%;
+            max-height: 150px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .edit-modal-content .ql-editor-content code {
+            background: rgba(0,0,0,0.3);
+            padding: 1px 4px;
+            border-radius: 3px;
+            color: #e74c3c;
+        }
+
+        .image-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.95);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            cursor: pointer;
+        }
+        .image-modal.active { display: flex; }
+        .image-modal img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        .image-modal-close {
+            position: absolute;
+            top: 20px;
+            right: 35px;
+            color: white;
+            font-size: 40px;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+
         @media (max-width: 1024px) {
             .stats-grid { grid-template-columns: repeat(3, 1fr); }
         }
@@ -521,6 +611,8 @@
                 <option value="rework">Rework</option>
             </select>
             <input type="text" class="search-input" id="searchInput" placeholder="Search questions or answers...">
+            <button class="btn btn-primary btn-sm" onclick="applyFilters()"><i class="fas fa-search"></i> Apply</button>
+            <button class="btn btn-danger btn-sm" onclick="resetFilters()"><i class="fas fa-undo"></i> Reset</button>
         </div>
 
         <div class="tab-container">
@@ -533,7 +625,7 @@
         </div>
     </div>
 
-    <!-- Modals -->
+    <!-- Master Review Modal -->
     <div class="modal" id="masterReviewModal">
         <div class="modal-content">
             <div class="modal-header master"><h3><i class="fas fa-user-check"></i> Assign to Reviewer</h3><button class="close-btn" onclick="closeModal('masterReviewModal')">&times;</button></div>
@@ -552,6 +644,7 @@
         </div>
     </div>
 
+    <!-- Review Modal -->
     <div class="modal" id="reviewModal">
         <div class="modal-content">
             <div class="modal-header review"><h3><i class="fas fa-user-check"></i> Assign to Approver</h3><button class="close-btn" onclick="closeModal('reviewModal')">&times;</button></div>
@@ -570,6 +663,7 @@
         </div>
     </div>
 
+    <!-- Approve Modal -->
     <div class="modal" id="approveModal">
         <div class="modal-content">
             <div class="modal-header approve"><h3><i class="fas fa-check-circle"></i> Approve</h3><button class="close-btn" onclick="closeModal('approveModal')">&times;</button></div>
@@ -586,6 +680,7 @@
         </div>
     </div>
 
+    <!-- Rework Modal -->
     <div class="modal" id="reworkModal">
         <div class="modal-content">
             <div class="modal-header rework"><h3><i class="fas fa-redo"></i> Rework</h3><button class="close-btn" onclick="closeModal('reworkModal')">&times;</button></div>
@@ -603,11 +698,42 @@
         </div>
     </div>
 
-    <div class="modal" id="imageModal" onclick="closeImageModal()">
-        <div class="modal-content" style="max-width:90%;max-height:90%;background:transparent;border:none;display:flex;justify-content:center;align-items:center;" onclick="event.stopPropagation();">
-            <img id="modalImage" style="max-width:100%;max-height:90vh;border-radius:8px;border:2px solid rgba(255,255,255,0.2);">
-            <button class="close-btn" style="position:absolute;top:20px;right:35px;font-size:40px;background:none;border:none;color:white;cursor:pointer;" onclick="closeImageModal()">&times;</button>
+    <!-- Edit Modal -->
+    <div class="modal" id="editModal">
+        <div class="modal-content edit-modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #b9770e, #f39c12);">
+                <h3><i class="fas fa-edit"></i> Edit Question</h3>
+                <button class="close-btn" onclick="closeModal('editModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="editQuestionContainer">
+                    <label>Question *</label>
+                    <textarea id="editQuestionText" rows="4" style="width:100%;padding:10px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.3);color:white;font-size:13px;font-family:inherit;"></textarea>
+                    <label style="margin-top:8px;">Answer *</label>
+                    <textarea id="editAnswerText" rows="3" style="width:100%;padding:10px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.3);color:white;font-size:13px;font-family:inherit;"></textarea>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+                        <div>
+                            <label>Marks</label>
+                            <input id="editMarks" type="number" min="0" max="100" style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.3);color:white;font-size:13px;">
+                        </div>
+                        <div>
+                            <label>Duration (min)</label>
+                            <input id="editDuration" type="number" min="0" max="180" style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.3);color:white;font-size:13px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger btn-sm" onclick="closeModal('editModal')">Cancel</button>
+                <button class="btn btn-warning btn-sm" onclick="submitEdit()"><i class="fas fa-save"></i> Save</button>
+            </div>
         </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div class="image-modal" id="imageModal" onclick="closeImageModal()">
+        <button class="image-modal-close" onclick="closeImageModal()">&times;</button>
+        <img id="modalImage" alt="Full size image">
     </div>
 
     <script>
@@ -631,16 +757,14 @@
         // STATE
         // ============================================
         let allQuestions = [];
+        let filteredQuestions = [];
         let allGrades = [];
         let allSubjects = [];
-        let allUsers = [];
         let reviewers = [];
         let approvers = [];
         let currentModalId = null;
         let activeTab = 0;
         let isFetching = false;
-        let lastFetchTime = 0;
-        const MIN_FETCH_INTERVAL = 30000;
 
         // ============================================
         // UTILITY FUNCTIONS
@@ -652,30 +776,16 @@
             return d.innerHTML; 
         }
         
-        // ====== FIX: Render HTML content safely for display ======
         function renderHtmlContent(html) {
             if (!html) return '';
             return html;
         }
 
-        // ====== FIX: Get plain text for tooltips ======
         function getPlainText(html) {
             if (!html) return '';
             const temp = document.createElement('div');
             temp.innerHTML = html;
             return temp.textContent || temp.innerText || '';
-        }
-
-        // ====== FIX: Truncate HTML content for display ======
-        function truncateHtml(html, maxLength) {
-            if (!html) return '';
-            const plain = getPlainText(html);
-            if (plain.length <= maxLength) return html;
-            // Find a good breaking point
-            let truncated = plain.substring(0, maxLength);
-            const lastSpace = truncated.lastIndexOf(' ');
-            if (lastSpace > 0) truncated = truncated.substring(0, lastSpace);
-            return truncated + '...';
         }
 
         function getStatusClass(s) {
@@ -720,15 +830,6 @@
         // ============================================
         // LOAD DATA FUNCTIONS
         // ============================================
-        async function loadAllUsers() {
-            try { 
-                const r = await fetch('/api/users'); 
-                const d = await r.json(); 
-                allUsers = d.users || []; 
-                console.log('📊 Loaded all users:', allUsers.length);
-            } catch(e) { console.error('Error loading users:', e); }
-        }
-
         async function loadReviewers() {
             try { 
                 const r = await fetch('/api/reviewers'); 
@@ -754,12 +855,10 @@
             let filtered = reviewers;
             if (questionGroup && questionGroup !== 'No group' && questionGroup !== 'Loading...') {
                 filtered = reviewers.filter(r => r.subject_group === questionGroup);
-                console.log(`🔍 Filtering reviewers by group: ${questionGroup}, found ${filtered.length}`);
             }
             
             if (filtered.length === 0) {
                 filtered = reviewers;
-                console.log(`📊 No reviewers in group, showing all ${filtered.length} reviewers`);
             }
             
             filtered.forEach(r => {
@@ -780,12 +879,10 @@
             let filtered = approvers;
             if (questionGroup && questionGroup !== 'No group' && questionGroup !== 'Loading...') {
                 filtered = approvers.filter(a => a.subject_group === questionGroup);
-                console.log(`🔍 Filtering approvers by group: ${questionGroup}, found ${filtered.length}`);
             }
             
             if (filtered.length === 0) {
                 filtered = approvers;
-                console.log(`📊 No approvers in group, showing all ${filtered.length} approvers`);
             }
             
             filtered.forEach(a => {
@@ -836,12 +933,9 @@
         // ============================================
         // MAIN FETCH FUNCTION
         // ============================================
-        async function fetchQuestions(force = false) {
+        async function fetchQuestions() {
             if (isFetching) return;
-            const now = Date.now();
-            if (!force && now - lastFetchTime < MIN_FETCH_INTERVAL) return;
             isFetching = true;
-            lastFetchTime = now;
             
             try {
                 console.log('📊 Fetching review questions...');
@@ -861,15 +955,14 @@
                 
                 updatePermissionNote(d);
                 updateStats();
-                renderTabs();
+                applyFilters();
                 
             } catch(e) {
                 console.error('Error fetching questions:', e);
                 document.getElementById('tabContent').innerHTML = `
                     <div class="no-data">
                         <i class="fas fa-exclamation-circle"></i> Error loading questions<br>
-                        <button class="btn btn-primary btn-sm" onclick="fetchQuestions(true)" style="margin-top:8px;">Retry</button>
-                        <br><span style="font-size:11px;color:rgba(255,255,255,0.3);">${escapeHtml(e.message)}</span>
+                        <button class="btn btn-primary btn-sm" onclick="fetchQuestions()" style="margin-top:8px;">Retry</button>
                     </div>
                 `;
             } finally {
@@ -907,19 +1000,25 @@
         }
 
         // ============================================
-        // FILTER AND RENDER FUNCTIONS
+        // FILTER FUNCTIONS - FIXED
         // ============================================
-        function getFilteredQuestions() {
+        function applyFilters() {
             const gradeVal = document.getElementById('gradeFilter').value;
             const subjectVal = document.getElementById('subjectFilter').value;
             const statusVal = document.getElementById('statusFilter').value;
             const search = document.getElementById('searchInput').value.toLowerCase().trim();
 
-            return allQuestions.filter(q => {
-                if (gradeVal && q.grade_id != gradeVal) return false;
-                if (subjectVal && q.subject_id != subjectVal) return false;
+            filteredQuestions = allQuestions.filter(q => {
+                // Grade filter
+                if (gradeVal && q.grade_id != parseInt(gradeVal)) return false;
+                
+                // Subject filter
+                if (subjectVal && q.subject_id != parseInt(subjectVal)) return false;
+                
+                // Status filter
                 if (statusVal && (q.status||'unassigned') !== statusVal) return false;
                 
+                // Search filter
                 if (search) {
                     const qText = (q.question_text || q.question || '').toLowerCase();
                     const ans = (q.answer || '').toLowerCase();
@@ -939,8 +1038,24 @@
                 }
                 return true;
             });
+
+            console.log(`📊 Filtered: ${filteredQuestions.length} questions (from ${allQuestions.length} total)`);
+            renderTabs();
         }
 
+        function resetFilters() {
+            document.getElementById('gradeFilter').value = '';
+            document.getElementById('subjectFilter').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('searchInput').value = '';
+            // Reset subject filter options based on grade
+            updateSubjectFilter();
+            applyFilters();
+        }
+
+        // ============================================
+        // TAB RENDER FUNCTION
+        // ============================================
         function renderTabs() {
             const isAdmin = currentUserRole === 'admin';
             const isMaster = permissions.MASTER || currentUserRole === 'master' || isAdmin;
@@ -952,32 +1067,32 @@
 
             if (isAdmin) {
                 tabs = [
-                    { id: 'admin_unassigned', icon: 'fa-user-shield', label: 'Unassigned / Rework', filter: q => (q.status === 'unassigned' || q.status === null || q.status === 'rework'), showAssign: true },
-                    { id: 'admin_under_review', icon: 'fa-clock', label: 'Under Review', filter: q => q.status === 'under_review', showAssign: false },
-                    { id: 'admin_reviewed', icon: 'fa-check-double', label: 'Ready to Approve', filter: q => q.status === 'reviewed_completed', showAssign: false },
-                    { id: 'admin_approved', icon: 'fa-check-circle', label: 'Approved', filter: q => q.status === 'approved', showAssign: false }
+                    { id: 'admin_unassigned', icon: 'fa-user-shield', label: 'Unassigned / Rework', filter: q => (q.status === 'unassigned' || q.status === null || q.status === 'rework') },
+                    { id: 'admin_under_review', icon: 'fa-clock', label: 'Under Review', filter: q => q.status === 'under_review' },
+                    { id: 'admin_reviewed', icon: 'fa-check-double', label: 'Ready to Approve', filter: q => q.status === 'reviewed_completed' },
+                    { id: 'admin_approved', icon: 'fa-check-circle', label: 'Approved', filter: q => q.status === 'approved' }
                 ];
             } else if (isMaster) {
                 tabs = [
-                    { id: 'master_unassigned', icon: 'fa-user-check', label: 'Unassigned', filter: q => (q.status === 'unassigned' || q.status === null || q.status === 'rework'), showAssign: true }
+                    { id: 'master_unassigned', icon: 'fa-user-check', label: 'Unassigned', filter: q => (q.status === 'unassigned' || q.status === null || q.status === 'rework') }
                 ];
             } else if (isReviewer) {
                 tabs = [
-                    { id: 'reviewer_self', icon: 'fa-user-edit', label: 'My Questions', filter: q => q.created_by === currentUsername && (q.status === 'unassigned' || q.status === 'rejected' || q.status === 'rework'), showAssign: false },
-                    { id: 'reviewer_assigned', icon: 'fa-tasks', label: 'Assigned to Me', filter: q => q.status === 'under_review' && q.assigned_reviewer_id === currentUserId, showAssign: false }
+                    { id: 'reviewer_self', icon: 'fa-user-edit', label: 'My Questions', filter: q => q.created_by === currentUsername && (q.status === 'unassigned' || q.status === 'rejected' || q.status === 'rework') },
+                    { id: 'reviewer_assigned', icon: 'fa-tasks', label: 'Assigned to Me', filter: q => q.status === 'under_review' && q.assigned_reviewer_id === currentUserId }
                 ];
             } else if (isApprover) {
                 tabs = [
-                    { id: 'approver_self', icon: 'fa-user-edit', label: 'My Questions', filter: q => q.created_by === currentUsername && (q.status === 'unassigned' || q.status === 'rejected' || q.status === 'rework'), showAssign: false },
-                    { id: 'approver_ready', icon: 'fa-check-double', label: 'Ready to Approve', filter: q => q.status === 'reviewed_completed' && q.assigned_approver_id === currentUserId, showAssign: false }
+                    { id: 'approver_self', icon: 'fa-user-edit', label: 'My Questions', filter: q => q.created_by === currentUsername && (q.status === 'unassigned' || q.status === 'rejected' || q.status === 'rework') },
+                    { id: 'approver_ready', icon: 'fa-check-double', label: 'Ready to Approve', filter: q => q.status === 'reviewed_completed' && q.assigned_approver_id === currentUserId }
                 ];
             } else if (isWriter) {
                 tabs = [
-                    { id: 'writer_self', icon: 'fa-user-edit', label: 'My Questions', filter: q => q.created_by === currentUsername, showAssign: false }
+                    { id: 'writer_self', icon: 'fa-user-edit', label: 'My Questions', filter: q => q.created_by === currentUsername }
                 ];
             } else {
                 tabs = [
-                    { id: 'writer_self', icon: 'fa-user-edit', label: 'My Questions', filter: q => q.created_by === currentUsername, showAssign: false }
+                    { id: 'writer_self', icon: 'fa-user-edit', label: 'My Questions', filter: q => q.created_by === currentUsername }
                 ];
             }
 
@@ -985,7 +1100,7 @@
             const header = document.getElementById('tabHeader');
             let headerHtml = '';
             tabs.forEach((tab, index) => {
-                const count = allQuestions.filter(tab.filter).length;
+                const count = filteredQuestions.filter(tab.filter).length;
                 const isActive = index === activeTab ? 'active' : '';
                 headerHtml += `
                     <button class="tab-btn ${isActive}" onclick="switchTab(${index})">
@@ -1001,13 +1116,13 @@
             let contentHtml = '';
             tabs.forEach((tab, index) => {
                 const isActive = index === activeTab ? 'active' : '';
-                const tabQuestions = allQuestions.filter(tab.filter);
+                const tabQuestions = filteredQuestions.filter(tab.filter);
                 
                 let tableRows = '';
                 if (tabQuestions.length === 0) {
-                    tableRows = `<tr><td colspan="8" class="no-data">No questions in this category</td></tr>`;
+                    tableRows = `<tr><td colspan="8" style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">No questions in this category</td></tr>`;
                 } else {
-                    tableRows = tabQuestions.map(q => renderTableRow(q, tab.showAssign, isAdmin)).join('');
+                    tableRows = tabQuestions.map(q => renderTableRow(q)).join('');
                 }
 
                 contentHtml += `
@@ -1036,9 +1151,9 @@
         }
 
         // ============================================
-        // TABLE ROW RENDERER - FIXED to show HTML content
+        // TABLE ROW RENDERER
         // ============================================
-        function renderTableRow(q, showAssign, isAdmin) {
+        function renderTableRow(q) {
             const status = q.status || 'unassigned';
             const subject = allSubjects.find(s => s.id == q.subject_id);
             const grade = allGrades.find(g => g.id == q.grade_id);
@@ -1048,14 +1163,13 @@
             const isAssignedReviewer = q.assigned_reviewer_id === currentUserId;
             const isAssignedApprover = q.assigned_approver_id === currentUserId;
 
-            const isAdminFull = currentUserRole === 'admin' || isAdmin;
-            const canMasterReview = isAdminFull || (permissions.MASTER && (status === 'unassigned' || status === null || status === 'rework'));
-            const canReview = isAdminFull || (permissions.RC && isAssignedReviewer && status === 'under_review');
-            const canApprove = isAdminFull || (permissions.AP && isAssignedApprover && status === 'reviewed_completed');
-            const canDirectApprove = isAdminFull && status !== 'approved';
-            const canEdit = isAdminFull || (permissions.RE && isMy && (status === 'unassigned' || status === 'rejected' || status === 'rework'));
-            const canDelete = isAdminFull;
-            const canRework = isAdminFull || isAssignedReviewer || isAssignedApprover || (isMy && status === 'rejected');
+            const isAdmin = currentUserRole === 'admin';
+            const canMasterReview = isAdmin || (permissions.MASTER && (status === 'unassigned' || status === null || status === 'rework'));
+            const canReview = isAdmin || (permissions.RC && isAssignedReviewer && status === 'under_review');
+            const canApprove = isAdmin || (permissions.AP && isAssignedApprover && status === 'reviewed_completed');
+            const canEdit = isAdmin || (permissions.RE && isMy && (status === 'unassigned' || status === 'rejected' || status === 'rework'));
+            const canDelete = isAdmin;
+            const canRework = isAdmin || isAssignedReviewer || isAssignedApprover || (isMy && status === 'rejected');
 
             let sourceLabel = '';
             if (isMy) sourceLabel = `<span class="badge badge-source"><i class="fas fa-user-edit"></i> Self</span>`;
@@ -1063,10 +1177,10 @@
             if (q.assigned_reviewer_name && !isMy) sourceLabel += ` <span class="badge badge-source">R: ${escapeHtml(q.assigned_reviewer_name)}</span>`;
 
             let actions = '';
-            if (canEdit) actions += `<button class="action-icon icon-edit" onclick="editQuestion(${q.id})" title="Edit"><i class="fas fa-edit"></i></button>`;
+            if (canEdit) actions += `<button class="action-icon icon-edit" onclick="openEdit(${q.id})" title="Edit"><i class="fas fa-edit"></i></button>`;
             if (canMasterReview) actions += `<button class="action-icon icon-assign" onclick="openMasterReview(${q.id})" title="Assign to Reviewer"><i class="fas fa-user-check"></i></button>`;
             if (canReview) actions += `<button class="action-icon icon-assign" onclick="openReview(${q.id})" title="Send to Approver"><i class="fas fa-paper-plane"></i></button>`;
-            if (canApprove || canDirectApprove) actions += `<button class="action-icon icon-approve" onclick="openApprove(${q.id})" title="Approve"><i class="fas fa-check"></i></button>`;
+            if (canApprove) actions += `<button class="action-icon icon-approve" onclick="openApprove(${q.id})" title="Approve"><i class="fas fa-check"></i></button>`;
             if (canRework) actions += `<button class="action-icon icon-rework" onclick="openRework(${q.id})" title="Rework"><i class="fas fa-redo"></i></button>`;
             if (canDelete) actions += `<button class="action-icon icon-delete" onclick="deleteQuestion(${q.id})" title="Delete"><i class="fas fa-trash"></i></button>`;
             if (!actions) actions = `<span style="color:rgba(255,255,255,0.2);font-size:10px;">No actions</span>`;
@@ -1074,12 +1188,9 @@
             const questionText = q.question_text || q.question || '';
             const answerText = q.answer || '';
             
-            // ====== FIX: Use HTML rendering instead of escapeHtml ======
-            // Get plain text for tooltip
             const questionPlain = getPlainText(questionText);
             const answerPlain = getPlainText(answerText);
             
-            // Truncate for display - show HTML but with scroll
             const questionDisplay = questionText ? 
                 `<div class="question-content-html">${renderHtmlContent(questionText)}</div>` : 
                 '<em style="color:rgba(255,255,255,0.2);">Empty</em>';
@@ -1102,9 +1213,6 @@
             `;
         }
 
-        // ============================================
-        // TAB SWITCHING
-        // ============================================
         function switchTab(index) {
             activeTab = index;
             renderTabs();
@@ -1128,7 +1236,7 @@
                     const d = await r.json();
                     if (d.success) { 
                         Swal.fire('Deleted!', '', 'success'); 
-                        fetchQuestions(true); 
+                        fetchQuestions(); 
                     } else {
                         Swal.fire('Error', d.error || 'Failed', 'error');
                     }
@@ -1138,6 +1246,89 @@
             }
         }
 
+        // ============================================
+        // EDIT FUNCTION - FIXED
+        // ============================================
+        async function openEdit(id) {
+            currentModalId = id;
+            
+            try {
+                // Fetch the question data from the server
+                const r = await fetch(`/api/question/${id}`);
+                const d = await r.json();
+                
+                if (d.error) {
+                    Swal.fire('Error', d.error, 'error');
+                    return;
+                }
+                
+                const q = d.question;
+                
+                // Set values in the edit modal - using raw text content
+                document.getElementById('editQuestionText').value = getPlainText(q.question_text || '');
+                document.getElementById('editAnswerText').value = getPlainText(q.answer || '');
+                document.getElementById('editMarks').value = q.marks || 1;
+                document.getElementById('editDuration').value = q.duration_minutes || 0;
+                
+                document.getElementById('editModal').classList.add('active');
+                
+            } catch(e) {
+                console.error('Error loading question for edit:', e);
+                Swal.fire('Error', 'Failed to load question data', 'error');
+            }
+        }
+
+        async function submitEdit() {
+            const questionText = document.getElementById('editQuestionText').value.trim();
+            const answerText = document.getElementById('editAnswerText').value.trim();
+            const marks = parseInt(document.getElementById('editMarks').value);
+            const duration = parseInt(document.getElementById('editDuration').value);
+
+            if (!questionText) {
+                Swal.fire('Error', 'Question text is required', 'error');
+                return;
+            }
+            if (!answerText) {
+                Swal.fire('Error', 'Answer is required', 'error');
+                return;
+            }
+            if (isNaN(marks) || marks < 0 || marks > 100) {
+                Swal.fire('Error', 'Marks must be between 0 and 100', 'error');
+                return;
+            }
+            if (isNaN(duration) || duration < 0 || duration > 180) {
+                Swal.fire('Error', 'Duration must be between 0 and 180 minutes', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/update-question/${currentModalId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        question_text: questionText,
+                        answer: answerText,
+                        marks: marks,
+                        duration_minutes: duration
+                    })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    Swal.fire('Updated!', data.message || 'Question updated successfully', 'success');
+                    closeModal('editModal');
+                    fetchQuestions();
+                } else {
+                    Swal.fire('Error', data.error || 'Failed to update', 'error');
+                }
+            } catch(e) {
+                console.error('Error in submitEdit:', e);
+                Swal.fire('Error', 'Failed to update question', 'error');
+            }
+        }
+
+        // ============================================
+        // MASTER REVIEW FUNCTIONS
+        // ============================================
         function openMasterReview(id) {
             currentModalId = id;
             const q = allQuestions.find(x => x.id === id);
@@ -1148,7 +1339,6 @@
                 let group = q.subject_group || q.user_group || currentSubjectGroup || 'No group';
                 document.getElementById('masterReviewGroupDisplay').textContent = group;
                 
-                console.log(`🔍 Opening master review for question ${id}, group: ${group}`);
                 populateReviewerSelect(group);
             }
             document.getElementById('masterReviewComment').value = '';
@@ -1176,7 +1366,7 @@
                 if (data.success) { 
                     Swal.fire('Assigned!', data.message || 'Question assigned to reviewer', 'success'); 
                     closeModal('masterReviewModal'); 
-                    fetchQuestions(true); 
+                    fetchQuestions(); 
                 } else {
                     Swal.fire('Error', data.error || 'Failed to assign', 'error');
                 }
@@ -1186,6 +1376,9 @@
             }
         }
 
+        // ============================================
+        // REVIEW FUNCTIONS
+        // ============================================
         function openReview(id) {
             currentModalId = id;
             const q = allQuestions.find(x => x.id === id);
@@ -1196,7 +1389,6 @@
                 let group = q.subject_group || q.user_group || currentSubjectGroup || 'No group';
                 document.getElementById('reviewGroupDisplay').textContent = group;
                 
-                console.log(`🔍 Opening review for question ${id}, group: ${group}`);
                 populateApproverSelect(group);
             }
             document.getElementById('reviewComment').value = '';
@@ -1224,7 +1416,7 @@
                 if (data.success) { 
                     Swal.fire('Assigned!', data.message || 'Question assigned to approver', 'success'); 
                     closeModal('reviewModal'); 
-                    fetchQuestions(true); 
+                    fetchQuestions(); 
                 } else {
                     Swal.fire('Error', data.error || 'Failed to assign', 'error');
                 }
@@ -1234,6 +1426,9 @@
             }
         }
 
+        // ============================================
+        // APPROVE FUNCTIONS
+        // ============================================
         function openApprove(id) {
             currentModalId = id;
             const q = allQuestions.find(x => x.id === id);
@@ -1259,7 +1454,7 @@
                 if (data.success) { 
                     Swal.fire('Approved!', data.message || 'Question approved successfully', 'success'); 
                     closeModal('approveModal'); 
-                    fetchQuestions(true); 
+                    fetchQuestions(); 
                 } else {
                     Swal.fire('Error', data.error || 'Failed to approve', 'error');
                 }
@@ -1269,6 +1464,9 @@
             }
         }
 
+        // ============================================
+        // REWORK FUNCTIONS
+        // ============================================
         function openRework(id) {
             currentModalId = id;
             const q = allQuestions.find(x => x.id === id);
@@ -1301,7 +1499,7 @@
                 if (data.success) { 
                     Swal.fire('Sent!', data.message || 'Question sent back for rework', 'success'); 
                     closeModal('reworkModal'); 
-                    fetchQuestions(true); 
+                    fetchQuestions(); 
                 } else {
                     Swal.fire('Error', data.error || 'Failed to send for rework', 'error');
                 }
@@ -1311,71 +1509,33 @@
             }
         }
 
-        async function editQuestion(id) {
-            const q = allQuestions.find(x => x.id === id);
-            if (!q) return;
-            const questionText = q.question_text || q.question || '';
-            const answerText = q.answer || '';
-            
-            const { value: form } = await Swal.fire({
-                title: 'Edit Question',
-                html: `
-                    <textarea id="swal-question" class="swal2-textarea" style="border-radius:6px;padding:8px;width:100%;margin-bottom:8px;background:#1a2a4a;color:white;border:1px solid rgba(255,255,255,0.1);">${escapeHtml(questionText)}</textarea>
-                    <textarea id="swal-answer" class="swal2-textarea" style="border-radius:6px;padding:8px;width:100%;margin-bottom:8px;background:#1a2a4a;color:white;border:1px solid rgba(255,255,255,0.1);">${escapeHtml(answerText)}</textarea>
-                    <div style="display:flex;gap:8px;">
-                        <input id="swal-marks" class="swal2-input" type="number" value="${q.marks || 1}" min="0" max="100" style="flex:1;border-radius:6px;padding:8px;background:#1a2a4a;color:white;border:1px solid rgba(255,255,255,0.1);">
-                        <input id="swal-duration" class="swal2-input" type="number" value="${q.duration_minutes || 0}" min="0" max="180" style="flex:1;border-radius:6px;padding:8px;background:#1a2a4a;color:white;border:1px solid rgba(255,255,255,0.1);">
-                    </div>
-                `,
-                focusConfirm: false,
-                showCancelButton: true,
-                confirmButtonColor: '#f39c12',
-                preConfirm: () => {
-                    const qt = document.getElementById('swal-question').value;
-                    const an = document.getElementById('swal-answer').value;
-                    const mk = parseInt(document.getElementById('swal-marks').value);
-                    const dur = parseInt(document.getElementById('swal-duration').value);
-                    if (!qt || !an) { Swal.showValidationMessage('Question & answer required'); return false; }
-                    if (isNaN(mk) || mk < 0 || mk > 100) { Swal.showValidationMessage('Marks 0-100'); return false; }
-                    return { question_text: qt, answer: an, marks: mk, duration_minutes: dur || 0 };
-                }
-            });
-            if (form) {
-                try {
-                    const r = await fetch(`/api/update-question/${id}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(form)
-                    });
-                    const d = await r.json();
-                    if (d.success) { 
-                        Swal.fire('Updated!', '', 'success'); 
-                        fetchQuestions(true); 
-                    } else {
-                        Swal.fire('Error', d.error || 'Failed', 'error');
-                    }
-                } catch(e) { 
-                    Swal.fire('Error', 'Failed to update', 'error'); 
-                }
-            }
-        }
-
         // ============================================
         // EVENT LISTENERS
         // ============================================
         document.getElementById('gradeFilter').addEventListener('change', function() {
             updateSubjectFilter();
-            renderTabs();
+            applyFilters();
         });
-        document.getElementById('subjectFilter').addEventListener('change', renderTabs);
-        document.getElementById('statusFilter').addEventListener('change', renderTabs);
-        document.getElementById('searchInput').addEventListener('input', renderTabs);
+        document.getElementById('subjectFilter').addEventListener('change', applyFilters);
+        document.getElementById('statusFilter').addEventListener('change', applyFilters);
+        document.getElementById('searchInput').addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                applyFilters();
+            }
+        });
 
         // Close modals on backdrop click
         document.querySelectorAll('.modal').forEach(m => {
             m.addEventListener('click', function(e) {
                 if (e.target === this) this.classList.remove('active');
             });
+        });
+
+        // Close image modal on escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeImageModal();
+            }
         });
 
         // ============================================
@@ -1389,13 +1549,12 @@
             
             await loadGrades();
             await loadSubjects();
-            await loadAllUsers();
             await loadReviewers();
             await loadApprovers();
-            await fetchQuestions(true);
+            await fetchQuestions();
             
-            // Auto-refresh every 45 seconds
-            setInterval(() => fetchQuestions(false), 45000);
+            // Auto-refresh every 60 seconds
+            setInterval(fetchQuestions, 60000);
         });
     </script>
 </body>
