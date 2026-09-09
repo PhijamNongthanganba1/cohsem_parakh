@@ -523,43 +523,6 @@
         .drag-handle { cursor: move; color: rgba(255,255,255,0.3); padding: 5px 10px; font-size: 14px; user-select: none; }
         .drag-handle:hover { color: rgba(255,255,255,0.7); }
 
-        /* Preview of saved question styling */
-        .saved-question-preview {
-            background: rgba(255,255,255,0.05);
-            border-radius: 12px;
-            padding: 20px;
-            margin: 15px 0;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .saved-question-preview .preview-label {
-            color: rgba(255,255,255,0.5);
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 10px;
-        }
-        .saved-question-preview .preview-content {
-            color: rgba(255,255,255,0.9);
-            font-size: 14px;
-            line-height: 1.6;
-        }
-        .saved-question-preview .preview-content p {
-            margin: 0 0 0.5em 0;
-        }
-        .saved-question-preview .preview-content p:last-child {
-            margin-bottom: 0;
-        }
-        .saved-question-preview .preview-content img {
-            max-width: 100%;
-            max-height: 200px;
-            border-radius: 4px;
-        }
-        .saved-question-preview .preview-content ul, 
-        .saved-question-preview .preview-content ol {
-            padding-left: 20px;
-        }
-
         @media (max-width: 768px) {
             body { padding: 10px; overflow: auto; height: auto; }
             .dashboard { height: auto; }
@@ -708,21 +671,6 @@
                     </div>
                 </form>
                 
-                <!-- Preview Section for debugging -->
-                <div style="margin-top: 20px; display: none;" id="debugPreviewSection">
-                    <div style="color: rgba(255,255,255,0.5); font-size: 12px; margin-bottom: 10px;">
-                        <i class="fas fa-code"></i> Debug Preview - How content will be displayed
-                    </div>
-                    <div class="saved-question-preview">
-                        <div class="preview-label"><i class="fas fa-question-circle"></i> Question Preview</div>
-                        <div class="preview-content" id="questionPreview"></div>
-                    </div>
-                    <div class="saved-question-preview" style="border-color: rgba(46,204,113,0.3);">
-                        <div class="preview-label"><i class="fas fa-check-circle" style="color: #2ecc71;"></i> Answer Preview</div>
-                        <div class="preview-content" id="answerPreview"></div>
-                    </div>
-                </div>
-                
                 <div class="success-message" id="successMessage"><i class="fas fa-check-circle"></i> Question submitted successfully!</div>
                 
                 <div class="form-footer">
@@ -797,51 +745,18 @@
         var dragOffsetY = 0;
         var allTextbooks = [];
         var allReferences = [];
-        
-        // Initialize Quill editors
         var questionEditor = new Quill('#questionEditor', {
             theme: 'snow',
             placeholder: 'Enter your question here...',
-            modules: { 
-                toolbar: [ 
-                    [{ 'header': [1,2,3,false] }], 
-                    ['bold','italic','underline','strike'], 
-                    [{ 'color': [] }, { 'background': [] }], 
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }], 
-                    [{ 'indent': '-1'}, { 'indent': '+1' }], 
-                    ['blockquote','code-block'], 
-                    ['link','image'], 
-                    ['clean'] 
-                ] 
-            }
+            modules: { toolbar: [ [{ 'header': [1,2,3,false] }], ['bold','italic','underline','strike'], [{ 'color': [] }, { 'background': [] }], [{ 'list': 'ordered'}, { 'list': 'bullet' }], [{ 'indent': '-1'}, { 'indent': '+1' }], ['blockquote','code-block'], ['link','image'], ['clean'] ] }
         });
 
         var answerEditor = new Quill('#answerEditor', {
             theme: 'snow',
             placeholder: 'Enter the complete answer here...',
-            modules: { 
-                toolbar: [ 
-                    [{ 'header': [1,2,3,false] }], 
-                    ['bold','italic','underline','strike'], 
-                    [{ 'color': [] }, { 'background': [] }], 
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }], 
-                    [{ 'indent': '-1'}, { 'indent': '+1' }], 
-                    ['blockquote','code-block'], 
-                    ['link','image'], 
-                    ['clean'] 
-                ] 
-            }
+            modules: { toolbar: [ [{ 'header': [1,2,3,false] }], ['bold','italic','underline','strike'], [{ 'color': [] }, { 'background': [] }], [{ 'list': 'ordered'}, { 'list': 'bullet' }], [{ 'indent': '-1'}, { 'indent': '+1' }], ['blockquote','code-block'], ['link','image'], ['clean'] ] }
         });
 
-        // Helper function to strip HTML for preview
-        function stripHtml(html) {
-            if (!html) return '';
-            var div = document.createElement('div');
-            div.innerHTML = html;
-            return div.textContent || div.innerText || '';
-        }
-
-        // Helper function to check if content has actual content (text or images)
         function hasActualContent(html) {
             if (!html) return false;
             var temp = document.createElement('div');
@@ -853,6 +768,7 @@
             return text.length > 0 || hasImages || hasLists;
         }
 
+        
         function stripHtmlAndGetText(html) {
             if (!html) return '';
             var temp = document.createElement('div');
@@ -861,16 +777,17 @@
             return text.trim();
         }
 
+        
         function getPlainTextFromEditor(editor) {
             var html = editor.root.innerHTML;
             return stripHtmlAndGetText(html);
         }
 
+        
         function getHtmlContentFromEditor(editor) {
             return editor.root.innerHTML;
         }
 
-        // Load textbooks and references
         function loadTextbooksAndReferences() {
             var subjectId = localStorage.getItem('selectedSubjectId');
             if (!subjectId || subjectId === 'null') {
@@ -987,7 +904,6 @@
             window.location.href = '/complete-selection';
         }
 
-        // Image upload functions
         function initImageUploads() {
             setupImageUpload('questionImageUploadArea', 'questionImageInput', 'questionImagePreviewContainer', 'questionImageCount', 'question');
             setupImageUpload('answerImageUploadArea', 'answerImageInput', 'answerImagePreviewContainer', 'answerImageCount', 'answer');
@@ -1099,7 +1015,14 @@
             grid.innerHTML = compactHTML || '<div class="compact-item"><span class="compact-label">No selection</span></div>';
         }
 
-        // Keyboard functions
+        function setupEventListeners() {
+            document.getElementById('questionKeyboardBtn').addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); toggleKeyboard(questionEditor); });
+            document.getElementById('answerKeyboardBtn').addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); toggleKeyboard(answerEditor); });
+            document.getElementById('closeKeyboardBtn').addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); hideFloatingKeyboard(); });
+            document.querySelectorAll('.kb-lang').forEach(function(btn) { btn.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); switchKB(this.dataset.lang); }); });
+            document.getElementById('submitBtn').addEventListener('click', function(e) { e.preventDefault(); submitQuestion(); });
+        }
+
         function toggleKeyboard(targetEditor) {
             var kb = document.getElementById('floatingKeyboard');
             if (!kb) { Swal.fire({ icon: 'error', title: 'Keyboard Error', text: 'Keyboard element not found.', confirmButtonColor: '#3498db' }); return; }
@@ -1203,7 +1126,6 @@
             catch(e) {}
         }
 
-        // Drag functionality
         function initDrag() {
             var dragHandle = document.getElementById('dragHandle');
             var keyboard = document.getElementById('floatingKeyboard');
@@ -1249,24 +1171,11 @@
             answerImages.forEach(function(img) { if (img.preview && img.preview.startsWith('blob:')) URL.revokeObjectURL(img.preview); });
             answerImages = []; renderImagePreviews('answer'); updateImageCount('answer');
             
-            // Hide debug preview
-            document.getElementById('debugPreviewSection').style.display = 'none';
-            
             questionEditor.focus();
         }
 
-        // Update preview function
-        function updatePreview() {
-            var qHtml = getHtmlContentFromEditor(questionEditor);
-            var aHtml = getHtmlContentFromEditor(answerEditor);
-            
-            document.getElementById('questionPreview').innerHTML = qHtml || '<span style="color: rgba(255,255,255,0.3);">No content yet</span>';
-            document.getElementById('answerPreview').innerHTML = aHtml || '<span style="color: rgba(255,255,255,0.3);">No content yet</span>';
-            document.getElementById('debugPreviewSection').style.display = 'block';
-        }
-
-        // Submit question function
         function submitQuestion() {
+            
             var questionHtml = getHtmlContentFromEditor(questionEditor);
             var answerHtml = getHtmlContentFromEditor(answerEditor);
             var marks = document.getElementById('marks').value.trim();
@@ -1282,7 +1191,6 @@
             if (textbookId) { var tb = allTextbooks.find(function(t) { return t.id == textbookId; }); if (tb) textbookName = tb.textbook_name; }
             if (referenceId) { var rb = allTextbooks.find(function(t) { return t.id == referenceId; }); if (rb) referenceBook = rb.textbook_name; }
             
-            // Validate content using HTML content (with images)
             if (!hasActualContent(questionHtml)) { 
                 Swal.fire({ icon: 'warning', title: 'Missing Question', text: 'Please enter a question with text or images!', confirmButtonColor: '#3498db' }); 
                 questionEditor.focus(); 
@@ -1346,8 +1254,8 @@
                     var chapterCode = localStorage.getItem('selectedChapterCode');
                     
                     var questionData = {
-                        question_text: questionHtml,  // Store HTML as-is
-                        answer: answerHtml,           // Store HTML as-is
+                        question_text: questionHtml, 
+                        answer: answerHtml, 
                         marks: parseInt(marks), 
                         duration_minutes: parseInt(durationMinutes),
                         images: JSON.stringify(allImages), 
@@ -1463,16 +1371,6 @@
             });
         }
 
-        // Setup event listeners
-        function setupEventListeners() {
-            document.getElementById('questionKeyboardBtn').addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); toggleKeyboard(questionEditor); });
-            document.getElementById('answerKeyboardBtn').addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); toggleKeyboard(answerEditor); });
-            document.getElementById('closeKeyboardBtn').addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); hideFloatingKeyboard(); });
-            document.querySelectorAll('.kb-lang').forEach(function(btn) { btn.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); switchKB(this.dataset.lang); }); });
-            document.getElementById('submitBtn').addEventListener('click', function(e) { e.preventDefault(); submitQuestion(); });
-        }
-
-        // DOM ready
         document.addEventListener('DOMContentLoaded', function() {
             renderCompactGrid();
             initImageUploads();
@@ -1484,10 +1382,6 @@
             initDrag();
             setupEventListeners();
             updateBookDisplay();
-            
-            // Add live preview on editor change (for debugging)
-            questionEditor.on('text-change', function() { updatePreview(); });
-            answerEditor.on('text-change', function() { updatePreview(); });
         });
 
         document.addEventListener('keydown', function(event) {
