@@ -112,7 +112,7 @@ def convert_doc(doc):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# ========== FIXED: Clean HTML by removing <p> tags ==========
+# ========== Clean HTML by removing <p> tags ==========
 def clean_editor_html(html_content):
     """
     Remove <p> tags from Quill editor content while preserving the content inside.
@@ -1249,7 +1249,7 @@ def delete_subject(subject_id):
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# PAGE1 DATA
+# PAGE1 DATA - FIXED WITH SUBJECT GROUP FILTERING
 # ============================================
 
 @app.route('/api/page1-data')
@@ -1258,10 +1258,58 @@ def get_page1_data():
         return jsonify({'error': 'Not authenticated'}), 401
     
     try:
+        user_role = session.get('user_role', 'writer')
+        subject_group = session.get('subject_group')
+        username = session.get('user', '')
+        
+        print(f"📊 Page1 data request - user: {username}, role: {user_role}, group: {subject_group}")
+        
+        # Get all grades initially
         grades = list(db.grades.find({}))
+        
+        # If user has a subject group and is not admin, filter grades
+        if subject_group and user_role != 'admin':
+            # Get subjects in this group
+            group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
+            subject_ids = [s['subject_id'] for s in group_subjects]
+            print(f"📊 Subject group {subject_group} has {len(subject_ids)} subjects")
+            
+            if subject_ids:
+                # Get grades that have subjects in this group
+                subjects_in_group = list(db.subjects.find({'id': {'$in': subject_ids}}))
+                grade_ids = list(set([s['grade_id'] for s in subjects_in_group]))
+                grades = [g for g in grades if g['id'] in grade_ids]
+                print(f"📊 Filtered to {len(grades)} grades for group {subject_group}")
+            else:
+                grades = []
+                print(f"📊 No subjects found for group {subject_group}")
+        
+        # Get subjects - filter by subject group if needed
         subjects = list(db.subjects.find({}))
+        if subject_group and user_role != 'admin':
+            group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
+            subject_ids = [s['subject_id'] for s in group_subjects]
+            if subject_ids:
+                subjects = [s for s in subjects if s['id'] in subject_ids]
+                print(f"📊 Filtered to {len(subjects)} subjects for group {subject_group}")
+        
+        # Get CGs - filter by subject group if needed
         cgs = list(db.curricular_goals.find({}))
+        if subject_group and user_role != 'admin':
+            group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
+            subject_ids = [s['subject_id'] for s in group_subjects]
+            if subject_ids:
+                cgs = [cg for cg in cgs if cg['subject_id'] in subject_ids]
+                print(f"📊 Filtered to {len(cgs)} CGs for group {subject_group}")
+        
+        # Get competencies - filter by CG IDs
         competencies = list(db.competencies.find({}))
+        if subject_group and user_role != 'admin':
+            cg_ids = [cg['id'] for cg in cgs]
+            if cg_ids:
+                competencies = [comp for comp in competencies if comp['cg_id'] in cg_ids]
+                print(f"📊 Filtered to {len(competencies)} competencies for group {subject_group}")
+        
         question_types = list(db.question_types.find({}))
         cognitive_domains = list(db.cognitive_domains.find({}))
         
@@ -1308,16 +1356,19 @@ def get_page1_data():
             'cgs_by_subject': cgs_by_subject,
             'comps_by_cg': comps_by_cg,
             'question_types': question_types,
-            'cognitive_domains': cognitive_domains
+            'cognitive_domains': cognitive_domains,
+            'user_role': user_role,
+            'subject_group': subject_group
         }
         
+        print(f"📊 Returning data: {len(grades)} grades, {len(subjects)} subjects, {len(cgs)} CGs, {len(competencies)} competencies")
         return jsonify(data)
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# PAGE2 DATA
+# PAGE2 DATA - FIXED WITH SUBJECT GROUP FILTERING
 # ============================================
 
 @app.route('/api/page2-data')
@@ -1326,6 +1377,8 @@ def get_page2_data():
         return jsonify({'error': 'Not authenticated'}), 401
     
     comp_id = request.args.get('comp_id')
+    user_role = session.get('user_role', 'writer')
+    subject_group = session.get('subject_group')
     
     try:
         comp_data = None
@@ -1377,7 +1430,9 @@ def get_page2_data():
             'domains': domains,
             'question_types_by_domain': question_types_by_domain,
             'difficulty_levels': difficulty_levels,
-            'comp': comp_data
+            'comp': comp_data,
+            'user_role': user_role,
+            'subject_group': subject_group
         }
         
         print(f"📊 Returning {len(domains)} domains, {len(question_types)} question types")
@@ -2423,8 +2478,7 @@ def get_reviewers():
     
     # Only admin or master can access reviewers list
     if user_role != 'admin' and not session.get('perm_master', False):
-        return jsonify({'error': 'Access denied'}), 403
-    
+        return jsonify({'error': 'Access denied'}), 403    
     try:
         # Build query to find users with reviewer permissions
         query = {
@@ -3705,9 +3759,6 @@ def debug_user(username):
         'has_master_perm': user.get('perm_master') == True or user.get('role') in ['master', 'admin']
     })
 
-
-
-
 @app.route('/api/question/<int:question_id>', methods=['GET'])
 def get_question(question_id):
     """Get a single question for editing"""
@@ -3736,9 +3787,6 @@ def get_question(question_id):
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-
-
-    
 @app.route('/api/debug/questions')
 def debug_questions():
     """Debug endpoint to check questions"""

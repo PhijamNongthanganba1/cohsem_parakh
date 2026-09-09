@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>COHSEM | PARAKH - Login</title>
     <style>
         * {
@@ -10,17 +10,38 @@
             padding: 0;
             box-sizing: border-box;
         }
+
+        html, body {
+            min-height: 100vh;
+            min-height: 100dvh; /* dynamic viewport height for mobile */
+        }
+
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
             background: linear-gradient(135deg, #0a1a3a 0%, #1a3a6d 25%, #0c2461 50%, #1e3a5f 75%, #0a1a3a 100%);
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 20px;
             position: relative;
-            overflow: hidden;
+            overflow-x: hidden;
+            /* force background on mobile */
+            background-attachment: fixed;
+            background-size: cover;
         }
+
+        /* fallback solid color for very old browsers */
+        @media screen and (max-width: 768px) {
+            body {
+                background: #0a1a3a;
+                background: linear-gradient(135deg, #0a1a3a 0%, #1a3a6d 25%, #0c2461 50%, #1e3a5f 75%, #0a1a3a 100%);
+                background-attachment: fixed;
+            }
+        }
+
+        /* pseudo elements for extra depth — fixed to avoid white gaps */
         body::before {
             content: '';
             position: fixed;
@@ -35,11 +56,14 @@
             background-size: 100px 100px, 150px 150px, 200px 200px;
             z-index: -2;
             animation: floatBackground 30s linear infinite;
+            pointer-events: none;
         }
+
         @keyframes floatBackground {
             0% { transform: translate(0, 0); }
             100% { transform: translate(50px, 50px); }
         }
+
         body::after {
             content: '';
             position: fixed;
@@ -53,11 +77,14 @@
                 radial-gradient(circle at 50% 50%, rgba(30, 58, 153, 0.05) 0%, transparent 50%);
             z-index: -1;
             animation: rotateGradient 20s linear infinite;
+            pointer-events: none;
         }
+
         @keyframes rotateGradient {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
         .login-wrapper {
             width: 100%;
             max-width: 1050px;
@@ -68,9 +95,12 @@
             animation: fadeIn 0.8s ease-out;
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             max-height: 90vh;
+            max-height: 90dvh;
         }
+
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -86,6 +116,7 @@
             width: 60px;      
             height: auto;
         }
+
         .left-panel {
             flex: 1;
             padding: 40px 35px;
@@ -96,6 +127,7 @@
             border-right: 1px solid rgba(255, 255, 255, 0.1);
             overflow-y: auto;
         }
+
         .left-logo-container {
             display: flex;
             justify-content: center;
@@ -104,44 +136,42 @@
             margin-bottom: 20px;
             width: 100%;
         }
-        .header{
-            display:flex;
-            justify-content:flex-start;
+
+        .header {
+            display: flex;
+            justify-content: flex-start;
         }
 
-        .logo-box{
-            width:150px;
-            height:90px;
+        .logo-box {
+            width: 150px;
+            height: 90px;
             padding-bottom: 5px;
-
         }
 
-        .logo{
-            width:100%;
-            height:100%;
-            object-fit:contain;
-
+        .logo {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
 
-        .heade1r{
-            display:flex;
-            justify-content:flex-end;
+        .header1 {
+            display: flex;
+            justify-content: flex-end;
         }
 
-        .logo-box1{
-            width:80%;
-            height:50px;
+        .logo-box1 {
+            width: 80%;
+            height: 50px;
             padding-top: 10px;
             margin-top: 30px;
-            
-
         }
 
-        .logo1{
-            width:100%;
-            height:100%;
-            object-fit:contain;
+        .logo1 {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
+
         .left-logo-item.combined-logo {
             display: flex;
             align-items: center;
@@ -176,6 +206,7 @@
             color: white;
             padding: 8px 12px;
         }
+
         .left-panel h1 {
             color: white;
             font-size: 34px;
@@ -185,6 +216,7 @@
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
             text-align: center;
         }
+
         .left-panel h1 .cohsem {
             color: white;
         }
@@ -195,6 +227,7 @@
         .left-panel h1 .parakh {
             color: #c06122;
         }
+
         .left-panel h2 {
             color: rgba(255, 255, 255, 0.9);
             font-size: 18px;
@@ -203,12 +236,14 @@
             letter-spacing: 2px;
             text-align: center;
         }
+
         .system-description {
             color: rgba(255, 255, 255, 0.8);
             font-size: 16px;
             margin: 30px 0;
             line-height: 1.6;
         }
+
         .feature-list {
             list-style: none;
             display: grid;
@@ -216,6 +251,7 @@
             gap: 8px;
             margin-top: 12px;
         }
+
         .feature-list li {
             color: rgba(255, 255, 255, 0.7);
             display: flex;
@@ -223,11 +259,13 @@
             gap: 8px;
             font-size: 12px;
         }
+
         .feature-list li i {
             color: #2ecc71;
             width: 16px;
             font-size: 12px;
         }
+
         .right-panel {
             width: 360px;
             padding: 40px 35px;
@@ -236,10 +274,12 @@
             flex-direction: column;
             justify-content: center;
         }
+
         .logo-section {
             text-align: center;
             margin-bottom: 20px;
         }
+
         .logo-section img {
             width: 55px;
             height: auto;
@@ -249,21 +289,26 @@
             border-radius: 10px;
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
+
         .logo-section h3 {
             color: white;
             font-size: 22px;
             margin: 15px 0 5px;
         }
+
         .logo-section p {
             color: rgba(255, 255, 255, 0.6);
             font-size: 13px;
         }
+
         .login-form {
             margin-top: 15px;
         }
+
         .form-group {
             margin-bottom: 18px;
         }
+
         .form-group label {
             display: block;
             color: rgba(255, 255, 255, 0.9);
@@ -271,10 +316,12 @@
             font-weight: 500;
             font-size: 13px;
         }
+
         .form-group label i {
             width: 18px;
             color: #3498db;
         }
+
         .form-control {
             width: 100%;
             padding: 12px 14px;
@@ -285,15 +332,18 @@
             font-size: 14px;
             transition: all 0.3s ease;
         }
+
         .form-control:focus {
             background: rgba(255, 255, 255, 0.12);
             border-color: #3498db;
             outline: none;
             box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
         }
+
         .form-control::placeholder {
             color: rgba(255, 255, 255, 0.3);
         }
+
         .btn-login {
             width: 100%;
             padding: 14px;
@@ -311,29 +361,35 @@
             justify-content: center;
             gap: 10px;
         }
+
         .btn-login:hover {
             background: linear-gradient(45deg, #8028CB, #4400CA);
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(142, 45, 226, 0.4);
         }
+
         .register-link {
             text-align: center;
             margin-top: 25px;
             color: rgba(255, 255, 255, 0.6);
         }
+
         .register-link a {
             color: #3498db;
             text-decoration: none;
             font-weight: 600;
             margin-left: 5px;
         }
+
         .register-link a:hover {
             text-decoration: underline;
         }
+
         .back-home {
             text-align: center;
             margin-top: 20px;
         }
+
         .back-home a {
             color: rgba(255, 255, 255, 0.8);
             text-decoration: none;
@@ -343,9 +399,11 @@
             font-size: 14px;
             transition: color 0.3s ease;
         }
+
         .back-home a:hover {
             color: white;
         }
+
         .security-badge {
             text-align: center;
             margin-top: 25px;
@@ -354,10 +412,12 @@
             color: rgba(255, 255, 255, 0.4);
             font-size: 11px;
         }
+
         .security-badge i {
             margin: 0 5px;
             color: #2ecc71;
         }
+
         .error-message {
             background: rgba(231, 76, 60, 0.15);
             border: 1px solid #e74c3c;
@@ -369,33 +429,100 @@
             font-size: 13px;
             display: none;
         }
+
         .error-message.show {
             display: block;
         }
+
+        /* Mobile-first fixes: ensure left panel hidden, right panel full width */
         @media (max-width: 768px) {
             .login-wrapper {
                 flex-direction: column;
                 max-width: 450px;
                 max-height: none;
+                border-radius: 24px;
+                background: rgba(255, 255, 255, 0.08);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
             }
+
             .left-panel {
                 display: none;
             }
+
             .right-panel {
                 width: 100%;
-                padding: 30px 25px;
+                padding: 30px 24px;
+                background: rgba(0, 0, 0, 0.2);
+                border-radius: 24px;
+            }
+
+            /* ensure right panel content is visible */
+            .right-panel .logo-section h3,
+            .right-panel .logo-section p,
+            .right-panel .form-group label,
+            .right-panel .security-badge {
+                color: rgba(255, 255, 255, 0.95);
+            }
+
+            .form-control {
+                background: rgba(255, 255, 255, 0.12);
+                border-color: rgba(255, 255, 255, 0.25);
+                color: #fff;
+            }
+
+            .form-control::placeholder {
+                color: rgba(255, 255, 255, 0.5);
+            }
+
+            .btn-login {
+                background: linear-gradient(45deg, #8E2DE2, #4A00E0);
+                font-size: 17px;
+                padding: 16px;
+            }
+
+            .security-badge {
+                border-top-color: rgba(255, 255, 255, 0.15);
+            }
+
+            /* extra safe background for mobile */
+            body {
+                background: #0a1a3a;
+                background: linear-gradient(135deg, #0a1a3a 0%, #1a3a6d 30%, #0c2461 60%, #1e3a5f 100%);
+                background-attachment: fixed;
+                padding: 12px;
+            }
+
+            /* pseudo elements stay fixed */
+            body::before, body::after {
+                position: fixed;
+            }
+        }
+
+        /* for very small screens */
+        @media (max-width: 400px) {
+            .right-panel {
+                padding: 20px 16px;
+            }
+            .logo-section img {
+                width: 44px;
+            }
+            .logo-section h3 {
+                font-size: 20px;
+            }
+            .btn-login {
+                font-size: 15px;
+                padding: 14px;
             }
         }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="header">
-                
-            
-                
-            </div>
     <div class="login-wrapper">
+        <!-- left panel (hidden on mobile) -->
         <div class="left-panel">
             <div class="left-logo-container">
                 <div class="left-logo-item combined-logo">
@@ -408,9 +535,7 @@
                 <span class="separator">|</span>
                 <span class="parakh">PARAKH</span>
             </h1>
-            <div>
-                <br>
-            </div>
+            <div><br></div>
             <h2>Integrated Test Management System</h2>
             <br>
             <ul class="feature-list">
@@ -425,12 +550,12 @@
 
             <div class="header1">
                 <div class="logo-box1">
-                    <img src="/static/all.png" class="logo1">
+                    <img src="/static/all.png" class="logo1" alt="partners">
                 </div>
             </div>
-            
         </div>
         
+        <!-- right panel: login form -->
         <div class="right-panel">
             <div class="logo-section">
                 <img src="/static/cohsem_ico.png" alt="COHSEM" onerror="this.style.display='none'">
@@ -464,6 +589,7 @@
             </div>
         </div>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         document.getElementById('dashboardLoginForm').addEventListener('submit', function(e) {
@@ -474,6 +600,7 @@
                 showError('Please enter both username and password');
             }
         });
+
         function showError(message) {
             const errorDiv = document.getElementById('errorMessage');
             errorDiv.textContent = message;
@@ -482,6 +609,8 @@
                 errorDiv.classList.remove('show');
             }, 5000);
         }
+
+        // Flash messages (from backend) — keep as is
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
