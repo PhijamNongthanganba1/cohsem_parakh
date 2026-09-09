@@ -304,7 +304,36 @@ def init_db():
             db.counters.update_one({'_id': 'users'}, {'$set': {'seq': 1}})
             print("✓ Created default admin user")
         
-        # ============ Create test data if no questions exist ============
+        # Create test users with different roles if they don't exist
+        test_users = [
+            {'username': 'master1', 'password': 'master123', 'role': 'master', 'perm_master': True},
+            {'username': 'reviewer1', 'password': 'reviewer123', 'role': 'reviewer', 'perm_rc': True},
+            {'username': 'approver1', 'password': 'approver123', 'role': 'approver', 'perm_ap': True},
+            {'username': 'builder1', 'password': 'builder123', 'role': 'builder', 'perm_ra': True},
+            {'username': 'writer1', 'password': 'writer123', 'role': 'writer', 'perm_re': True}
+        ]
+        
+        for test_user in test_users:
+            if not db.users.find_one({'username': test_user['username']}):
+                hashed_pw = generate_password_hash(test_user['password'])
+                next_id = get_next_id('users')
+                db.users.insert_one({
+                    'id': next_id,
+                    'username': test_user['username'],
+                    'password': hashed_pw,
+                    'role': test_user['role'],
+                    'subject_group': None,
+                    'group_role': 'member',
+                    'perm_re': test_user.get('perm_re', False),
+                    'perm_ra': test_user.get('perm_ra', False),
+                    'perm_rc': test_user.get('perm_rc', False),
+                    'perm_ap': test_user.get('perm_ap', False),
+                    'perm_master': test_user.get('perm_master', False),
+                    'created_at': datetime.now()
+                })
+                print(f"✓ Created test user: {test_user['username']} ({test_user['role']})")
+        
+        # ============ Create test questions if no questions exist ============
         if db.simple_questions.count_documents({}) == 0:
             print("🔄 Creating test questions...")
             create_test_questions()
@@ -394,7 +423,7 @@ def create_test_questions():
                 'duration_minutes': 10,
                 'grade_id': 3,
                 'subject_id': 1,
-                'created_by': 'admin',
+                'created_by': 'writer1',
                 'created_at': datetime.now(),
                 'status': 'under_review',
                 'question_type_name': 'Long Answer',
@@ -411,7 +440,7 @@ def create_test_questions():
                 'duration_minutes': 1,
                 'grade_id': 3,
                 'subject_id': 2,
-                'created_by': 'admin',
+                'created_by': 'writer1',
                 'created_at': datetime.now(),
                 'status': 'unassigned',
                 'question_type_name': 'Very Short Answer',
@@ -428,7 +457,7 @@ def create_test_questions():
                 'duration_minutes': 10,
                 'grade_id': 3,
                 'subject_id': 3,
-                'created_by': 'admin',
+                'created_by': 'writer1',
                 'created_at': datetime.now(),
                 'status': 'reviewed_completed',
                 'question_type_name': 'Long Answer',
@@ -445,7 +474,7 @@ def create_test_questions():
                 'duration_minutes': 3,
                 'grade_id': 3,
                 'subject_id': 4,
-                'created_by': 'admin',
+                'created_by': 'writer1',
                 'created_at': datetime.now(),
                 'status': 'rejected',
                 'question_type_name': 'Short Answer',
@@ -462,7 +491,7 @@ def create_test_questions():
                 'duration_minutes': 5,
                 'grade_id': 4,
                 'subject_id': 1,
-                'created_by': 'admin',
+                'created_by': 'writer1',
                 'created_at': datetime.now(),
                 'status': 'approved',
                 'question_type_name': 'Short Answer',
@@ -470,79 +499,11 @@ def create_test_questions():
                 'domain_name': 'Sensitivity',
                 'knowledge_level_name': 'Analysis',
                 'language': 'en'
-            },
-            {
-                'id': 7,
-                'question_text': 'Define resonance in chemistry.',
-                'answer': 'Resonance is the phenomenon where a molecule can be represented by multiple Lewis structures, with the actual structure being a hybrid of these structures.',
-                'marks': 4,
-                'duration_minutes': 8,
-                'grade_id': 4,
-                'subject_id': 2,
-                'created_by': 'admin',
-                'created_at': datetime.now(),
-                'status': 'under_review',
-                'question_type_name': 'Long Answer',
-                'difficulty_name': 'Hard',
-                'domain_name': 'Creativity',
-                'knowledge_level_name': 'Critical Thinking',
-                'language': 'en'
-            },
-            {
-                'id': 8,
-                'question_text': 'What is the function of mitochondria?',
-                'answer': 'Mitochondria are the powerhouses of the cell, producing ATP through cellular respiration.',
-                'marks': 2,
-                'duration_minutes': 3,
-                'grade_id': 4,
-                'subject_id': 3,
-                'created_by': 'admin',
-                'created_at': datetime.now(),
-                'status': 'unassigned',
-                'question_type_name': 'Short Answer',
-                'difficulty_name': 'Easy',
-                'domain_name': 'Awareness',
-                'knowledge_level_name': 'Knowledge',
-                'language': 'en'
-            },
-            {
-                'id': 9,
-                'question_text': 'Find the derivative of f(x) = x² + 3x - 5.',
-                'answer': "f'(x) = 2x + 3",
-                'marks': 3,
-                'duration_minutes': 5,
-                'grade_id': 4,
-                'subject_id': 4,
-                'created_by': 'admin',
-                'created_at': datetime.now(),
-                'status': 'approved',
-                'question_type_name': 'Short Answer',
-                'difficulty_name': 'Medium',
-                'domain_name': 'Sensitivity',
-                'knowledge_level_name': 'Application',
-                'language': 'en'
-            },
-            {
-                'id': 10,
-                'question_text': 'Explain the concept of entropy.',
-                'answer': 'Entropy is a measure of disorder or randomness in a system. The second law of thermodynamics states that the entropy of an isolated system always increases over time.',
-                'marks': 5,
-                'duration_minutes': 10,
-                'grade_id': 4,
-                'subject_id': 2,
-                'created_by': 'admin',
-                'created_at': datetime.now(),
-                'status': 'reviewed_completed',
-                'question_type_name': 'Long Answer',
-                'difficulty_name': 'Hard',
-                'domain_name': 'Creativity',
-                'knowledge_level_name': 'Evaluation',
-                'language': 'en'
             }
         ]
         
         db.simple_questions.insert_many(questions)
-        db.counters.update_one({'_id': 'simple_questions'}, {'$set': {'seq': 10}})
+        db.counters.update_one({'_id': 'simple_questions'}, {'$set': {'seq': 6}})
         print(f"  ✓ Created {len(questions)} test questions")
         
     except Exception as e:
@@ -937,26 +898,11 @@ def review():
         'MASTER': session.get('perm_master', False)
     }
     
-    page_title = "Questions List"
-    if user_role == 'admin':
-        page_title = "All Questions"
-    elif permissions.get('MASTER'):
-        page_title = "Master Dashboard - Assign Reviewers"
-    elif permissions.get('AP'):
-        page_title = "Approver Dashboard"
-    elif permissions.get('RC'):
-        page_title = "Reviewer Dashboard"
-    elif permissions.get('RA'):
-        page_title = "Approved Questions for Paper Building"
-    elif permissions.get('RE'):
-        page_title = "My Questions"
-    
     return render_template('review.html', 
                          user=username, 
                          user_id=user_id,
                          user_role=user_role,
-                         permissions=permissions,
-                         page_title=page_title)
+                         permissions=permissions)
 
 @app.route('/logout')
 def logout():
@@ -2433,7 +2379,7 @@ def delete_user(user_id):
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# REVIEW WORKFLOW ENDPOINTS
+# REVIEW WORKFLOW ENDPOINTS - FIXED
 # ============================================
 
 @app.route('/api/reviewers', methods=['GET'])
@@ -2451,11 +2397,12 @@ def get_reviewers():
         return jsonify({'error': 'Access denied'}), 403
     
     try:
+        # Build query to find users with reviewer permissions
         query = {
             '$or': [
                 {'perm_rc': True},
-                {'role': 'admin'},
-                {'role': 'reviewer'}
+                {'role': 'reviewer'},
+                {'role': 'admin'}
             ]
         }
         
@@ -2470,8 +2417,15 @@ def get_reviewers():
         reviewers = list(db.users.find(query).sort('username', 1))
         reviewers = convert_doc(reviewers)
         
+        # Log for debugging
+        print(f"📊 Found {len(reviewers)} reviewers")
+        for r in reviewers:
+            print(f"   - {r.get('username')} (perm_rc: {r.get('perm_rc')}, role: {r.get('role')})")
+        
         return jsonify({'reviewers': reviewers})
     except Exception as e:
+        print(f"❌ Error in get_reviewers: {e}")
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/approvers', methods=['GET'])
@@ -2489,11 +2443,12 @@ def get_approvers():
         return jsonify({'error': 'Access denied'}), 403
     
     try:
+        # Build query to find users with approver permissions
         query = {
             '$or': [
                 {'perm_ap': True},
-                {'role': 'admin'},
-                {'role': 'approver'}
+                {'role': 'approver'},
+                {'role': 'admin'}
             ]
         }
         
@@ -2508,8 +2463,15 @@ def get_approvers():
         approvers = list(db.users.find(query).sort('username', 1))
         approvers = convert_doc(approvers)
         
+        # Log for debugging
+        print(f"📊 Found {len(approvers)} approvers")
+        for a in approvers:
+            print(f"   - {a.get('username')} (perm_ap: {a.get('perm_ap')}, role: {a.get('role')})")
+        
         return jsonify({'approvers': approvers})
     except Exception as e:
+        print(f"❌ Error in get_approvers: {e}")
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/master-review-question/<int:question_id>', methods=['POST'])
@@ -2524,6 +2486,7 @@ def master_review_question(question_id):
     subject_group = session.get('subject_group')
     user_id = session.get('user_id')
     
+    # Check if user has master permission
     if user_role != 'admin' and not perm_master:
         return jsonify({'error': 'Master permission required'}), 403
     
@@ -2536,7 +2499,7 @@ def master_review_question(question_id):
         return jsonify({'error': 'Reviewer selection is required'}), 400
     
     try:
-        # Check if question exists and user has access
+        # Check if question exists
         question = db.simple_questions.find_one({'id': question_id})
         if not question:
             return jsonify({'error': 'Question not found'}), 404
@@ -2550,17 +2513,25 @@ def master_review_question(question_id):
             if not subject_check:
                 return jsonify({'error': 'Access denied to this question'}), 403
         
-        # Verify the reviewer exists and has reviewer permissions
-        reviewer = db.users.find_one({
-            'id': reviewer_id,
-            '$or': [
-                {'perm_rc': True},
-                {'role': 'admin'},
-                {'role': 'reviewer'}
-            ]
-        })
+        # Get the reviewer from database
+        reviewer = db.users.find_one({'id': int(reviewer_id)})
         if not reviewer:
-            return jsonify({'error': 'Selected reviewer does not have reviewer permissions'}), 400
+            return jsonify({'error': 'Reviewer not found'}), 404
+        
+        # Check if the user has reviewer permissions
+        has_reviewer_perm = (
+            reviewer.get('perm_rc') == True or 
+            reviewer.get('role') == 'reviewer' or 
+            reviewer.get('role') == 'admin'
+        )
+        
+        if not has_reviewer_perm:
+            # Log the reviewer data for debugging
+            print(f"⚠️ User {reviewer.get('username')} (id: {reviewer_id}) does not have reviewer permissions")
+            print(f"   perm_rc: {reviewer.get('perm_rc')}, role: {reviewer.get('role')}")
+            return jsonify({
+                'error': f'Selected user "{reviewer.get("username")}" does not have reviewer permissions. Please select a user with Reviewer role or RC permission.'
+            }), 400
         
         # Verify reviewer is in same subject group (if not admin)
         if user_role != 'admin' and subject_group:
@@ -2579,7 +2550,7 @@ def master_review_question(question_id):
                 'master_reviewed_by': username,
                 'master_reviewed_at': datetime.now(),
                 'master_reviewed_comment': master_comment,
-                'assigned_reviewer_id': reviewer_id,
+                'assigned_reviewer_id': int(reviewer_id),
                 'assigned_reviewer_name': reviewer_name,
                 'reviewed_by': None,
                 'reviewed_comment': None,
@@ -2593,6 +2564,8 @@ def master_review_question(question_id):
         
         return jsonify({'success': True, 'message': f'Question assigned to {reviewer_name} for review'})
     except Exception as e:
+        print(f"❌ Error in master_review_question: {e}")
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/review-question/<int:question_id>', methods=['POST'])
@@ -2628,17 +2601,24 @@ def review_question(question_id):
         if user_role != 'admin' and question.get('assigned_reviewer_id') != user_id:
             return jsonify({'error': 'This question is not assigned to you'}), 403
         
-        # Verify the approver exists and has approver permissions
-        approver = db.users.find_one({
-            'id': approver_id,
-            '$or': [
-                {'perm_ap': True},
-                {'role': 'admin'},
-                {'role': 'approver'}
-            ]
-        })
+        # Get the approver from database
+        approver = db.users.find_one({'id': int(approver_id)})
         if not approver:
-            return jsonify({'error': 'Selected approver does not have approver permissions'}), 400
+            return jsonify({'error': 'Approver not found'}), 404
+        
+        # Check if the user has approver permissions
+        has_approver_perm = (
+            approver.get('perm_ap') == True or 
+            approver.get('role') == 'approver' or 
+            approver.get('role') == 'admin'
+        )
+        
+        if not has_approver_perm:
+            print(f"⚠️ User {approver.get('username')} (id: {approver_id}) does not have approver permissions")
+            print(f"   perm_ap: {approver.get('perm_ap')}, role: {approver.get('role')}")
+            return jsonify({
+                'error': f'Selected user "{approver.get("username")}" does not have approver permissions. Please select a user with Approver role or AP permission.'
+            }), 400
         
         # Verify approver is in same subject group (if not admin)
         if user_role != 'admin' and subject_group:
@@ -2657,7 +2637,7 @@ def review_question(question_id):
                 'reviewed_by': username,
                 'reviewed_at': datetime.now(),
                 'reviewed_comment': reviewer_comment,
-                'assigned_approver_id': approver_id,
+                'assigned_approver_id': int(approver_id),
                 'assigned_approver_name': approver_name,
                 'approved_by': None,
                 'approved_at': None
@@ -2666,6 +2646,8 @@ def review_question(question_id):
         
         return jsonify({'success': True, 'message': f'Question assigned to {approver_name} for approval'})
     except Exception as e:
+        print(f"❌ Error in review_question: {e}")
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/approve-question/<int:question_id>', methods=['POST'])
@@ -2709,6 +2691,8 @@ def approve_question(question_id):
         
         return jsonify({'success': True, 'message': 'Question approved successfully'})
     except Exception as e:
+        print(f"❌ Error in approve_question: {e}")
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/rework-question/<int:question_id>', methods=['POST'])
@@ -2785,6 +2769,8 @@ def rework_question(question_id):
         
         return jsonify({'success': True, 'message': 'Question sent back for rework'})
     except Exception as e:
+        print(f"❌ Error in rework_question: {e}")
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/update-question/<int:question_id>', methods=['POST'])
@@ -2838,6 +2824,8 @@ def update_question(question_id):
         
         return jsonify({'success': True, 'message': 'Question updated successfully'})
     except Exception as e:
+        print(f"❌ Error in update_question: {e}")
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/builder-questions', methods=['GET'])
@@ -2921,6 +2909,8 @@ def get_builder_questions():
         
         return jsonify({'questions': questions})
     except Exception as e:
+        print(f"❌ Error in get_builder_questions: {e}")
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 # ============================================
@@ -3645,6 +3635,57 @@ def debug_session():
             'MASTER': session.get('perm_master', False)
         }
     })
+
+# ============================================
+# DEBUG ENDPOINTS
+# ============================================
+
+@app.route('/api/debug/user/<username>')
+def debug_user(username):
+    """Debug endpoint to check user permissions"""
+    if 'user' not in session or session.get('user_role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    user = db.users.find_one({'username': username})
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    return jsonify({
+        'username': user.get('username'),
+        'role': user.get('role'),
+        'perm_rc': user.get('perm_rc'),
+        'perm_ap': user.get('perm_ap'),
+        'perm_master': user.get('perm_master'),
+        'perm_re': user.get('perm_re'),
+        'perm_ra': user.get('perm_ra'),
+        'subject_group': user.get('subject_group'),
+        'has_reviewer_perm': user.get('perm_rc') == True or user.get('role') in ['reviewer', 'admin'],
+        'has_approver_perm': user.get('perm_ap') == True or user.get('role') in ['approver', 'admin'],
+        'has_master_perm': user.get('perm_master') == True or user.get('role') in ['master', 'admin']
+    })
+
+@app.route('/api/debug/questions')
+def debug_questions():
+    """Debug endpoint to check questions"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    try:
+        total = db.simple_questions.count_documents({})
+        status_counts = {}
+        for status in ['approved', 'unassigned', 'under_review', 'reviewed_completed', 'rejected']:
+            status_counts[status] = db.simple_questions.count_documents({'status': status})
+        
+        sample = list(db.simple_questions.find({}).limit(5))
+        sample = convert_doc(sample)
+        
+        return jsonify({
+            'total_questions': total,
+            'status_counts': status_counts,
+            'sample_questions': sample
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # ============================================
 # MAIN
