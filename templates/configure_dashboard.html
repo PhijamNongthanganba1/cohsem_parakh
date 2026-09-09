@@ -1076,14 +1076,15 @@
         }
 
         function selectGrade(id, name) {
-            currentSelections.grade = { id, name };
+            currentSelections.grade = { id: id.toString(), name: name };
             currentSelections.subject = null;
             currentSelections.textbook = null;
             currentSelections.chapter = null;
             currentSelections.cg = null;
             currentSelections.competency = null;
             document.getElementById('selectedGradeName').textContent = name;
-            loadSubjects(id);
+            // Pass grade ID as string
+            loadSubjects(id.toString());
             goToStage(2);
             updateSelectionSummary();
         }
@@ -1126,11 +1127,24 @@
             }
         }
 
+        // ============================================
+        // CRITICAL FIX: loadSubjects - Handles grade_id as string
+        // ============================================
         async function loadSubjects(gradeId) {
             try {
+                // Make sure gradeId is a string for comparison
+                const gradeIdStr = gradeId.toString();
+                
+                // Fetch fresh data from API
                 const response = await fetch('/api/page1-data');
                 const data = await response.json();
-                subjects = data.subjects?.filter(s => s.grade_id == gradeId) || [];
+                
+                // Filter subjects by grade_id (convert both to strings for comparison)
+                subjects = data.subjects?.filter(s => {
+                    const sGradeId = s.grade_id ? s.grade_id.toString() : '';
+                    return sGradeId === gradeIdStr;
+                }) || [];
+                
                 const container = document.getElementById('subjectGrid');
                 if(subjects.length === 0) {
                     container.innerHTML = '<div class="no-data">No subjects found. Click "Add New Subject" to create one.</div>';
@@ -1148,11 +1162,14 @@
                         </div>
                     </div>
                 `).join('');
-            } catch(e) { console.error('Error loading subjects:', e); }
+            } catch(e) { 
+                console.error('Error loading subjects:', e); 
+                document.getElementById('subjectGrid').innerHTML = '<div class="no-data">Error loading subjects. Please refresh.</div>';
+            }
         }
 
         function selectSubject(id, name) {
-            currentSelections.subject = { id, name };
+            currentSelections.subject = { id: id.toString(), name: name };
             currentSelections.textbook = null;
             currentSelections.chapter = null;
             currentSelections.cg = null;
@@ -1181,7 +1198,10 @@
                     const data = await response.json();
                     if(data.success) {
                         Swal.fire('Deleted', 'Subject deleted successfully', 'success');
-                        loadSubjects(currentSelections.grade.id);
+                        // Reload subjects for current grade
+                        if (currentSelections.grade) {
+                            loadSubjects(currentSelections.grade.id);
+                        }
                         loadStats();
                         if(currentSelections.subject?.id === id) {
                             currentSelections.subject = null;
@@ -1201,27 +1221,9 @@
             }
         }
 
-        function toggleBookType() {
-            const isReference = document.querySelector('input[name="bookType"]:checked').value === 'reference';
-            const description = document.getElementById('bookTypeDescription');
-            const modalTitle = document.getElementById('textbookModalTitle');
-            const textbookLabel = document.getElementById('textbookLabel');
-            const referenceLabel = document.getElementById('referenceLabel');
-            
-            textbookLabel.classList.remove('active-textbook');
-            referenceLabel.classList.remove('active-reference');
-            
-            if (isReference) {
-                description.textContent = 'Reference Book is an additional resource book';
-                modalTitle.textContent = 'Add Reference Book';
-                referenceLabel.classList.add('active-reference');
-            } else {
-                description.textContent = 'Textbook is the main curriculum book.';
-                modalTitle.textContent = 'Add Textbook';
-                textbookLabel.classList.add('active-textbook');
-            }
-        }
-
+        // ============================================
+        // FIX: loadTextbooks - uses subject_id correctly
+        // ============================================
         async function loadTextbooks(subjectId) {
             const container = document.getElementById('textbookGrid');
             container.innerHTML = `<div class="loading" style="grid-column: span 3;"><i class="fas fa-spinner fa-pulse"></i><br>Loading books...<br><small style="color: rgba(255,255,255,0.3);">Subject ID: ${subjectId}</small></div>`;
@@ -1280,11 +1282,32 @@
             }
         }
 
+        function toggleBookType() {
+            const isReference = document.querySelector('input[name="bookType"]:checked').value === 'reference';
+            const description = document.getElementById('bookTypeDescription');
+            const modalTitle = document.getElementById('textbookModalTitle');
+            const textbookLabel = document.getElementById('textbookLabel');
+            const referenceLabel = document.getElementById('referenceLabel');
+            
+            textbookLabel.classList.remove('active-textbook');
+            referenceLabel.classList.remove('active-reference');
+            
+            if (isReference) {
+                description.textContent = 'Reference Book is an additional resource book';
+                modalTitle.textContent = 'Add Reference Book';
+                referenceLabel.classList.add('active-reference');
+            } else {
+                description.textContent = 'Textbook is the main curriculum book.';
+                modalTitle.textContent = 'Add Textbook';
+                textbookLabel.classList.add('active-textbook');
+            }
+        }
+
         function selectTextbook(id, name) {
             const textbook = textbooks.find(t => t.id === id);
             const displayName = textbook && textbook.is_reference ? `${name} (Reference)` : name;
             
-            currentSelections.textbook = { id, name: displayName };
+            currentSelections.textbook = { id: id.toString(), name: displayName };
             currentSelections.chapter = null;
             currentSelections.cg = null;
             currentSelections.competency = null;
@@ -1414,6 +1437,9 @@
             }
         }
 
+        // ============================================
+        // FIX: loadChapters - handles subject_id correctly
+        // ============================================
         async function loadChapters(textbookId) {
             const container = document.getElementById('chapterGrid');
             
@@ -1426,20 +1452,15 @@
             `;
             
             try {
-                let subjectId = currentSelections.textbook?.subject_id;
+                // Get subject_id from current selection
+                let subjectId = currentSelections.subject ? currentSelections.subject.id : null;
                 
                 if (!subjectId) {
+                    // Try to get subject_id from textbook data
                     const textbook = textbooks.find(t => t.id === textbookId);
-                    if (textbook) {
+                    if (textbook && textbook.subject_id) {
                         subjectId = textbook.subject_id;
-                        if (currentSelections.textbook) {
-                            currentSelections.textbook.subject_id = subjectId;
-                        }
                     }
-                }
-                
-                if (!subjectId && currentSelections.subject) {
-                    subjectId = currentSelections.subject.id;
                 }
                 
                 if (!subjectId) {
@@ -1496,7 +1517,7 @@
         }
 
         function selectChapter(id, name) {
-            currentSelections.chapter = { id, name };
+            currentSelections.chapter = { id: id.toString(), name: name };
             currentSelections.cg = null;
             currentSelections.competency = null;
             if (currentSelections.subject) {
@@ -1639,6 +1660,9 @@
             }
         }
 
+        // ============================================
+        // FIX: loadCGs - handles subject_id correctly
+        // ============================================
         async function loadCGs(subjectId) {
             const container = document.getElementById('cgGrid');
             container.innerHTML = `
@@ -1707,7 +1731,7 @@
         }
 
         function selectCG(id, code) {
-            currentSelections.cg = { id, code };
+            currentSelections.cg = { id: id.toString(), code: code };
             currentSelections.competency = null;
             document.getElementById('selectedCGName').textContent = code;
             loadCompetencies(id);
@@ -1750,6 +1774,9 @@
             }
         }
 
+        // ============================================
+        // FIX: loadCompetencies - handles cg_id correctly
+        // ============================================
         async function loadCompetencies(cgId) {
             const container = document.getElementById('competencyGrid');
             container.innerHTML = `
@@ -1765,7 +1792,10 @@
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const data = await response.json();
                 const allComps = data.competencies || [];
-                competencies = allComps.filter(c => c.cg_id == cgId);
+                competencies = allComps.filter(c => {
+                    const cCgId = c.cg_id ? c.cg_id.toString() : '';
+                    return cCgId === cgId.toString();
+                });
                 
                 if (competencies.length === 0) {
                     container.innerHTML = `
@@ -1822,7 +1852,7 @@
         }
 
         function selectCompetency(id, code) {
-            currentSelections.competency = { id, code };
+            currentSelections.competency = { id: id.toString(), code: code };
             updateSelectionSummary();
             Swal.fire({
                 icon: 'success',
@@ -1900,7 +1930,7 @@
         }
 
         // ============================================
-        // FIXED: openAddModal with proper grade_id handling
+        // FIX: openAddModal - uses proper grade_id handling
         // ============================================
         function openAddModal(type) {
             if(!isAdmin) return showViewOnly(type, '');
@@ -2029,12 +2059,13 @@
                 if(result.success) {
                     Swal.fire('Success', 'Saved successfully', 'success');
                     closeModal('addEditModal');
+                    // Refresh the current view
                     if(currentStage === 1) loadGrades();
-                    else if(currentStage === 2) loadSubjects(currentSelections.grade.id);
-                    else if(currentStage === 3) loadTextbooks(currentSelections.subject.id);
+                    else if(currentStage === 2 && currentSelections.grade) loadSubjects(currentSelections.grade.id);
+                    else if(currentStage === 3 && currentSelections.subject) loadTextbooks(currentSelections.subject.id);
                     else if(currentStage === 4 && currentSelections.textbook) loadChapters(currentSelections.textbook.id);
-                    else if(currentStage === 5) loadCGs(currentSelections.subject.id);
-                    else if(currentStage === 6) loadCompetencies(currentSelections.cg.id);
+                    else if(currentStage === 5 && currentSelections.subject) loadCGs(currentSelections.subject.id);
+                    else if(currentStage === 6 && currentSelections.cg) loadCompetencies(currentSelections.cg.id);
                     loadStats();
                 } else {
                     Swal.fire('Error', result.error || 'Failed to save', 'error');
@@ -2126,7 +2157,12 @@
             try {
                 const response = await fetch('/api/page1-data');
                 const data = await response.json();
-                const subjectList = data.subjects?.filter(s => s.grade_id == gradeId) || [];
+                // Filter subjects by grade_id (convert to string for comparison)
+                const gradeIdStr = gradeId.toString();
+                const subjectList = data.subjects?.filter(s => {
+                    const sGradeId = s.grade_id ? s.grade_id.toString() : '';
+                    return sGradeId === gradeIdStr;
+                }) || [];
                 const subjectSelect = document.getElementById('groupSubject');
                 subjectSelect.innerHTML = '<option value="">Select Subject</option>';
                 subjectSelect.disabled = false;
@@ -2519,6 +2555,20 @@
         function closeModal(modalId) {
             document.getElementById(modalId).classList.remove('active');
         }
+
+        // ============================================
+        // FIX: After saving, refresh the view
+        // ============================================
+        // This ensures that after creating a new subject, 
+        // the subjects list is refreshed
+        const originalSaveItem = saveItem;
+        saveItem = async function() {
+            await originalSaveItem();
+            // After saving, if we're on stage 2, reload subjects
+            if (currentStage === 2 && currentSelections.grade) {
+                loadSubjects(currentSelections.grade.id);
+            }
+        };
     </script>
 </body>
 </html>
