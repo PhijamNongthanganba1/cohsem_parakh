@@ -70,15 +70,21 @@ def convert_objectid(doc):
     Recursively convert ObjectId and datetime to serializable types.
     CRITICAL FIX: Converts ALL ObjectId fields to strings for frontend compatibility.
     """
+    if doc is None:
+        return None
     if isinstance(doc, list):
         return [convert_objectid(item) for item in doc]
     if isinstance(doc, dict):
         result = {}
         for key, value in doc.items():
-            # Handle _id field
+            # Handle _id field - ALWAYS convert to string AND add 'id' field
             if key == '_id':
-                result[key] = str(value)
-                result['id'] = str(value)  # Add 'id' field for frontend
+                if isinstance(value, ObjectId):
+                    result[key] = str(value)
+                    result['id'] = str(value)  # Add 'id' field for frontend
+                else:
+                    result[key] = value
+                    result['id'] = value
             # CRITICAL: Convert grade_id to string
             elif key == 'grade_id':
                 if isinstance(value, ObjectId):
@@ -175,6 +181,13 @@ def safe_object_id(value):
                 return ObjectId(value)
             except:
                 return None
+        # Try to find by ID using regex on string
+        try:
+            # Try to convert to ObjectId
+            return ObjectId(value)
+        except:
+            # If it's a numeric ID from frontend, try to find by string ID
+            pass
     return None
 
 def get_grade_id_from_value(value):
@@ -196,12 +209,7 @@ def get_grade_id_from_value(value):
                 return grade['_id']
             return None
         
-        # Try to find by grade_name
-        grade = db.grades.find_one({'grade_name': value})
-        if grade:
-            return grade['_id']
-        
-        # Try to find by string ID - convert to ObjectId if valid
+        # Try to find by ObjectId
         try:
             if len(value) == 24 and re.match(r'^[0-9a-fA-F]{24}$', value):
                 grade = db.grades.find_one({'_id': ObjectId(value)})
@@ -210,10 +218,23 @@ def get_grade_id_from_value(value):
         except:
             pass
         
+        # Try to find by grade_name (for numeric IDs from frontend)
+        grade = db.grades.find_one({'grade_name': value})
+        if grade:
+            return grade['_id']
+        
         # Try to find by regex match on grade_name
         grade = db.grades.find_one({'grade_name': {'$regex': value, '$options': 'i'}})
         if grade:
             return grade['_id']
+    
+    # Try to find by string ID
+    try:
+        grade = db.grades.find_one({'_id': ObjectId(value)})
+        if grade:
+            return grade['_id']
+    except:
+        pass
     
     grade = db.grades.find_one({})
     if grade:
@@ -265,6 +286,12 @@ def get_user_grades(username):
 # --- Database Initialization ---
 def init_db():
     try:
+        # Create indexes for better performance
+        db.grades.create_index('grade_name', unique=True)
+        db.subjects.create_index([('grade_id', 1), ('subject_name', 1)], unique=True)
+        db.users.create_index('username', unique=True)
+        db.subject_groups.create_index('group_code', unique=True)
+        
         if db.cognitive_domains.count_documents({}) == 0:
             domains_data = [
                 {'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
@@ -626,11 +653,13 @@ def dashboard_stats():
         stats = {}
         
         for grade in all_grades:
-            grade_id = str(grade['_id'])
+            grade_id = grade['_id']
+            grade_id_str = str(grade_id)
             grade_name = grade['grade_name']
             
+            # Get stats for this grade
             pipeline = [
-                {'$match': {'grade_id': grade_id}},
+                {'$match': {'grade_id': grade_id_str}},
                 {'$group': {
                     '_id': None,
                     'total': {'$sum': 1},
@@ -645,8 +674,9 @@ def dashboard_stats():
             grade_stats = list(db.simple_questions.aggregate(pipeline))
             grade_stats = grade_stats[0] if grade_stats else {'total': 0, 'approved': 0, 'unassigned': 0, 'under_review': 0, 'reviewed_completed': 0, 'rejected': 0, 'master_reviewed': 0}
             
+            # Get subject stats for this grade
             pipeline_subject = [
-                {'$match': {'grade_id': grade_id}},
+                {'$match': {'grade_id': grade_id_str}},
                 {'$group': {
                     '_id': '$subject_id',
                     'total': {'$sum': 1},
@@ -675,7 +705,7 @@ def dashboard_stats():
                         'subject_name': subjects_dict[subject_id]['subject_name']
                     }
             
-            stats[f'grade_{grade_id}'] = {
+            stats[f'grade_{grade_id_str}'] = {
                 'total': grade_stats.get('total', 0),
                 'approved': grade_stats.get('approved', 0),
                 'unassigned': grade_stats.get('unassigned', 0),
@@ -685,24 +715,14 @@ def dashboard_stats():
                 'master_reviewed': grade_stats.get('master_reviewed', 0),
                 'subjects': subjects_dict_for_grade,
                 'grade_name': grade_name,
-                'grade_id': grade_id
+                'grade_id': grade_id_str
             }
         
+        # Get recent activity
         pipeline_recent = [
-            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
-            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': '_id', 'as': 'subject_info'}},
-            {'$lookup': {'from': 'chapters', 'localField': 'chapter_id', 'foreignField': '_id', 'as': 'chapter_info'}},
             {'$sort': {'created_at': -1}},
             {'$limit': 10}
         ]
-        
-        if user_role != 'admin' and subject_group:
-            subject_ids = [str(row['subject_id']) for row in db.subject_groups.find({'group_code': subject_group})]
-            if subject_ids:
-                pipeline_recent.insert(0, {'$match': {'subject_id': {'$in': subject_ids}}})
-            else:
-                pipeline_recent.insert(0, {'$match': {'_id': None}})
-        
         recent = list(db.simple_questions.aggregate(pipeline_recent))
         recent = convert_objectid(recent)
         stats['recent'] = recent
@@ -730,9 +750,19 @@ def get_grades():
             grades = list(db.grades.find({}).sort('_id', 1))
         else:
             subject_groups = list(db.subject_groups.find({'group_code': subject_group}))
-            grade_ids = list(set([g['grade_id'] for g in subject_groups if g.get('grade_id')]))
+            grade_ids = list(set([str(g['grade_id']) for g in subject_groups if g.get('grade_id')]))
             if grade_ids:
-                grades = list(db.grades.find({'_id': {'$in': grade_ids}}))
+                # Convert to ObjectId for query
+                grade_obj_ids = []
+                for gid in grade_ids:
+                    try:
+                        grade_obj_ids.append(ObjectId(gid))
+                    except:
+                        pass
+                if grade_obj_ids:
+                    grades = list(db.grades.find({'_id': {'$in': grade_obj_ids}}))
+                else:
+                    grades = []
             else:
                 grades = []
         
@@ -832,26 +862,29 @@ def get_subjects():
                     {'grade_id': ''},
                     {'grade_id': {'$exists': False}}
                 ]},
-                {'$set': {'grade_id': grade_id}}
+                {'$set': {'grade_id': str(grade_id)}}
             )
         
-        pipeline = [
-            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
-            {'$addFields': {'grade_name': {'$arrayElemAt': ['$grade_info.grade_name', 0]}}},
-            {'$project': {'grade_info': 0}}
-        ]
-        
         if user_role == 'admin':
-            subjects = list(db.subjects.aggregate(pipeline))
+            subjects = list(db.subjects.find({}))
         else:
             subject_ids = []
             if subject_group:
                 groups = db.subject_groups.find({'group_code': subject_group})
-                subject_ids = [g['subject_id'] for g in groups]
+                subject_ids = [str(g['subject_id']) for g in groups]
             
             if subject_ids:
-                pipeline.insert(0, {'$match': {'_id': {'$in': subject_ids}}})
-                subjects = list(db.subjects.aggregate(pipeline))
+                # Convert to ObjectId for query
+                subject_obj_ids = []
+                for sid in subject_ids:
+                    try:
+                        subject_obj_ids.append(ObjectId(sid))
+                    except:
+                        pass
+                if subject_obj_ids:
+                    subjects = list(db.subjects.find({'_id': {'$in': subject_obj_ids}}))
+                else:
+                    subjects = []
             else:
                 subjects = []
         
@@ -859,8 +892,11 @@ def get_subjects():
         for s in subjects:
             if '_id' in s:
                 s['id'] = str(s['_id'])
-                del s['_id']
+                # Keep _id as string for compatibility
+                s['_id'] = str(s['_id'])
             if 'grade_id' in s and isinstance(s['grade_id'], ObjectId):
+                s['grade_id'] = str(s['grade_id'])
+            elif 'grade_id' in s:
                 s['grade_id'] = str(s['grade_id'])
         
         return jsonify({'subjects': subjects})
@@ -891,10 +927,12 @@ def create_subject():
         if grade_id_obj is None:
             return jsonify({'error': 'No grades available. Please create a grade first.'}), 400
         
+        grade_id_str = str(grade_id_obj)
+        
         # Check if subject already exists for this grade
         existing = db.subjects.find_one({
             'subject_name': name,
-            'grade_id': grade_id_obj
+            'grade_id': grade_id_str
         })
         
         if existing:
@@ -902,14 +940,14 @@ def create_subject():
         
         result = db.subjects.insert_one({
             'subject_name': name, 
-            'grade_id': grade_id_obj
+            'grade_id': grade_id_str
         })
         
         # Return with ID as string
         return jsonify({
             'success': True, 
             'id': str(result.inserted_id), 
-            'grade_id': str(grade_id_obj),
+            'grade_id': grade_id_str,
             'subject_name': name
         })
     except Exception as e:
@@ -938,9 +976,11 @@ def update_subject(subject_id):
         if grade_id_obj is None:
             return jsonify({'error': 'No grades available'}), 400
         
+        grade_id_str = str(grade_id_obj)
+        
         result = db.subjects.update_one(
             {'_id': ObjectId(subject_id)},
-            {'$set': {'subject_name': name, 'grade_id': grade_id_obj}}
+            {'$set': {'subject_name': name, 'grade_id': grade_id_str}}
         )
         if result.matched_count == 0:
             return jsonify({'error': 'Subject not found'}), 404
@@ -985,6 +1025,7 @@ def get_page1_data():
         first_grade = db.grades.find_one({})
         if first_grade:
             grade_id = first_grade['_id']
+            grade_id_str = str(grade_id)
             db.subjects.update_many(
                 {'$or': [
                     {'grade_id': {'$type': 'string'}},
@@ -993,7 +1034,7 @@ def get_page1_data():
                     {'grade_id': ''},
                     {'grade_id': {'$exists': False}}
                 ]},
-                {'$set': {'grade_id': grade_id}}
+                {'$set': {'grade_id': grade_id_str}}
             )
         
         grades = list(db.grades.find())
@@ -1019,14 +1060,14 @@ def get_page1_data():
         for g in grades:
             grade_id_str = str(g['_id'])
             g['id'] = grade_id_str
-            if '_id' in g:
-                del g['_id']
+            g['_id'] = grade_id_str  # Keep _id as string for compatibility
             data['grades'].append(g)
         
         # Process subjects - CRITICAL: Convert grade_id to string
         for s in subjects:
             subject_id_str = str(s['_id'])
             s['id'] = subject_id_str
+            s['_id'] = subject_id_str
             
             # CRITICAL FIX: Convert grade_id to string
             if 'grade_id' in s:
@@ -1040,9 +1081,6 @@ def get_page1_data():
                 else:
                     s['grade_id'] = str(s['grade_id'])
             
-            if '_id' in s:
-                del s['_id']
-            
             # Group subjects by grade_id for frontend
             grade_id_str = str(s['grade_id']) if s['grade_id'] else None
             if grade_id_str:
@@ -1054,13 +1092,15 @@ def get_page1_data():
         # Process CGs
         for cg in cgs:
             cg['id'] = str(cg['_id'])
+            cg['_id'] = str(cg['_id'])
             if cg.get('subject_id') and isinstance(cg['subject_id'], ObjectId):
+                cg['subject_id'] = str(cg['subject_id'])
+            elif cg.get('subject_id'):
                 cg['subject_id'] = str(cg['subject_id'])
             if cg.get('chapter_id') and isinstance(cg['chapter_id'], ObjectId):
                 cg['chapter_id'] = str(cg['chapter_id'])
-            
-            if '_id' in cg:
-                del cg['_id']
+            elif cg.get('chapter_id'):
+                cg['chapter_id'] = str(cg['chapter_id'])
             
             subject_id_str = str(cg['subject_id']) if cg.get('subject_id') else None
             if subject_id_str:
@@ -1072,11 +1112,11 @@ def get_page1_data():
         # Process Competencies
         for comp in competencies:
             comp['id'] = str(comp['_id'])
+            comp['_id'] = str(comp['_id'])
             if comp.get('cg_id') and isinstance(comp['cg_id'], ObjectId):
                 comp['cg_id'] = str(comp['cg_id'])
-            
-            if '_id' in comp:
-                del comp['_id']
+            elif comp.get('cg_id'):
+                comp['cg_id'] = str(comp['cg_id'])
             
             cg_id_str = str(comp['cg_id']) if comp.get('cg_id') else None
             if cg_id_str:
@@ -1088,15 +1128,13 @@ def get_page1_data():
         # Process Question Types
         for qt in question_types:
             qt['id'] = str(qt['_id'])
-            if '_id' in qt:
-                del qt['_id']
+            qt['_id'] = str(qt['_id'])
             data['question_types'].append(qt)
         
         # Process Cognitive Domains
         for cd in cognitive_domains:
             cd['id'] = str(cd['_id'])
-            if '_id' in cd:
-                del cd['_id']
+            cd['_id'] = str(cd['_id'])
             data['cognitive_domains'].append(cd)
         
         # DEBUG: Log the subjects_by_grade to see what's being sent
@@ -1130,14 +1168,14 @@ def get_textbooks():
         query = {}
         
         if user_role != 'admin' and subject_group:
-            subject_ids = [row['subject_id'] for row in db.subject_groups.find({'group_code': subject_group})]
+            subject_ids = [str(row['subject_id']) for row in db.subject_groups.find({'group_code': subject_group})]
             if subject_ids:
                 query['subject_id'] = {'$in': subject_ids}
         
         if subject_id:
-            query['subject_id'] = ObjectId(subject_id) if len(subject_id) == 24 else subject_id
+            query['subject_id'] = subject_id
         if grade_id:
-            query['grade_id'] = ObjectId(grade_id) if len(grade_id) == 24 else grade_id
+            query['grade_id'] = grade_id
         if book_type == 'textbook':
             query['is_reference'] = {'$ne': 1}
         elif book_type == 'reference':
@@ -1169,22 +1207,20 @@ def create_textbook():
         return jsonify({'error': 'Textbook name, subject, and grade are required'}), 400
     
     try:
-        subject_id_obj = safe_object_id(subject_id)
-        if subject_id_obj is None:
-            return jsonify({'error': 'Invalid subject_id'}), 400
-        
         grade_id_obj = get_grade_id_from_value(grade_id)
         if grade_id_obj is None:
             return jsonify({'error': 'No grades available'}), 400
         
-        existing = db.textbooks.find_one({'textbook_name': textbook_name, 'subject_id': subject_id_obj})
+        grade_id_str = str(grade_id_obj)
+        
+        existing = db.textbooks.find_one({'textbook_name': textbook_name, 'subject_id': subject_id})
         if existing:
             return jsonify({'error': 'Book already exists for this subject'}), 400
         
         result = db.textbooks.insert_one({
             'textbook_name': textbook_name,
-            'subject_id': subject_id_obj,
-            'grade_id': grade_id_obj,
+            'subject_id': subject_id,
+            'grade_id': grade_id_str,
             'publisher': publisher,
             'is_reference': is_reference,
             'created_at': datetime.now()
@@ -1213,20 +1249,18 @@ def update_textbook(textbook_id):
         return jsonify({'error': 'Textbook name, subject, and grade are required'}), 400
     
     try:
-        subject_id_obj = safe_object_id(subject_id)
-        if subject_id_obj is None:
-            return jsonify({'error': 'Invalid subject_id'}), 400
-        
         grade_id_obj = get_grade_id_from_value(grade_id)
         if grade_id_obj is None:
             return jsonify({'error': 'No grades available'}), 400
+        
+        grade_id_str = str(grade_id_obj)
         
         result = db.textbooks.update_one(
             {'_id': ObjectId(textbook_id)},
             {'$set': {
                 'textbook_name': textbook_name,
-                'subject_id': subject_id_obj,
-                'grade_id': grade_id_obj,
+                'subject_id': subject_id,
+                'grade_id': grade_id_str,
                 'publisher': publisher,
                 'is_reference': is_reference
             }}
@@ -1247,7 +1281,7 @@ def delete_textbook(textbook_id):
         return jsonify({'error': 'Admin access required'}), 403
     
     try:
-        count = db.chapters.count_documents({'textbook_id': ObjectId(textbook_id)})
+        count = db.chapters.count_documents({'textbook_id': textbook_id})
         if count > 0:
             return jsonify({'error': f'Cannot delete textbook because it has {count} chapter(s) associated.'}), 400
         
@@ -1266,7 +1300,7 @@ def get_subject_textbooks(subject_id):
     book_type = request.args.get('book_type')
     
     try:
-        query = {'subject_id': ObjectId(subject_id) if len(subject_id) == 24 else subject_id}
+        query = {'subject_id': subject_id}
         if book_type == 'textbook':
             query['is_reference'] = {'$ne': 1}
         elif book_type == 'reference':
@@ -1294,13 +1328,14 @@ def get_chapters():
     try:
         query = {}
         if subject_id:
-            query['subject_id'] = ObjectId(subject_id) if len(subject_id) == 24 else subject_id
+            query['subject_id'] = subject_id
         
         if user_role != 'admin' and subject_group:
-            subject_ids = [row['subject_id'] for row in db.subject_groups.find({'group_code': subject_group})]
+            subject_ids = [str(row['subject_id']) for row in db.subject_groups.find({'group_code': subject_group})]
             if subject_ids:
                 query['subject_id'] = {'$in': subject_ids}
         
+        # Use aggregation to join with subjects, grades, and textbooks
         pipeline = [
             {'$match': query},
             {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': '_id', 'as': 'subject_info'}},
@@ -1345,26 +1380,19 @@ def create_chapter():
         return jsonify({'error': 'Textbook selection is required'}), 400
     
     try:
-        subject_id_obj = safe_object_id(subject_id)
-        textbook_id_obj = safe_object_id(textbook_id)
+        # Get grade_id from subject
+        subject = db.subjects.find_one({'_id': ObjectId(subject_id)})
+        grade_id = subject.get('grade_id') if subject else None
         
-        if subject_id_obj is None:
-            return jsonify({'error': 'Invalid subject_id'}), 400
-        if textbook_id_obj is None:
-            return jsonify({'error': 'Invalid textbook_id'}), 400
-        
-        existing = db.chapters.find_one({'subject_id': subject_id_obj, 'chapter_name': chapter_name})
+        existing = db.chapters.find_one({'subject_id': subject_id, 'chapter_name': chapter_name})
         if existing:
             return jsonify({'error': 'Chapter already exists for this subject'}), 400
         
-        subject = db.subjects.find_one({'_id': subject_id_obj})
-        grade_id = subject.get('grade_id') if subject else None
-        
         result = db.chapters.insert_one({
-            'subject_id': subject_id_obj,
+            'subject_id': subject_id,
             'chapter_name': chapter_name,
             'chapter_number': chapter_number,
-            'textbook_id': textbook_id_obj,
+            'textbook_id': textbook_id,
             'reference_book': reference_book,
             'grade_id': grade_id,
             'created_at': datetime.now()
@@ -1395,21 +1423,13 @@ def update_chapter(chapter_id):
         return jsonify({'error': 'Textbook selection is required'}), 400
     
     try:
-        subject_id_obj = safe_object_id(subject_id)
-        textbook_id_obj = safe_object_id(textbook_id)
-        
-        if subject_id_obj is None:
-            return jsonify({'error': 'Invalid subject_id'}), 400
-        if textbook_id_obj is None:
-            return jsonify({'error': 'Invalid textbook_id'}), 400
-        
         result = db.chapters.update_one(
             {'_id': ObjectId(chapter_id)},
             {'$set': {
-                'subject_id': subject_id_obj,
+                'subject_id': subject_id,
                 'chapter_name': chapter_name,
                 'chapter_number': chapter_number,
-                'textbook_id': textbook_id_obj,
+                'textbook_id': textbook_id,
                 'reference_book': reference_book
             }}
         )
@@ -1429,7 +1449,7 @@ def delete_chapter(chapter_id):
         return jsonify({'error': 'Admin access required'}), 403
     
     try:
-        count = db.simple_questions.count_documents({'chapter_id': ObjectId(chapter_id)})
+        count = db.simple_questions.count_documents({'chapter_id': chapter_id})
         if count > 0:
             return jsonify({'error': f'Cannot delete chapter because it has {count} question(s).'}), 400
         
@@ -1446,7 +1466,7 @@ def get_subject_chapters(subject_id):
         return jsonify({'error': 'Not authenticated'}), 401
     
     try:
-        chapters = list(db.chapters.find({'subject_id': ObjectId(subject_id) if len(subject_id) == 24 else subject_id}).sort('chapter_number', 1))
+        chapters = list(db.chapters.find({'subject_id': subject_id}).sort('chapter_number', 1))
         chapters = convert_objectid(chapters)
         return jsonify({'chapters': chapters})
     except Exception as e:
@@ -1469,12 +1489,12 @@ def get_cgs():
     try:
         query = {}
         if subject_id:
-            query['subject_id'] = ObjectId(subject_id) if len(subject_id) == 24 else subject_id
+            query['subject_id'] = subject_id
         if chapter_id:
-            query['chapter_id'] = ObjectId(chapter_id) if len(chapter_id) == 24 else chapter_id
+            query['chapter_id'] = chapter_id
         
         if user_role != 'admin' and subject_group:
-            subject_ids = [row['subject_id'] for row in db.subject_groups.find({'group_code': subject_group})]
+            subject_ids = [str(row['subject_id']) for row in db.subject_groups.find({'group_code': subject_group})]
             if subject_ids:
                 query['subject_id'] = {'$in': subject_ids}
         
@@ -1517,15 +1537,9 @@ def create_cg():
         return jsonify({'error': 'Code and subject required'}), 400
     
     try:
-        subject_id_obj = safe_object_id(subject_id)
-        if subject_id_obj is None:
-            return jsonify({'error': 'Invalid subject_id'}), 400
-        
-        chapter_id_obj = safe_object_id(chapter_id) if chapter_id else None
-        
-        dup_query = {'cg_code': code, 'subject_id': subject_id_obj}
-        if chapter_id_obj:
-            dup_query['chapter_id'] = chapter_id_obj
+        dup_query = {'cg_code': code, 'subject_id': subject_id}
+        if chapter_id:
+            dup_query['chapter_id'] = chapter_id
         else:
             dup_query['chapter_id'] = None
         
@@ -1535,8 +1549,8 @@ def create_cg():
         result = db.curricular_goals.insert_one({
             'cg_code': code,
             'cg_description': description,
-            'subject_id': subject_id_obj,
-            'chapter_id': chapter_id_obj
+            'subject_id': subject_id,
+            'chapter_id': chapter_id
         })
         return jsonify({'success': True, 'id': str(result.inserted_id)})
     except Exception as e:
@@ -1561,19 +1575,13 @@ def update_cg(cg_id):
         return jsonify({'error': 'Code and subject required'}), 400
     
     try:
-        subject_id_obj = safe_object_id(subject_id)
-        if subject_id_obj is None:
-            return jsonify({'error': 'Invalid subject_id'}), 400
-        
-        chapter_id_obj = safe_object_id(chapter_id) if chapter_id else None
-        
         result = db.curricular_goals.update_one(
             {'_id': ObjectId(cg_id)},
             {'$set': {
                 'cg_code': code,
                 'cg_description': description,
-                'subject_id': subject_id_obj,
-                'chapter_id': chapter_id_obj
+                'subject_id': subject_id,
+                'chapter_id': chapter_id
             }}
         )
         if result.matched_count == 0:
@@ -1592,7 +1600,7 @@ def delete_cg(cg_id):
         return jsonify({'error': 'Admin access required'}), 403
     
     try:
-        if db.competencies.count_documents({'cg_id': ObjectId(cg_id)}) > 0:
+        if db.competencies.count_documents({'cg_id': cg_id}) > 0:
             return jsonify({'error': 'Cannot delete CG with competencies'}), 400
         
         result = db.curricular_goals.delete_one({'_id': ObjectId(cg_id)})
@@ -1623,7 +1631,7 @@ def get_competencies_api():
         ]
         
         if user_role != 'admin' and subject_group:
-            subject_ids = [row['subject_id'] for row in db.subject_groups.find({'group_code': subject_group})]
+            subject_ids = [str(row['subject_id']) for row in db.subject_groups.find({'group_code': subject_group})]
             if subject_ids:
                 pipeline.insert(0, {'$match': {'subject_id': {'$in': subject_ids}}})
         
@@ -1652,14 +1660,10 @@ def create_competency():
         return jsonify({'error': 'Code and CG required'}), 400
     
     try:
-        cg_id_obj = safe_object_id(cg_id)
-        if cg_id_obj is None:
-            return jsonify({'error': 'Invalid cg_id'}), 400
-        
         result = db.competencies.insert_one({
             'comp_code': code,
             'comp_description': description,
-            'cg_id': cg_id_obj,
+            'cg_id': cg_id,
             'status': status
         })
         return jsonify({'success': True, 'id': str(result.inserted_id)})
@@ -1685,16 +1689,12 @@ def update_competency(comp_id):
         return jsonify({'error': 'Code and CG required'}), 400
     
     try:
-        cg_id_obj = safe_object_id(cg_id)
-        if cg_id_obj is None:
-            return jsonify({'error': 'Invalid cg_id'}), 400
-        
         result = db.competencies.update_one(
             {'_id': ObjectId(comp_id)},
             {'$set': {
                 'comp_code': code,
                 'comp_description': description,
-                'cg_id': cg_id_obj,
+                'cg_id': cg_id,
                 'status': status
             }}
         )
@@ -1714,7 +1714,7 @@ def delete_competency(comp_id):
         return jsonify({'error': 'Admin access required'}), 403
     
     try:
-        if db.simple_questions.count_documents({'comp_id': ObjectId(comp_id)}) > 0:
+        if db.simple_questions.count_documents({'comp_id': comp_id}) > 0:
             return jsonify({'error': 'Cannot delete competency with questions'}), 400
         
         result = db.competencies.delete_one({'_id': ObjectId(comp_id)})
@@ -1807,9 +1807,7 @@ def create_subject_group():
         if grade_id_obj is None:
             return jsonify({'error': 'No grades available'}), 400
         
-        subject_id_obj = safe_object_id(subject_id)
-        if subject_id_obj is None:
-            return jsonify({'error': 'Invalid subject_id'}), 400
+        grade_id_str = str(grade_id_obj)
         
         existing = db.subject_groups.find_one({'group_code': group_code})
         if existing:
@@ -1818,8 +1816,8 @@ def create_subject_group():
         result = db.subject_groups.insert_one({
             'group_code': group_code,
             'group_name': group_name,
-            'grade_id': grade_id_obj,
-            'subject_id': subject_id_obj,
+            'grade_id': grade_id_str,
+            'subject_id': subject_id,
             'created_at': datetime.now()
         })
         return jsonify({'success': True, 'id': str(result.inserted_id), 'message': 'Group created successfully'})
@@ -1846,17 +1844,15 @@ def update_subject_group(group_id):
         if grade_id_obj is None:
             return jsonify({'error': 'No grades available'}), 400
         
-        subject_id_obj = safe_object_id(subject_id)
-        if subject_id_obj is None:
-            return jsonify({'error': 'Invalid subject_id'}), 400
+        grade_id_str = str(grade_id_obj)
         
         result = db.subject_groups.update_one(
             {'_id': ObjectId(group_id)},
             {'$set': {
                 'group_code': group_code,
                 'group_name': group_name,
-                'grade_id': grade_id_obj,
-                'subject_id': subject_id_obj
+                'grade_id': grade_id_str,
+                'subject_id': subject_id
             }}
         )
         if result.matched_count == 0:
@@ -2360,7 +2356,7 @@ def get_review_questions():
         for q in questions:
             q['id'] = str(q['_id'])
             if '_id' in q:
-                del q['_id']
+                q['_id'] = str(q['_id'])
             
             can_edit = False
             can_review = False
@@ -2630,22 +2626,22 @@ def get_builder_questions():
             match['status'] = status
         
         if question_ids:
-            ids = [int(x.strip()) for x in question_ids.split(',') if x.strip().isdigit()]
+            ids = [str(x.strip()) for x in question_ids.split(',') if x.strip()]
             if ids:
-                match['_id'] = {'$in': [ObjectId(str(id)) for id in ids]}
+                match['_id'] = {'$in': [ObjectId(id) for id in ids]}
         
         if chapter_ids:
-            ids = [int(x.strip()) for x in chapter_ids.split(',') if x.strip().isdigit()]
+            ids = [str(x.strip()) for x in chapter_ids.split(',') if x.strip()]
             if ids:
                 match['chapter_id'] = {'$in': ids}
         
         if cg_ids:
-            ids = [int(x.strip()) for x in cg_ids.split(',') if x.strip().isdigit()]
+            ids = [str(x.strip()) for x in cg_ids.split(',') if x.strip()]
             if ids:
                 match['cg_id'] = {'$in': ids}
         
         if comp_ids:
-            ids = [int(x.strip()) for x in comp_ids.split(',') if x.strip().isdigit()]
+            ids = [str(x.strip()) for x in comp_ids.split(',') if x.strip()]
             if ids:
                 match['comp_id'] = {'$in': ids}
         
@@ -2706,9 +2702,9 @@ def get_page2_data():
         
         if not domains:
             domains = [
-                {'id': 1, 'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
-                {'id': 2, 'domain_name': 'Sensitivity', 'description': 'Sensitivity to applications and real-world connections'},
-                {'id': 3, 'domain_name': 'Creativity', 'description': 'Creative thinking and problem solving'}
+                {'id': '1', 'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
+                {'id': '2', 'domain_name': 'Sensitivity', 'description': 'Sensitivity to applications and real-world connections'},
+                {'id': '3', 'domain_name': 'Creativity', 'description': 'Creative thinking and problem solving'}
             ]
         
         question_types = list(db.question_types.find())
@@ -2719,9 +2715,9 @@ def get_page2_data():
         
         if not difficulty_levels:
             difficulty_levels = [
-                {'id': 1, 'level_name': 'Easy'},
-                {'id': 2, 'level_name': 'Medium'},
-                {'id': 3, 'level_name': 'Hard'}
+                {'id': '1', 'level_name': 'Easy'},
+                {'id': '2', 'level_name': 'Medium'},
+                {'id': '3', 'level_name': 'Hard'}
             ]
         
         data = {
@@ -2754,30 +2750,30 @@ def get_knowledge_levels():
     try:
         query = {'is_active': True}
         if domain_id:
-            query['domain_id'] = ObjectId(domain_id)
+            query['domain_id'] = domain_id
         elif difficulty_id:
-            query['difficulty_id'] = ObjectId(difficulty_id)
+            query['difficulty_id'] = difficulty_id
         
         levels = list(db.knowledge_levels.find(query))
         levels = convert_objectid(levels)
         
         if not levels:
             default_levels = [
-                {'id': 1, 'level_name': 'Knowledge', 'description': 'Basic recall of information and facts'},
-                {'id': 2, 'level_name': 'Remembering', 'description': 'Retrieving knowledge from memory'},
-                {'id': 3, 'level_name': 'Understanding', 'description': 'Constructing meaning from information'},
-                {'id': 4, 'level_name': 'Comprehension', 'description': 'Grasping the meaning of information'},
-                {'id': 5, 'level_name': 'Application', 'description': 'Apply knowledge to new situations'},
-                {'id': 6, 'level_name': 'Analysis', 'description': 'Break down information into parts'},
-                {'id': 7, 'level_name': 'Synthesis', 'description': 'Combine elements to form a new whole'},
-                {'id': 8, 'level_name': 'Empathy', 'description': "Understanding others' perspectives and feelings"},
-                {'id': 9, 'level_name': 'Interpretation', 'description': 'Explaining and interpreting information'},
-                {'id': 10, 'level_name': 'Evaluation', 'description': 'Make judgments based on criteria and standards'},
-                {'id': 11, 'level_name': 'Creation', 'description': 'Generate new ideas and products'},
-                {'id': 12, 'level_name': 'Critical Thinking', 'description': 'Deep analysis and evaluation of information'},
-                {'id': 13, 'level_name': 'Innovation', 'description': 'Novel approaches and solutions to problems'},
-                {'id': 14, 'level_name': 'Design Thinking', 'description': 'Human-centered problem solving approach'},
-                {'id': 15, 'level_name': 'Reflection', 'description': 'Thoughtful consideration and self-assessment'}
+                {'id': '1', 'level_name': 'Knowledge', 'description': 'Basic recall of information and facts'},
+                {'id': '2', 'level_name': 'Remembering', 'description': 'Retrieving knowledge from memory'},
+                {'id': '3', 'level_name': 'Understanding', 'description': 'Constructing meaning from information'},
+                {'id': '4', 'level_name': 'Comprehension', 'description': 'Grasping the meaning of information'},
+                {'id': '5', 'level_name': 'Application', 'description': 'Apply knowledge to new situations'},
+                {'id': '6', 'level_name': 'Analysis', 'description': 'Break down information into parts'},
+                {'id': '7', 'level_name': 'Synthesis', 'description': 'Combine elements to form a new whole'},
+                {'id': '8', 'level_name': 'Empathy', 'description': "Understanding others' perspectives and feelings"},
+                {'id': '9', 'level_name': 'Interpretation', 'description': 'Explaining and interpreting information'},
+                {'id': '10', 'level_name': 'Evaluation', 'description': 'Make judgments based on criteria and standards'},
+                {'id': '11', 'level_name': 'Creation', 'description': 'Generate new ideas and products'},
+                {'id': '12', 'level_name': 'Critical Thinking', 'description': 'Deep analysis and evaluation of information'},
+                {'id': '13', 'level_name': 'Innovation', 'description': 'Novel approaches and solutions to problems'},
+                {'id': '14', 'level_name': 'Design Thinking', 'description': 'Human-centered problem solving approach'},
+                {'id': '15', 'level_name': 'Reflection', 'description': 'Thoughtful consideration and self-assessment'}
             ]
             if domain_id:
                 return jsonify({'knowledge_levels': default_levels})
@@ -2798,9 +2794,9 @@ def get_cognitive_domains():
         
         if not domains:
             domains = [
-                {'id': 1, 'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
-                {'id': 2, 'domain_name': 'Sensitivity', 'description': 'Sensitivity to applications and real-world connections'},
-                {'id': 3, 'domain_name': 'Creativity', 'description': 'Creative thinking and problem solving'}
+                {'id': '1', 'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
+                {'id': '2', 'domain_name': 'Sensitivity', 'description': 'Sensitivity to applications and real-world connections'},
+                {'id': '3', 'domain_name': 'Creativity', 'description': 'Creative thinking and problem solving'}
             ]
         
         return jsonify({'domains': domains})
