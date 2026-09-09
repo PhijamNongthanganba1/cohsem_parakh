@@ -1883,7 +1883,7 @@ def create_subject_group():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/subject-groups/<group_id>', methods(['PUT'])
+@app.route('/api/subject-groups/<group_id>', methods=['PUT'])
 def update_subject_group(group_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
