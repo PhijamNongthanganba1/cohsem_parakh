@@ -112,31 +112,49 @@ def convert_doc(doc):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# ========== FIXED: Clean HTML by removing <p> tags ==========
+def clean_editor_html(html_content):
+    """
+    Remove <p> tags from Quill editor content while preserving the content inside.
+    This ensures question and answer text don't have unnecessary paragraph tags.
+    """
+    if not html_content:
+        return ''
+    
+    # Remove <p> tags but keep their content
+    # Handle opening and closing <p> tags with attributes
+    clean = re.sub(r'<p[^>]*>', '', html_content)
+    clean = re.sub(r'</p>', '', clean)
+    
+    # Remove any empty divs that might have been created
+    clean = re.sub(r'<div[^>]*>\s*</div>', '', clean)
+    
+    # Clean up extra whitespace
+    clean = re.sub(r'\n\s*\n', '\n', clean)
+    clean = re.sub(r'^\s+|\s+$', '', clean)
+    
+    # If the result is just empty or <br>, return empty string
+    if clean == '' or clean == '<br>' or clean == '<br/>' or clean == '<br />':
+        return ''
+    
+    return clean
+
 def strip_html_tags(html_content):
-    """Remove HTML tags and return plain text"""
+    """Strip HTML tags from content for text-only display"""
     if not html_content:
         return ''
     clean = re.sub(r'<[^>]+>', ' ', html_content)
     clean = re.sub(r'\s+', ' ', clean)
     return clean.strip()
 
-def get_plain_text(html_content):
-    """Get plain text from HTML content for previews"""
-    if not html_content:
-        return ''
-    return strip_html_tags(html_content)
-
 def has_actual_content(html_content):
-    """Check if HTML has actual content (text or images)"""
+    """Check if HTML content has actual content beyond empty tags"""
     if not html_content:
         return False
-    # Check for images
     if '<img' in html_content.lower():
         return True
-    # Check for lists, blockquotes, code blocks
     if any(tag in html_content.lower() for tag in ['<ul', '<ol', '<blockquote', '<pre', '<code']):
         return True
-    # Check for text content
     text = strip_html_tags(html_content)
     if text and len(text.strip()) > 0:
         return True
@@ -407,12 +425,12 @@ def create_test_questions():
             db.counters.update_one({'_id': 'subjects'}, {'$set': {'seq': 8}})
             print("  ✓ Created test subjects")
         
-        # Create test questions with HTML content (simulating Quill editor output)
+        # Create test questions
         questions = [
             {
                 'id': 1,
-                'question_text': '<p>What is the SI unit of force?</p>',
-                'answer': '<p>Newton (N)</p>',
+                'question_text': 'What is the SI unit of force?',
+                'answer': 'Newton (N)',
                 'marks': 1,
                 'duration_minutes': 1,
                 'grade_id': 3,
@@ -428,8 +446,8 @@ def create_test_questions():
             },
             {
                 'id': 2,
-                'question_text': '<p>Explain Newton\'s First Law of Motion with an example.</p>',
-                'answer': '<p>Newton\'s First Law states that an object at rest stays at rest and an object in motion stays in motion unless acted upon by an external force.</p><p><strong>Example:</strong> A book on a table remains at rest until someone pushes it.</p>',
+                'question_text': 'Explain Newton\'s First Law of Motion with an example.',
+                'answer': 'Newton\'s First Law states that an object at rest stays at rest and an object in motion stays in motion unless acted upon by an external force. Example: A book on a table remains at rest until someone pushes it.',
                 'marks': 5,
                 'duration_minutes': 10,
                 'grade_id': 3,
@@ -445,8 +463,8 @@ def create_test_questions():
             },
             {
                 'id': 3,
-                'question_text': '<p>What is the chemical formula of water?</p>',
-                'answer': '<p>H₂O</p>',
+                'question_text': 'What is the chemical formula of water?',
+                'answer': 'H₂O',
                 'marks': 1,
                 'duration_minutes': 1,
                 'grade_id': 3,
@@ -462,8 +480,8 @@ def create_test_questions():
             },
             {
                 'id': 4,
-                'question_text': '<p>Describe the process of photosynthesis.</p>',
-                'answer': '<p>Photosynthesis is the process by which plants use sunlight, water, and carbon dioxide to produce glucose and oxygen.</p><p>It occurs in the chloroplasts of plant cells.</p>',
+                'question_text': 'Describe the process of photosynthesis.',
+                'answer': 'Photosynthesis is the process by which plants use sunlight, water, and carbon dioxide to produce glucose and oxygen. It occurs in the chloroplasts of plant cells.',
                 'marks': 5,
                 'duration_minutes': 10,
                 'grade_id': 3,
@@ -479,8 +497,8 @@ def create_test_questions():
             },
             {
                 'id': 5,
-                'question_text': '<p>Solve: 2x + 5 = 13</p>',
-                'answer': '<p>x = 4</p>',
+                'question_text': 'Solve: 2x + 5 = 13',
+                'answer': 'x = 4',
                 'marks': 2,
                 'duration_minutes': 3,
                 'grade_id': 3,
@@ -496,8 +514,8 @@ def create_test_questions():
             },
             {
                 'id': 6,
-                'question_text': '<p>What is the difference between speed and velocity?</p>',
-                'answer': '<p>Speed is a scalar quantity measuring the rate of motion, while velocity is a vector quantity measuring rate of motion with direction.</p>',
+                'question_text': 'What is the difference between speed and velocity?',
+                'answer': 'Speed is a scalar quantity measuring the rate of motion, while velocity is a vector quantity measuring rate of motion with direction.',
                 'marks': 3,
                 'duration_minutes': 5,
                 'grade_id': 4,
@@ -2390,7 +2408,7 @@ def delete_user(user_id):
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# REVIEW WORKFLOW ENDPOINTS
+# REVIEW WORKFLOW ENDPOINTS - FIXED
 # ============================================
 
 @app.route('/api/reviewers', methods=['GET'])
@@ -2403,10 +2421,12 @@ def get_reviewers():
     subject_group = session.get('subject_group')
     current_user_id = session.get('user_id')
     
+    # Only admin or master can access reviewers list
     if user_role != 'admin' and not session.get('perm_master', False):
         return jsonify({'error': 'Access denied'}), 403
     
     try:
+        # Build query to find users with reviewer permissions
         query = {
             '$or': [
                 {'perm_rc': True},
@@ -2415,15 +2435,18 @@ def get_reviewers():
             ]
         }
         
+        # Exclude current user
         if current_user_id:
             query['id'] = {'$ne': current_user_id}
         
+        # Filter by subject group if not admin
         if user_role != 'admin' and subject_group:
             query['subject_group'] = subject_group
         
         reviewers = list(db.users.find(query).sort('username', 1))
         reviewers = convert_doc(reviewers)
         
+        # Log for debugging
         print(f"📊 Found {len(reviewers)} reviewers")
         for r in reviewers:
             print(f"   - {r.get('username')} (perm_rc: {r.get('perm_rc')}, role: {r.get('role')})")
@@ -2444,10 +2467,12 @@ def get_approvers():
     subject_group = session.get('subject_group')
     current_user_id = session.get('user_id')
     
+    # Only admin, master, or reviewer can access approvers list
     if user_role != 'admin' and not session.get('perm_master', False) and not session.get('perm_rc', False):
         return jsonify({'error': 'Access denied'}), 403
     
     try:
+        # Build query to find users with approver permissions
         query = {
             '$or': [
                 {'perm_ap': True},
@@ -2456,15 +2481,18 @@ def get_approvers():
             ]
         }
         
+        # Exclude current user
         if current_user_id:
             query['id'] = {'$ne': current_user_id}
         
+        # Filter by subject group if not admin
         if user_role != 'admin' and subject_group:
             query['subject_group'] = subject_group
         
         approvers = list(db.users.find(query).sort('username', 1))
         approvers = convert_doc(approvers)
         
+        # Log for debugging
         print(f"📊 Found {len(approvers)} approvers")
         for a in approvers:
             print(f"   - {a.get('username')} (perm_ap: {a.get('perm_ap')}, role: {a.get('role')})")
@@ -2487,6 +2515,7 @@ def master_review_question(question_id):
     subject_group = session.get('subject_group')
     user_id = session.get('user_id')
     
+    # Check if user has master permission
     if user_role != 'admin' and not perm_master:
         return jsonify({'error': 'Master permission required'}), 403
     
@@ -2499,10 +2528,12 @@ def master_review_question(question_id):
         return jsonify({'error': 'Reviewer selection is required'}), 400
     
     try:
+        # Check if question exists
         question = db.simple_questions.find_one({'id': question_id})
         if not question:
             return jsonify({'error': 'Question not found'}), 404
         
+        # Check subject access if not admin
         if user_role != 'admin' and subject_group:
             subject_check = db.subject_groups.find_one({
                 'group_code': subject_group,
@@ -2511,10 +2542,12 @@ def master_review_question(question_id):
             if not subject_check:
                 return jsonify({'error': 'Access denied to this question'}), 403
         
+        # Get the reviewer from database
         reviewer = db.users.find_one({'id': int(reviewer_id)})
         if not reviewer:
             return jsonify({'error': 'Reviewer not found'}), 404
         
+        # Check if the user has reviewer permissions
         has_reviewer_perm = (
             reviewer.get('perm_rc') == True or 
             reviewer.get('role') == 'reviewer' or 
@@ -2522,18 +2555,21 @@ def master_review_question(question_id):
         )
         
         if not has_reviewer_perm:
+            # Log the reviewer data for debugging
             print(f"⚠️ User {reviewer.get('username')} (id: {reviewer_id}) does not have reviewer permissions")
             print(f"   perm_rc: {reviewer.get('perm_rc')}, role: {reviewer.get('role')}")
             return jsonify({
                 'error': f'Selected user "{reviewer.get("username")}" does not have reviewer permissions. Please select a user with Reviewer role or RC permission.'
             }), 400
         
+        # Verify reviewer is in same subject group (if not admin)
         if user_role != 'admin' and subject_group:
             if reviewer.get('subject_group') != subject_group:
                 return jsonify({'error': 'Reviewer must be in the same subject group'}), 400
         
         reviewer_name = reviewer.get('username', reviewer_name)
         
+        # Update question status
         master_comment = f"[ASSIGNED TO REVIEWER: {reviewer_name}] {comment}" if comment else f"[ASSIGNED TO REVIEWER: {reviewer_name}]"
         
         db.simple_questions.update_one(
@@ -2585,17 +2621,21 @@ def review_question(question_id):
         return jsonify({'error': 'Approver selection is required'}), 400
     
     try:
+        # Check if question exists and user has access
         question = db.simple_questions.find_one({'id': question_id})
         if not question:
             return jsonify({'error': 'Question not found'}), 404
         
+        # Verify this question is assigned to this reviewer
         if user_role != 'admin' and question.get('assigned_reviewer_id') != user_id:
             return jsonify({'error': 'This question is not assigned to you'}), 403
         
+        # Get the approver from database
         approver = db.users.find_one({'id': int(approver_id)})
         if not approver:
             return jsonify({'error': 'Approver not found'}), 404
         
+        # Check if the user has approver permissions
         has_approver_perm = (
             approver.get('perm_ap') == True or 
             approver.get('role') == 'approver' or 
@@ -2609,12 +2649,14 @@ def review_question(question_id):
                 'error': f'Selected user "{approver.get("username")}" does not have approver permissions. Please select a user with Approver role or AP permission.'
             }), 400
         
+        # Verify approver is in same subject group (if not admin)
         if user_role != 'admin' and subject_group:
             if approver.get('subject_group') != subject_group:
                 return jsonify({'error': 'Approver must be in the same subject group'}), 400
         
         approver_name = approver.get('username', approver_name)
         
+        # Update question status
         reviewer_comment = f"[ASSIGNED TO APPROVER: {approver_name}] {comment}" if comment else f"[ASSIGNED TO APPROVER: {approver_name}]"
         
         db.simple_questions.update_one(
@@ -2656,13 +2698,16 @@ def approve_question(question_id):
     comment = data.get('comment', '') if data else ''
     
     try:
+        # Check if question exists and user has access
         question = db.simple_questions.find_one({'id': question_id})
         if not question:
             return jsonify({'error': 'Question not found'}), 404
         
+        # Verify this question is assigned to this approver
         if user_role != 'admin' and question.get('assigned_approver_id') != user_id:
             return jsonify({'error': 'This question is not assigned to you'}), 403
         
+        # Update question status
         db.simple_questions.update_one(
             {'id': question_id},
             {'$set': {
@@ -2701,10 +2746,12 @@ def rework_question(question_id):
         return jsonify({'error': 'Rework comment is required'}), 400
     
     try:
+        # Check if question exists
         question = db.simple_questions.find_one({'id': question_id})
         if not question:
             return jsonify({'error': 'Question not found'}), 404
         
+        # Determine if user can rework
         can_rework = False
         
         if user_role == 'admin':
@@ -2723,8 +2770,10 @@ def rework_question(question_id):
         if not can_rework:
             return jsonify({'error': 'Not authorized to rework this question'}), 403
         
+        # Add comment with metadata
         comment_with_meta = f"[REWORK by {username} on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {rework_comment}"
         
+        # Update question status
         db.simple_questions.update_one(
             {'id': question_id},
             {'$set': {
@@ -2775,10 +2824,12 @@ def update_question(question_id):
         return jsonify({'error': 'Answer is required'}), 400
     
     try:
+        # Check if question exists
         question = db.simple_questions.find_one({'id': question_id})
         if not question:
             return jsonify({'error': 'Question not found'}), 404
         
+        # Determine if user can edit
         can_edit = False
         if user_role == 'admin':
             can_edit = True
@@ -2788,11 +2839,16 @@ def update_question(question_id):
         if not can_edit:
             return jsonify({'error': 'Not authorized to edit this question'}), 403
         
+        # Clean the HTML content
+        question_text_cleaned = clean_editor_html(question_text)
+        answer_cleaned = clean_editor_html(answer)
+        
+        # Update question
         db.simple_questions.update_one(
             {'id': question_id},
             {'$set': {
-                'question_text': question_text,
-                'answer': answer,
+                'question_text': question_text_cleaned,
+                'answer': answer_cleaned,
                 'marks': marks,
                 'duration_minutes': duration_minutes,
                 'updated_at': datetime.now()
@@ -2805,8 +2861,93 @@ def update_question(question_id):
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/builder-questions', methods=['GET'])
+def get_builder_questions():
+    """Get questions for paper builder (approved questions only)"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user_role = session.get('user_role', 'writer')
+    perm_ra = session.get('perm_ra', False)
+    subject_group = session.get('subject_group')
+    
+    if user_role != 'admin' and not perm_ra:
+        return jsonify({'error': 'Builder (RA) permission required'}), 403
+    
+    grade_id = request.args.get('grade_id')
+    subject_id = request.args.get('subject_id')
+    chapter_ids = request.args.get('chapter_ids')
+    cg_ids = request.args.get('cg_ids')
+    comp_ids = request.args.get('comp_ids')
+    question_ids = request.args.get('question_ids')
+    status = request.args.get('status', 'approved')
+    count_only = request.args.get('count_only') == 'true'
+    
+    try:
+        # Build query
+        query = {'status': status}
+        
+        if grade_id:
+            query['grade_id'] = int(grade_id)
+        
+        if subject_id:
+            query['subject_id'] = int(subject_id)
+        
+        if chapter_ids:
+            chapter_list = [int(x.strip()) for x in chapter_ids.split(',') if x.strip().isdigit()]
+            if chapter_list:
+                query['chapter_id'] = {'$in': chapter_list}
+        
+        if cg_ids:
+            cg_list = [int(x.strip()) for x in cg_ids.split(',') if x.strip().isdigit()]
+            if cg_list:
+                query['cg_id'] = {'$in': cg_list}
+        
+        if comp_ids:
+            comp_list = [int(x.strip()) for x in comp_ids.split(',') if x.strip().isdigit()]
+            if comp_list:
+                query['comp_id'] = {'$in': comp_list}
+        
+        if question_ids:
+            id_list = [int(x.strip()) for x in question_ids.split(',') if x.strip().isdigit()]
+            if id_list:
+                query['id'] = {'$in': id_list}
+        
+        # Apply subject group filter if not admin
+        if user_role != 'admin' and subject_group:
+            group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
+            subject_ids = [s['subject_id'] for s in group_subjects]
+            if subject_ids:
+                query['subject_id'] = {'$in': subject_ids}
+            else:
+                return jsonify({'questions': []})
+        
+        if count_only:
+            count = db.simple_questions.count_documents(query)
+            return jsonify({'count': count})
+        
+        # Get questions
+        questions = list(db.simple_questions.find(query).sort('question_type_name', 1).limit(500))
+        questions = convert_doc(questions)
+        
+        # Parse images for each question
+        for q in questions:
+            if q.get('images'):
+                try:
+                    q['images'] = json.loads(q['images']) if isinstance(q['images'], str) else q['images']
+                except:
+                    q['images'] = []
+            else:
+                q['images'] = []
+        
+        return jsonify({'questions': questions})
+    except Exception as e:
+        print(f"❌ Error in get_builder_questions: {e}")
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
 # ============================================
-# REVIEW QUESTIONS API
+# REVIEW QUESTIONS
 # ============================================
 
 @app.route('/api/review-questions')
@@ -2827,16 +2968,22 @@ def get_review_questions():
     print(f"🔍 Review Questions called by: {username} (role: {user_role}, id: {user_id})")
     
     try:
+        # First, get total count for debugging
         total_questions = db.simple_questions.count_documents({})
         print(f"📊 Total questions in database: {total_questions}")
         
+        # Build the query
         match_conditions = []
         
+        # Apply role-based filters
         if user_role == 'admin':
+            # Admin sees all questions
             print("👑 Admin user - showing all questions")
         else:
+            # Build permission-based filters
             permission_filters = []
             
+            # Writer (RE): sees own unassigned/rejected questions
             if session.get('perm_re', False):
                 permission_filters.append({
                     '$and': [
@@ -2845,9 +2992,11 @@ def get_review_questions():
                     ]
                 })
             
+            # Master: sees unassigned questions
             if session.get('perm_master', False):
                 permission_filters.append({'status': 'unassigned'})
             
+            # Reviewer (RC): sees questions assigned to them
             if session.get('perm_rc', False):
                 permission_filters.append({
                     '$and': [
@@ -2856,6 +3005,7 @@ def get_review_questions():
                     ]
                 })
             
+            # Approver (AP): sees questions assigned to them
             if session.get('perm_ap', False):
                 permission_filters.append({
                     '$and': [
@@ -2864,9 +3014,11 @@ def get_review_questions():
                     ]
                 })
             
+            # Builder (RA): sees approved questions
             if session.get('perm_ra', False):
                 permission_filters.append({'status': 'approved'})
             
+            # Everyone can see their own questions
             permission_filters.append({'created_by': username})
             
             if permission_filters:
@@ -2876,6 +3028,7 @@ def get_review_questions():
             
             print(f"🔍 Permission filters: {len(permission_filters)} filters applied")
         
+        # Apply subject group filter if not admin
         if user_role != 'admin' and subject_group:
             group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
             subject_ids = [s['subject_id'] for s in group_subjects]
@@ -2885,15 +3038,19 @@ def get_review_questions():
             else:
                 match_conditions.append({'_id': None})
         
+        # Apply grade filter
         if grade:
             match_conditions.append({'grade_id': int(grade)})
         
+        # Apply subject filter
         if subject:
             match_conditions.append({'subject_id': int(subject)})
         
+        # Apply status filter
         if status:
             match_conditions.append({'status': status})
         
+        # Apply search filter
         if search:
             match_conditions.append({
                 '$or': [
@@ -2902,6 +3059,7 @@ def get_review_questions():
                 ]
             })
         
+        # Build the pipeline
         pipeline = []
         
         if match_conditions:
@@ -2939,8 +3097,8 @@ def get_review_questions():
         
         print(f"📊 Filtered questions count: {len(questions)}")
         
+        # Parse images and add permissions
         for q in questions:
-            # Parse images
             if q.get('images'):
                 try:
                     q['images'] = json.loads(q['images']) if isinstance(q['images'], str) else q['images']
@@ -3022,6 +3180,7 @@ def get_simple_questions():
     except Exception as e:
         return jsonify({'questions': []})
 
+# ========== FIXED: create_simple_question with HTML cleaning ==========
 @app.route('/api/create-simple-question', methods=['POST'])
 def create_simple_question():
     if 'user' not in session:
@@ -3069,18 +3228,16 @@ def create_simple_question():
     reference_book = data.get('reference_book')
     reference_page = data.get('reference_page')
     
-    if not question_text:
+    # ========== CLEAN THE HTML CONTENT - REMOVE <p> TAGS ==========
+    question_text_cleaned = clean_editor_html(question_text)
+    answer_cleaned = clean_editor_html(answer)
+    
+    # Validate after cleaning
+    if not question_text_cleaned:
         return jsonify({'error': 'Question text is required'}), 400
     
-    if not answer:
+    if not answer_cleaned:
         return jsonify({'error': 'Answer is required'}), 400
-    
-    # Validate content
-    if not has_actual_content(question_text):
-        return jsonify({'error': 'Question must have text or images'}), 400
-    
-    if not has_actual_content(answer):
-        return jsonify({'error': 'Answer must have text or images'}), 400
     
     try:
         username = session.get('user', 'Unknown')
@@ -3098,8 +3255,8 @@ def create_simple_question():
         textbook_id_int = int(textbook_id) if textbook_id else None
         
         question_doc = {
-            'question_text': question_text,  # Store HTML as-is
-            'answer': answer,                # Store HTML as-is
+            'question_text': question_text_cleaned,
+            'answer': answer_cleaned,
             'marks': marks,
             'duration_minutes': duration_minutes,
             'comp_id': comp_id_int,
@@ -3129,7 +3286,9 @@ def create_simple_question():
             'textbook_publisher': textbook_publisher,
             'textbook_page': textbook_page,
             'reference_book': reference_book,
-            'reference_page': reference_page
+            'reference_page': reference_page,
+            'question_text_raw': question_text,  # Store original raw HTML if needed
+            'answer_raw': answer  # Store original raw HTML if needed
         }
         
         question_doc = {k: v for k, v in question_doc.items() if v is not None}
@@ -3524,6 +3683,7 @@ def debug_session():
 
 @app.route('/api/debug/user/<username>')
 def debug_user(username):
+    """Debug endpoint to check user permissions"""
     if 'user' not in session or session.get('user_role') != 'admin':
         return jsonify({'error': 'Unauthorized'}), 401
     
@@ -3547,6 +3707,7 @@ def debug_user(username):
 
 @app.route('/api/debug/questions')
 def debug_questions():
+    """Debug endpoint to check questions"""
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     

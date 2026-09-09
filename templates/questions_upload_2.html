@@ -757,35 +757,52 @@
             modules: { toolbar: [ [{ 'header': [1,2,3,false] }], ['bold','italic','underline','strike'], [{ 'color': [] }, { 'background': [] }], [{ 'list': 'ordered'}, { 'list': 'bullet' }], [{ 'indent': '-1'}, { 'indent': '+1' }], ['blockquote','code-block'], ['link','image'], ['clean'] ] }
         });
 
+        // ========== NEW HELPER FUNCTION: Clean HTML by removing <p> tags ==========
+        function cleanEditorHtml(html) {
+            if (!html) return '';
+            
+            // Create a temporary element to parse the HTML
+            var temp = document.createElement('div');
+            temp.innerHTML = html;
+            
+            // Get all <p> elements and replace them with their inner HTML
+            var paragraphs = temp.querySelectorAll('p');
+            paragraphs.forEach(function(p) {
+                // Get the inner HTML of the paragraph
+                var innerContent = p.innerHTML;
+                // Create a text node or span with the content
+                var container = document.createElement('span');
+                container.innerHTML = innerContent;
+                // Replace the paragraph with its content
+                p.parentNode.replaceChild(container, p);
+            });
+            
+            // Get the cleaned HTML
+            var cleanedHtml = temp.innerHTML;
+            
+            // Remove extra whitespace
+            cleanedHtml = cleanedHtml.replace(/\s+/g, ' ').trim();
+            
+            // If the result is just empty, return empty string
+            if (cleanedHtml === '' || cleanedHtml === '<br>') {
+                return '';
+            }
+            
+            return cleanedHtml;
+        }
+
+        // ========== NEW HELPER FUNCTION: Check if content has actual text ==========
         function hasActualContent(html) {
             if (!html) return false;
+            if (html.indexOf('<img') !== -1) return true;
+            if (html.indexOf('<ul') !== -1 || html.indexOf('<ol') !== -1 || html.indexOf('<blockquote') !== -1 || html.indexOf('<pre') !== -1 || html.indexOf('<code') !== -1) {
+                return true;
+            }
             var temp = document.createElement('div');
             temp.innerHTML = html;
             var text = temp.textContent || temp.innerText || '';
             text = text.trim();
-            var hasImages = temp.querySelectorAll('img').length > 0;
-            var hasLists = temp.querySelectorAll('ul, ol, blockquote, pre, code').length > 0;
-            return text.length > 0 || hasImages || hasLists;
-        }
-
-        
-        function stripHtmlAndGetText(html) {
-            if (!html) return '';
-            var temp = document.createElement('div');
-            temp.innerHTML = html;
-            var text = temp.textContent || temp.innerText || '';
-            return text.trim();
-        }
-
-        
-        function getPlainTextFromEditor(editor) {
-            var html = editor.root.innerHTML;
-            return stripHtmlAndGetText(html);
-        }
-
-        
-        function getHtmlContentFromEditor(editor) {
-            return editor.root.innerHTML;
+            return text.length > 0;
         }
 
         function loadTextbooksAndReferences() {
@@ -1174,10 +1191,16 @@
             questionEditor.focus();
         }
 
+        // ========== UPDATED: submitQuestion with HTML cleaning ==========
         function submitQuestion() {
+            // Get raw HTML from editors
+            var questionHtmlRaw = questionEditor.root.innerHTML;
+            var answerHtmlRaw = answerEditor.root.innerHTML;
             
-            var questionHtml = getHtmlContentFromEditor(questionEditor);
-            var answerHtml = getHtmlContentFromEditor(answerEditor);
+            // Clean the HTML by removing <p> tags
+            var questionHtml = cleanEditorHtml(questionHtmlRaw);
+            var answerHtml = cleanEditorHtml(answerHtmlRaw);
+            
             var marks = document.getElementById('marks').value.trim();
             var durationMinutes = document.getElementById('duration_minutes').value.trim() || '0';
             var language = currentKB;
@@ -1254,6 +1277,7 @@
                     var chapterCode = localStorage.getItem('selectedChapterCode');
                     
                     var questionData = {
+                        // Use the CLEANED HTML (without <p> tags)
                         question_text: questionHtml, 
                         answer: answerHtml, 
                         marks: parseInt(marks), 
