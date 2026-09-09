@@ -1088,7 +1088,7 @@ def delete_textbook(textbook_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/subjects/<int:subject_id>/textbooks', methods(['GET'])
+@app.route('/api/subjects/<int:subject_id>/textbooks', methods=['GET'])
 def get_subject_textbooks(subject_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
