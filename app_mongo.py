@@ -1365,7 +1365,7 @@ def create_cg():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/cgs/<int:cg_id>', methods(['PUT'])
+@app.route('/api/cgs/<int:cg_id>', methods=['PUT'])
 def update_cg(cg_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401

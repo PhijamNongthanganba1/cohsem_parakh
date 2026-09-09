@@ -50,13 +50,13 @@ def add_cognitive_config_column():
         if not exists:
             cur.execute("ALTER TABLE paper_blueprints ADD COLUMN cognitive_config TEXT")
             db.commit()
-            print("✓ Added cognitive_config column to paper_blueprints table")
+            
             return True
         else:
-            print("✓ cognitive_config column already exists")
+            
             return True
     except Exception as e:
-        print(f"Error adding cognitive_config column: {e}")
+        
         return False
     finally:
         cur.close()
@@ -218,7 +218,6 @@ def init_db():
     db = get_db()
     cur = db.cursor()
     try:
-        # Users table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -236,7 +235,6 @@ def init_db():
             )
         """)
 
-        # Grades table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS grades (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -244,7 +242,6 @@ def init_db():
             )
         """)
 
-        # Subjects table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS subjects (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -255,7 +252,6 @@ def init_db():
             )
         """)
 
-        # Textbooks table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS textbooks (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -273,7 +269,6 @@ def init_db():
             )
         """)
 
-        # Chapters table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS chapters (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -290,7 +285,6 @@ def init_db():
             )
         """)
 
-        # Cognitive Domains table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS cognitive_domains (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -299,7 +293,6 @@ def init_db():
             )
         """)
 
-        # Difficulty Levels table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS difficulty_levels (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -307,7 +300,6 @@ def init_db():
             )
         """)
 
-        # Knowledge Levels table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS knowledge_levels (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -323,7 +315,6 @@ def init_db():
             )
         """)
 
-        # Question Types table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS question_types (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -335,7 +326,6 @@ def init_db():
             )
         """)
 
-        # Curricular Goals table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS curricular_goals (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -350,7 +340,6 @@ def init_db():
             )
         """)
 
-        # Competencies table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS competencies (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -363,7 +352,6 @@ def init_db():
             )
         """)
 
-        # Subject Groups table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS subject_groups (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -379,7 +367,6 @@ def init_db():
             )
         """)
 
-        # Simple Questions table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS simple_questions (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -460,7 +447,6 @@ def init_db():
             )
         """)
 
-        # Paper Blueprints table with cognitive_config column
         cur.execute("""
             CREATE TABLE IF NOT EXISTS paper_blueprints (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -486,10 +472,8 @@ def init_db():
 
         db.commit()
 
-        # Add cognitive_config column if it doesn't exist (for existing tables)
         add_cognitive_config_column()
 
-        # Insert default reference data if empty
         cur.execute("SELECT COUNT(*) as count FROM cognitive_domains")
         domain_count = cur.fetchone()[0]
         
@@ -497,7 +481,6 @@ def init_db():
             insert_default_reference_data(cur)
             db.commit()
 
-        # Create default admin user if no users exist
         cur.execute("SELECT COUNT(*) as count FROM users")
         user_count = cur.fetchone()[0]
         
@@ -526,7 +509,7 @@ def init_db():
 
     except Exception as e:
         db.rollback()
-        print(f"Error in init_db: {e}")
+        
     finally:
         cur.close()
         db.close()
@@ -4125,7 +4108,6 @@ def serve_question_image(filename):
     return jsonify({'error': 'Image not found'}), 404
 
 
-# ===== PAPER BLUEPRINT API ENDPOINTS =====
 
 @app.route('/api/paper-blueprints', methods=['GET'])
 def get_paper_blueprints():
@@ -4179,7 +4161,6 @@ def get_paper_blueprints():
             bp['comp_ids'] = [int(x) for x in bp['comp_ids'].split(',')] if bp['comp_ids'] else []
             bp['question_ids'] = [int(x) for x in bp['question_ids'].split(',')] if bp['question_ids'] else []
             
-            # Merge config and cognitive_config
             config_data = {}
             if bp['config']:
                 try:
@@ -4222,10 +4203,8 @@ def create_paper_blueprint():
     config = data.get('config', {})
     status = data.get('status', 'draft')
     
-    # Extract cognitive config separately
     cognitive_config = config.get('cognitive', {}) if config else {}
     
-    # Remove cognitive from main config to avoid duplication
     main_config = config.copy() if config else {}
     if 'cognitive' in main_config:
         del main_config['cognitive']
@@ -4281,7 +4260,6 @@ def get_paper_blueprint(blueprint_id):
         blueprint['comp_ids'] = [int(x) for x in blueprint['comp_ids'].split(',')] if blueprint['comp_ids'] else []
         blueprint['question_ids'] = [int(x) for x in blueprint['question_ids'].split(',')] if blueprint['question_ids'] else []
         
-        # Merge config and cognitive_config
         config_data = {}
         if blueprint['config']:
             try:
@@ -4324,10 +4302,8 @@ def update_paper_blueprint(blueprint_id):
     config = data.get('config', {})
     status = data.get('status', 'draft')
     
-    # Extract cognitive config separately
     cognitive_config = config.get('cognitive', {}) if config else {}
     
-    # Remove cognitive from main config
     main_config = config.copy() if config else {}
     if 'cognitive' in main_config:
         del main_config['cognitive']
