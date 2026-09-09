@@ -180,7 +180,6 @@ def init_db():
             print("  ✓ Created id index on knowledge_levels")
         except pymongo.errors.DuplicateKeyError as e:
             print(f"  ⚠️ DuplicateKeyError on knowledge_levels: {e}")
-            # Fix by removing documents with null id and retry
             db.knowledge_levels.delete_many({'id': None})
             try:
                 db.knowledge_levels.drop_index('id_1')
@@ -305,6 +304,11 @@ def init_db():
             db.counters.update_one({'_id': 'users'}, {'$set': {'seq': 1}})
             print("✓ Created default admin user")
         
+        # ============ Create test data if no questions exist ============
+        if db.simple_questions.count_documents({}) == 0:
+            print("🔄 Creating test questions...")
+            create_test_questions()
+        
         # Fix existing data - add numeric IDs
         fix_collection_ids('grades')
         fix_collection_ids('subjects')
@@ -331,6 +335,218 @@ def init_db():
     except Exception as e:
         print(f"⚠️ Database initialization error: {e}")
         traceback.print_exc()
+
+def create_test_questions():
+    """Create test questions for development"""
+    try:
+        # First ensure we have grades
+        if db.grades.count_documents({}) == 0:
+            grades = [
+                {'id': 1, 'grade_name': 'Class IX'},
+                {'id': 2, 'grade_name': 'Class X'},
+                {'id': 3, 'grade_name': 'Class XI'},
+                {'id': 4, 'grade_name': 'Class XII'}
+            ]
+            db.grades.insert_many(grades)
+            db.counters.update_one({'_id': 'grades'}, {'$set': {'seq': 4}})
+            print("  ✓ Created test grades")
+        
+        # Create subjects
+        if db.subjects.count_documents({}) == 0:
+            subjects = [
+                {'id': 1, 'subject_name': 'Physics', 'grade_id': 3},
+                {'id': 2, 'subject_name': 'Chemistry', 'grade_id': 3},
+                {'id': 3, 'subject_name': 'Biology', 'grade_id': 3},
+                {'id': 4, 'subject_name': 'Mathematics', 'grade_id': 3},
+                {'id': 5, 'subject_name': 'Physics', 'grade_id': 4},
+                {'id': 6, 'subject_name': 'Chemistry', 'grade_id': 4},
+                {'id': 7, 'subject_name': 'Biology', 'grade_id': 4},
+                {'id': 8, 'subject_name': 'Mathematics', 'grade_id': 4}
+            ]
+            db.subjects.insert_many(subjects)
+            db.counters.update_one({'_id': 'subjects'}, {'$set': {'seq': 8}})
+            print("  ✓ Created test subjects")
+        
+        # Create test questions
+        questions = [
+            {
+                'id': 1,
+                'question_text': 'What is the SI unit of force?',
+                'answer': 'Newton (N)',
+                'marks': 1,
+                'duration_minutes': 1,
+                'grade_id': 3,
+                'subject_id': 1,
+                'created_by': 'admin',
+                'created_at': datetime.now(),
+                'status': 'approved',
+                'question_type_name': 'Objective',
+                'difficulty_name': 'Easy',
+                'domain_name': 'Awareness',
+                'knowledge_level_name': 'Knowledge',
+                'language': 'en'
+            },
+            {
+                'id': 2,
+                'question_text': 'Explain Newton\'s First Law of Motion with an example.',
+                'answer': 'Newton\'s First Law states that an object at rest stays at rest and an object in motion stays in motion unless acted upon by an external force. Example: A book on a table remains at rest until someone pushes it.',
+                'marks': 5,
+                'duration_minutes': 10,
+                'grade_id': 3,
+                'subject_id': 1,
+                'created_by': 'admin',
+                'created_at': datetime.now(),
+                'status': 'under_review',
+                'question_type_name': 'Long Answer',
+                'difficulty_name': 'Medium',
+                'domain_name': 'Sensitivity',
+                'knowledge_level_name': 'Application',
+                'language': 'en'
+            },
+            {
+                'id': 3,
+                'question_text': 'What is the chemical formula of water?',
+                'answer': 'H₂O',
+                'marks': 1,
+                'duration_minutes': 1,
+                'grade_id': 3,
+                'subject_id': 2,
+                'created_by': 'admin',
+                'created_at': datetime.now(),
+                'status': 'unassigned',
+                'question_type_name': 'Very Short Answer',
+                'difficulty_name': 'Easy',
+                'domain_name': 'Awareness',
+                'knowledge_level_name': 'Remembering',
+                'language': 'en'
+            },
+            {
+                'id': 4,
+                'question_text': 'Describe the process of photosynthesis.',
+                'answer': 'Photosynthesis is the process by which plants use sunlight, water, and carbon dioxide to produce glucose and oxygen. It occurs in the chloroplasts of plant cells.',
+                'marks': 5,
+                'duration_minutes': 10,
+                'grade_id': 3,
+                'subject_id': 3,
+                'created_by': 'admin',
+                'created_at': datetime.now(),
+                'status': 'reviewed_completed',
+                'question_type_name': 'Long Answer',
+                'difficulty_name': 'Medium',
+                'domain_name': 'Sensitivity',
+                'knowledge_level_name': 'Comprehension',
+                'language': 'en'
+            },
+            {
+                'id': 5,
+                'question_text': 'Solve: 2x + 5 = 13',
+                'answer': 'x = 4',
+                'marks': 2,
+                'duration_minutes': 3,
+                'grade_id': 3,
+                'subject_id': 4,
+                'created_by': 'admin',
+                'created_at': datetime.now(),
+                'status': 'rejected',
+                'question_type_name': 'Short Answer',
+                'difficulty_name': 'Easy',
+                'domain_name': 'Awareness',
+                'knowledge_level_name': 'Knowledge',
+                'language': 'en'
+            },
+            {
+                'id': 6,
+                'question_text': 'What is the difference between speed and velocity?',
+                'answer': 'Speed is a scalar quantity measuring the rate of motion, while velocity is a vector quantity measuring rate of motion with direction.',
+                'marks': 3,
+                'duration_minutes': 5,
+                'grade_id': 4,
+                'subject_id': 1,
+                'created_by': 'admin',
+                'created_at': datetime.now(),
+                'status': 'approved',
+                'question_type_name': 'Short Answer',
+                'difficulty_name': 'Medium',
+                'domain_name': 'Sensitivity',
+                'knowledge_level_name': 'Analysis',
+                'language': 'en'
+            },
+            {
+                'id': 7,
+                'question_text': 'Define resonance in chemistry.',
+                'answer': 'Resonance is the phenomenon where a molecule can be represented by multiple Lewis structures, with the actual structure being a hybrid of these structures.',
+                'marks': 4,
+                'duration_minutes': 8,
+                'grade_id': 4,
+                'subject_id': 2,
+                'created_by': 'admin',
+                'created_at': datetime.now(),
+                'status': 'under_review',
+                'question_type_name': 'Long Answer',
+                'difficulty_name': 'Hard',
+                'domain_name': 'Creativity',
+                'knowledge_level_name': 'Critical Thinking',
+                'language': 'en'
+            },
+            {
+                'id': 8,
+                'question_text': 'What is the function of mitochondria?',
+                'answer': 'Mitochondria are the powerhouses of the cell, producing ATP through cellular respiration.',
+                'marks': 2,
+                'duration_minutes': 3,
+                'grade_id': 4,
+                'subject_id': 3,
+                'created_by': 'admin',
+                'created_at': datetime.now(),
+                'status': 'unassigned',
+                'question_type_name': 'Short Answer',
+                'difficulty_name': 'Easy',
+                'domain_name': 'Awareness',
+                'knowledge_level_name': 'Knowledge',
+                'language': 'en'
+            },
+            {
+                'id': 9,
+                'question_text': 'Find the derivative of f(x) = x² + 3x - 5.',
+                'answer': "f'(x) = 2x + 3",
+                'marks': 3,
+                'duration_minutes': 5,
+                'grade_id': 4,
+                'subject_id': 4,
+                'created_by': 'admin',
+                'created_at': datetime.now(),
+                'status': 'approved',
+                'question_type_name': 'Short Answer',
+                'difficulty_name': 'Medium',
+                'domain_name': 'Sensitivity',
+                'knowledge_level_name': 'Application',
+                'language': 'en'
+            },
+            {
+                'id': 10,
+                'question_text': 'Explain the concept of entropy.',
+                'answer': 'Entropy is a measure of disorder or randomness in a system. The second law of thermodynamics states that the entropy of an isolated system always increases over time.',
+                'marks': 5,
+                'duration_minutes': 10,
+                'grade_id': 4,
+                'subject_id': 2,
+                'created_by': 'admin',
+                'created_at': datetime.now(),
+                'status': 'reviewed_completed',
+                'question_type_name': 'Long Answer',
+                'difficulty_name': 'Hard',
+                'domain_name': 'Creativity',
+                'knowledge_level_name': 'Evaluation',
+                'language': 'en'
+            }
+        ]
+        
+        db.simple_questions.insert_many(questions)
+        db.counters.update_one({'_id': 'simple_questions'}, {'$set': {'seq': 10}})
+        print(f"  ✓ Created {len(questions)} test questions")
+        
+    except Exception as e:
+        print(f"  ⚠️ Error creating test questions: {e}")
 
 def fix_collection_ids(collection_name):
     """Add numeric 'id' field to documents if missing"""
@@ -2327,7 +2543,6 @@ def master_review_question(question_id):
         
         # Check subject access if not admin
         if user_role != 'admin' and subject_group:
-            # Verify the question's subject belongs to user's group
             subject_check = db.subject_groups.find_one({
                 'group_code': subject_group,
                 'subject_id': question.get('subject_id')
@@ -2679,7 +2894,6 @@ def get_builder_questions():
         
         # Apply subject group filter if not admin
         if user_role != 'admin' and subject_group:
-            # Get subject IDs for this group
             group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
             subject_ids = [s['subject_id'] for s in group_subjects]
             if subject_ids:
@@ -2710,7 +2924,7 @@ def get_builder_questions():
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# REVIEW QUESTIONS (UPDATED)
+# REVIEW QUESTIONS
 # ============================================
 
 @app.route('/api/review-questions')
@@ -2728,14 +2942,20 @@ def get_review_questions():
     status = request.args.get('status', '')
     search = request.args.get('search', '')
     
+    print(f"🔍 Review Questions called by: {username} (role: {user_role}, id: {user_id})")
+    
     try:
+        # First, get total count for debugging
+        total_questions = db.simple_questions.count_documents({})
+        print(f"📊 Total questions in database: {total_questions}")
+        
         # Build the query
         match_conditions = []
         
         # Apply role-based filters
         if user_role == 'admin':
             # Admin sees all questions
-            pass
+            print("👑 Admin user - showing all questions")
         else:
             # Build permission-based filters
             permission_filters = []
@@ -2781,15 +3001,17 @@ def get_review_questions():
             if permission_filters:
                 match_conditions.append({'$or': permission_filters})
             else:
-                match_conditions.append({'_id': None})  # No access
+                match_conditions.append({'_id': None})
+            
+            print(f"🔍 Permission filters: {len(permission_filters)} filters applied")
         
         # Apply subject group filter if not admin
         if user_role != 'admin' and subject_group:
-            # Get subject IDs for this group
             group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
             subject_ids = [s['subject_id'] for s in group_subjects]
             if subject_ids:
                 match_conditions.append({'subject_id': {'$in': subject_ids}})
+                print(f"🔍 Subject group filter: {len(subject_ids)} subjects")
             else:
                 match_conditions.append({'_id': None})
         
@@ -2850,6 +3072,8 @@ def get_review_questions():
         questions = list(db.simple_questions.aggregate(pipeline))
         questions = convert_doc(questions)
         
+        print(f"📊 Filtered questions count: {len(questions)}")
+        
         # Parse images and add permissions
         for q in questions:
             if q.get('images'):
@@ -2892,11 +3116,13 @@ def get_review_questions():
             },
             'subject_group': subject_group,
             'user_role': user_role,
-            'user_id': user_id
+            'user_id': user_id,
+            'total_count': total_questions
         })
     except Exception as e:
+        print(f"❌ Error in review-questions: {e}")
         traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
 
 # ============================================
 # SIMPLE QUESTIONS ENDPOINTS
