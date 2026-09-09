@@ -164,61 +164,111 @@ def init_db():
         db.knowledge_levels.create_index('id', unique=True)
         db.knowledge_levels.create_index([('domain_id', 1), ('level_name', 1)], unique=True)
         
-        # Cognitive Domains
-        if db.cognitive_domains.count_documents({}) == 0:
-            domains = [
-                {'id': 1, 'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
-                {'id': 2, 'domain_name': 'Sensitivity', 'description': 'Sensitivity to applications and real-world connections'},
-                {'id': 3, 'domain_name': 'Creativity', 'description': 'Creative thinking and problem solving'}
-            ]
-            db.cognitive_domains.insert_many(domains)
-            print("✓ Inserted default cognitive domains")
+        # ============ FIX: Cognitive Domains with numeric IDs ============
+        print("🔄 Setting up cognitive domains with numeric IDs...")
         
-        # Difficulty Levels
-        if db.difficulty_levels.count_documents({}) == 0:
-            difficulties = [
-                {'id': 1, 'level_name': 'Easy'},
-                {'id': 2, 'level_name': 'Medium'},
-                {'id': 3, 'level_name': 'Hard'}
-            ]
-            db.difficulty_levels.insert_many(difficulties)
-            print("✓ Inserted default difficulty levels")
+        # Define domains with numeric IDs
+        domains_data = [
+            {'id': 1, 'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
+            {'id': 2, 'domain_name': 'Sensitivity', 'description': 'Sensitivity to applications and real-world connections'},
+            {'id': 3, 'domain_name': 'Creativity', 'description': 'Creative thinking and problem solving'}
+        ]
         
-        # Knowledge Levels (Sub-Domains) - CRITICAL: domain_id must be numeric
-        if db.knowledge_levels.count_documents({}) == 0:
-            knowledge = [
-                {'id': 1, 'level_name': 'Knowledge', 'description': 'Basic recall of information and facts', 'domain_id': 1, 'difficulty_id': 1},
-                {'id': 2, 'level_name': 'Remembering', 'description': 'Retrieving knowledge from memory', 'domain_id': 1, 'difficulty_id': 1},
-                {'id': 3, 'level_name': 'Understanding', 'description': 'Constructing meaning from information', 'domain_id': 1, 'difficulty_id': 1},
-                {'id': 4, 'level_name': 'Comprehension', 'description': 'Grasping the meaning of information', 'domain_id': 1, 'difficulty_id': 2},
-                {'id': 5, 'level_name': 'Application', 'description': 'Apply knowledge to new situations', 'domain_id': 2, 'difficulty_id': 2},
-                {'id': 6, 'level_name': 'Analysis', 'description': 'Break down information into parts', 'domain_id': 2, 'difficulty_id': 2},
-                {'id': 7, 'level_name': 'Synthesis', 'description': 'Combine elements to form a new whole', 'domain_id': 2, 'difficulty_id': 2},
-                {'id': 8, 'level_name': 'Empathy', 'description': "Understanding others' perspectives", 'domain_id': 2, 'difficulty_id': 2},
-                {'id': 9, 'level_name': 'Interpretation', 'description': 'Explaining and interpreting information', 'domain_id': 2, 'difficulty_id': 2},
-                {'id': 10, 'level_name': 'Evaluation', 'description': 'Make judgments based on criteria', 'domain_id': 3, 'difficulty_id': 3},
-                {'id': 11, 'level_name': 'Creation', 'description': 'Generate new ideas and products', 'domain_id': 3, 'difficulty_id': 3},
-                {'id': 12, 'level_name': 'Critical Thinking', 'description': 'Deep analysis and evaluation', 'domain_id': 3, 'difficulty_id': 3},
-                {'id': 13, 'level_name': 'Innovation', 'description': 'Novel approaches to problems', 'domain_id': 3, 'difficulty_id': 3},
-                {'id': 14, 'level_name': 'Design Thinking', 'description': 'Human-centered problem solving', 'domain_id': 3, 'difficulty_id': 3},
-                {'id': 15, 'level_name': 'Reflection', 'description': 'Thoughtful self-assessment', 'domain_id': 3, 'difficulty_id': 3}
-            ]
-            db.knowledge_levels.insert_many(knowledge)
-            print("✓ Inserted default knowledge levels with domain_id")
+        # Insert or update domains with numeric IDs
+        for domain in domains_data:
+            existing = db.cognitive_domains.find_one({'id': domain['id']})
+            if not existing:
+                db.cognitive_domains.insert_one(domain)
+                print(f"  ✓ Inserted cognitive domain: {domain['domain_name']} (id: {domain['id']})")
+            else:
+                # Update if needed
+                if existing.get('domain_name') != domain['domain_name'] or existing.get('description') != domain['description']:
+                    db.cognitive_domains.update_one(
+                        {'id': domain['id']},
+                        {'$set': {'domain_name': domain['domain_name'], 'description': domain['description']}}
+                    )
+                    print(f"  ✓ Updated cognitive domain: {domain['domain_name']} (id: {domain['id']})")
         
-        # Question Types
-        if db.question_types.count_documents({}) == 0:
-            qtypes = [
-                {'id': 1, 'type_name': 'Objective', 'cognitive_id': 1},
-                {'id': 2, 'type_name': 'Very Short Answer', 'cognitive_id': 1},
-                {'id': 3, 'type_name': 'Short Answer', 'cognitive_id': 2},
-                {'id': 4, 'type_name': 'Long Answer', 'cognitive_id': 2},
-                {'id': 5, 'type_name': 'MCQ', 'cognitive_id': 3}
-            ]
-            db.question_types.insert_many(qtypes)
-            print("✓ Inserted default question types")
+        # ============ FIX: Difficulty Levels with numeric IDs ============
+        print("🔄 Setting up difficulty levels with numeric IDs...")
+        difficulties_data = [
+            {'id': 1, 'level_name': 'Easy'},
+            {'id': 2, 'level_name': 'Medium'},
+            {'id': 3, 'level_name': 'Hard'}
+        ]
         
-        # Admin user
+        for diff in difficulties_data:
+            existing = db.difficulty_levels.find_one({'id': diff['id']})
+            if not existing:
+                db.difficulty_levels.insert_one(diff)
+                print(f"  ✓ Inserted difficulty level: {diff['level_name']} (id: {diff['id']})")
+        
+        # ============ FIX: Knowledge Levels with numeric domain_id ============
+        print("🔄 Setting up knowledge levels with numeric domain_id...")
+        
+        # First, clear existing knowledge levels to ensure clean data
+        # Uncomment the line below if you want to reset knowledge levels
+        # db.knowledge_levels.delete_many({})
+        
+        knowledge_data = [
+            # Domain 1: Awareness (id: 1)
+            {'id': 1, 'level_name': 'Knowledge', 'description': 'Basic recall of information and facts', 'domain_id': 1, 'difficulty_id': 1, 'is_active': True},
+            {'id': 2, 'level_name': 'Remembering', 'description': 'Retrieving knowledge from memory', 'domain_id': 1, 'difficulty_id': 1, 'is_active': True},
+            {'id': 3, 'level_name': 'Understanding', 'description': 'Constructing meaning from information', 'domain_id': 1, 'difficulty_id': 1, 'is_active': True},
+            {'id': 4, 'level_name': 'Comprehension', 'description': 'Grasping the meaning of information', 'domain_id': 1, 'difficulty_id': 2, 'is_active': True},
+            
+            # Domain 2: Sensitivity (id: 2)
+            {'id': 5, 'level_name': 'Application', 'description': 'Apply knowledge to new situations', 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
+            {'id': 6, 'level_name': 'Analysis', 'description': 'Break down information into parts', 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
+            {'id': 7, 'level_name': 'Synthesis', 'description': 'Combine elements to form a new whole', 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
+            {'id': 8, 'level_name': 'Empathy', 'description': "Understanding others' perspectives and feelings", 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
+            {'id': 9, 'level_name': 'Interpretation', 'description': 'Explaining and interpreting information', 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
+            
+            # Domain 3: Creativity (id: 3)
+            {'id': 10, 'level_name': 'Evaluation', 'description': 'Make judgments based on criteria and standards', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True},
+            {'id': 11, 'level_name': 'Creation', 'description': 'Generate new ideas and products', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True},
+            {'id': 12, 'level_name': 'Critical Thinking', 'description': 'Deep analysis and evaluation of information', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True},
+            {'id': 13, 'level_name': 'Innovation', 'description': 'Novel approaches and solutions to problems', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True},
+            {'id': 14, 'level_name': 'Design Thinking', 'description': 'Human-centered problem solving approach', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True},
+            {'id': 15, 'level_name': 'Reflection', 'description': 'Thoughtful consideration and self-assessment', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True}
+        ]
+        
+        for level in knowledge_data:
+            existing = db.knowledge_levels.find_one({'id': level['id']})
+            if not existing:
+                db.knowledge_levels.insert_one(level)
+                print(f"  ✓ Inserted knowledge level: {level['level_name']} (domain_id: {level['domain_id']})")
+            else:
+                # Update to ensure correct domain_id
+                if existing.get('domain_id') != level['domain_id']:
+                    db.knowledge_levels.update_one(
+                        {'id': level['id']},
+                        {'$set': {
+                            'domain_id': level['domain_id'],
+                            'difficulty_id': level['difficulty_id'],
+                            'description': level['description'],
+                            'is_active': level['is_active']
+                        }}
+                    )
+                    print(f"  ✓ Updated knowledge level: {level['level_name']} (domain_id: {level['domain_id']})")
+        
+        # ============ FIX: Question Types with cognitive_id ============
+        print("🔄 Setting up question types with cognitive_id...")
+        question_types_data = [
+            {'id': 1, 'type_name': 'Objective', 'cognitive_id': 1, 'description': 'Objective type questions'},
+            {'id': 2, 'type_name': 'Very Short Answer', 'cognitive_id': 1, 'description': 'Very short answer type questions'},
+            {'id': 3, 'type_name': 'Short Answer', 'cognitive_id': 2, 'description': 'Short answer type questions'},
+            {'id': 4, 'type_name': 'Long Answer', 'cognitive_id': 2, 'description': 'Long answer type questions'},
+            {'id': 5, 'type_name': 'MCQ', 'cognitive_id': 3, 'description': 'Multiple choice questions'}
+        ]
+        
+        for qt in question_types_data:
+            existing = db.question_types.find_one({'id': qt['id']})
+            if not existing:
+                db.question_types.insert_one(qt)
+                print(f"  ✓ Inserted question type: {qt['type_name']} (cognitive_id: {qt['cognitive_id']})")
+        
+        # ============ FIX: Admin user ============
         if db.users.count_documents({}) == 0:
             hashed_password = generate_password_hash("admin123")
             db.users.insert_one({
@@ -257,9 +307,13 @@ def init_db():
         # Fix knowledge_levels domain_id to be numeric
         fix_knowledge_levels_domain_id()
         
+        # Verify the data
+        verify_domain_data()
+        
         print("✅ Database initialization complete")
     except Exception as e:
         print(f"⚠️ Database initialization error: {e}")
+        traceback.print_exc()
 
 def fix_collection_ids(collection_name):
     """Add numeric 'id' field to documents if missing"""
@@ -356,42 +410,97 @@ def fix_foreign_keys():
 
 def fix_knowledge_levels_domain_id():
     """Fix knowledge_levels domain_id to be numeric and match cognitive_domains"""
+    print("🔄 Fixing knowledge_levels domain_id...")
+    
     # Get all cognitive domains with numeric IDs
     domains = list(db.cognitive_domains.find({}))
     domain_map = {str(d['_id']): d['id'] for d in domains}
-    
-    # Also map by name
     domain_name_map = {d['domain_name']: d['id'] for d in domains}
     
     # Fix knowledge levels
     levels = list(db.knowledge_levels.find({}))
+    fixed_count = 0
+    
     for level in levels:
         domain_id = level.get('domain_id')
         if domain_id:
+            needs_update = False
+            new_domain_id = None
+            
             # If domain_id is an ObjectId, convert to numeric
             if isinstance(domain_id, ObjectId):
                 domain_id_str = str(domain_id)
                 if domain_id_str in domain_map:
-                    db.knowledge_levels.update_one(
-                        {'_id': level['_id']},
-                        {'$set': {'domain_id': domain_map[domain_id_str]}}
-                    )
-                    print(f"  Fixed knowledge level '{level.get('level_name')}' domain_id: {domain_map[domain_id_str]}")
+                    new_domain_id = domain_map[domain_id_str]
+                    needs_update = True
+            
             # If domain_id is a string ObjectId
             elif isinstance(domain_id, str) and len(domain_id) == 24:
                 if domain_id in domain_map:
-                    db.knowledge_levels.update_one(
-                        {'_id': level['_id']},
-                        {'$set': {'domain_id': domain_map[domain_id]}}
-                    )
-                    print(f"  Fixed knowledge level '{level.get('level_name')}' domain_id: {domain_map[domain_id]}")
+                    new_domain_id = domain_map[domain_id]
+                    needs_update = True
+            
             # If domain_id is a string name
             elif isinstance(domain_id, str) and domain_id in domain_name_map:
+                new_domain_id = domain_name_map[domain_id]
+                needs_update = True
+            
+            # If domain_id is an integer but not matching the domain
+            elif isinstance(domain_id, int):
+                # Check if this domain_id exists in cognitive_domains
+                domain_exists = db.cognitive_domains.find_one({'id': domain_id})
+                if not domain_exists:
+                    # Try to find the right domain by name
+                    level_name = level.get('level_name', '').lower()
+                    if 'knowledge' in level_name or 'remember' in level_name or 'understand' in level_name:
+                        new_domain_id = 1
+                        needs_update = True
+                    elif 'application' in level_name or 'analysis' in level_name or 'synthesis' in level_name or 'empathy' in level_name or 'interpretation' in level_name:
+                        new_domain_id = 2
+                        needs_update = True
+                    elif 'evaluation' in level_name or 'creation' in level_name or 'critical' in level_name or 'innovation' in level_name or 'design' in level_name or 'reflection' in level_name:
+                        new_domain_id = 3
+                        needs_update = True
+            
+            if needs_update and new_domain_id is not None:
                 db.knowledge_levels.update_one(
                     {'_id': level['_id']},
-                    {'$set': {'domain_id': domain_name_map[domain_id]}}
+                    {'$set': {'domain_id': new_domain_id}}
                 )
-                print(f"  Fixed knowledge level '{level.get('level_name')}' domain_id: {domain_name_map[domain_id]}")
+                fixed_count += 1
+                print(f"  Fixed knowledge level '{level.get('level_name')}' domain_id: {new_domain_id}")
+    
+    print(f"✓ Fixed {fixed_count} knowledge_levels domain_id references")
+
+def verify_domain_data():
+    """Verify that cognitive domains and knowledge levels are correctly linked"""
+    print("🔍 Verifying domain data...")
+    
+    domains = list(db.cognitive_domains.find({}))
+    print(f"  Cognitive domains found: {len(domains)}")
+    for d in domains:
+        print(f"    - {d.get('domain_name')} (id: {d.get('id')})")
+    
+    levels = list(db.knowledge_levels.find({}))
+    print(f"  Knowledge levels found: {len(levels)}")
+    
+    # Check for levels without valid domain_id
+    invalid_levels = []
+    for level in levels:
+        domain_id = level.get('domain_id')
+        if not domain_id:
+            invalid_levels.append(level)
+        elif isinstance(domain_id, int):
+            domain_exists = db.cognitive_domains.find_one({'id': domain_id})
+            if not domain_exists:
+                invalid_levels.append(level)
+    
+    if invalid_levels:
+        print(f"  ⚠️ Found {len(invalid_levels)} knowledge levels with invalid domain_id")
+        for level in invalid_levels:
+            print(f"    - {level.get('level_name')} (domain_id: {level.get('domain_id')})")
+    else:
+        print("  ✅ All knowledge levels have valid domain_id references")
 
 with app.app_context():
     init_db()
@@ -1013,16 +1122,21 @@ def get_page2_data():
                 comp_data = convert_doc(comp)
                 print(f"📊 Found competency: {comp_data.get('comp_code')} - cg_id: {comp_data.get('cg_id')}")
         
-        # Get all cognitive domains
+        # Get all cognitive domains with numeric IDs
         domains = list(db.cognitive_domains.find({}).sort('id', 1))
         domains = convert_doc(domains)
         
         if not domains:
+            # Default domains with numeric IDs
             domains = [
                 {'id': 1, 'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
                 {'id': 2, 'domain_name': 'Sensitivity', 'description': 'Sensitivity to applications and real-world connections'},
                 {'id': 3, 'domain_name': 'Creativity', 'description': 'Creative thinking and problem solving'}
             ]
+            # Insert default domains if they don't exist
+            for domain in domains:
+                if not db.cognitive_domains.find_one({'id': domain['id']}):
+                    db.cognitive_domains.insert_one(domain)
         
         # Get question types
         question_types = list(db.question_types.find({}).sort('cognitive_id', 1))
@@ -1048,6 +1162,9 @@ def get_page2_data():
                 {'id': 2, 'level_name': 'Medium'},
                 {'id': 3, 'level_name': 'Hard'}
             ]
+            for diff in difficulty_levels:
+                if not db.difficulty_levels.find_one({'id': diff['id']}):
+                    db.difficulty_levels.insert_one(diff)
         
         data = {
             'domains': domains,
@@ -1098,31 +1215,31 @@ def get_knowledge_levels():
             except:
                 pass
         
-        # Get knowledge levels
+        # Get knowledge levels from database
         levels = list(db.knowledge_levels.find(query).sort('id', 1))
         
         print(f"📊 Found {len(levels)} knowledge levels from database")
         for level in levels:
             print(f"  Level: {level.get('level_name')} - domain_id: {level.get('domain_id')} (type: {type(level.get('domain_id'))})")
         
-        # Convert to frontend format
-        levels = convert_doc(levels)
-        
-        # If no levels found, return default mapping based on domain_id
+        # If no levels found, use default mapping
         if not levels:
-            print("📊 No levels found, using default mapping")
+            print("📊 No levels found in database, using default mapping")
             
-            # Default mapping from app.py
+            # Default mapping with numeric domain_id
             default_mapping = [
+                # Domain 1: Awareness
                 {'id': 1, 'level_name': 'Knowledge', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Basic recall of information and facts'},
                 {'id': 2, 'level_name': 'Remembering', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Retrieving knowledge from memory'},
                 {'id': 3, 'level_name': 'Understanding', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Constructing meaning from information'},
                 {'id': 4, 'level_name': 'Comprehension', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Grasping the meaning of information'},
+                # Domain 2: Sensitivity
                 {'id': 5, 'level_name': 'Application', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Apply knowledge to new situations'},
                 {'id': 6, 'level_name': 'Analysis', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Break down information into parts'},
                 {'id': 7, 'level_name': 'Synthesis', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Combine elements to form a new whole'},
                 {'id': 8, 'level_name': 'Empathy', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': "Understanding others' perspectives and feelings"},
                 {'id': 9, 'level_name': 'Interpretation', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Explaining and interpreting information'},
+                # Domain 3: Creativity
                 {'id': 10, 'level_name': 'Evaluation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Make judgments based on criteria and standards'},
                 {'id': 11, 'level_name': 'Creation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Generate new ideas and products'},
                 {'id': 12, 'level_name': 'Critical Thinking', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Deep analysis and evaluation of information'},
@@ -1131,6 +1248,7 @@ def get_knowledge_levels():
                 {'id': 15, 'level_name': 'Reflection', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Thoughtful consideration and self-assessment'}
             ]
             
+            # Filter by domain_id if provided
             if domain_id:
                 try:
                     domain_id_int = int(domain_id)
@@ -1140,6 +1258,19 @@ def get_knowledge_levels():
                     levels = []
             else:
                 levels = default_mapping
+            
+            # Insert default mapping into database for future use
+            for level in levels:
+                existing = db.knowledge_levels.find_one({'id': level['id']})
+                if not existing:
+                    # Remove domain_name from the document as it's not in the schema
+                    level_copy = level.copy()
+                    level_copy.pop('domain_name', None)
+                    db.knowledge_levels.insert_one(level_copy)
+                    print(f"  ✓ Inserted default knowledge level: {level['level_name']}")
+        
+        # Convert to frontend format
+        levels = convert_doc(levels)
         
         print(f"📊 Returning {len(levels)} knowledge levels")
         return jsonify({'knowledge_levels': levels})
@@ -1161,6 +1292,19 @@ def get_cognitive_domains():
         domains = list(db.cognitive_domains.find({}).sort('id', 1))
         domains = convert_doc(domains)
         
+        # If no domains found, create default domains
+        if not domains:
+            default_domains = [
+                {'id': 1, 'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
+                {'id': 2, 'domain_name': 'Sensitivity', 'description': 'Sensitivity to applications and real-world connections'},
+                {'id': 3, 'domain_name': 'Creativity', 'description': 'Creative thinking and problem solving'}
+            ]
+            for domain in default_domains:
+                if not db.cognitive_domains.find_one({'id': domain['id']}):
+                    db.cognitive_domains.insert_one(domain)
+            domains = list(db.cognitive_domains.find({}).sort('id', 1))
+            domains = convert_doc(domains)
+        
         print(f"📊 Returning {len(domains)} cognitive domains")
         for domain in domains:
             print(f"  Domain: {domain.get('domain_name')} - id: {domain.get('id')}")
@@ -1168,6 +1312,7 @@ def get_cognitive_domains():
         return jsonify({'domains': domains})
     except Exception as e:
         print(f"❌ Error in get_cognitive_domains: {e}")
+        traceback.print_exc()
         return jsonify({'domains': []})
 
 # ============================================
