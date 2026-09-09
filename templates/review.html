@@ -436,7 +436,7 @@
                 <option value="rejected">Rejected</option>
                 <option value="rework">Rework</option>
             </select>
-            <input type="text" class="search-input" id="searchInput" placeholder="Search...">
+            <input type="text" class="search-input" id="searchInput" placeholder="Search questions or answers...">
         </div>
 
         <div class="tab-container">
@@ -455,8 +455,9 @@
             <div class="modal-header master"><h3><i class="fas fa-user-check"></i> Assign to Reviewer</h3><button class="close-btn" onclick="closeModal('masterReviewModal')">&times;</button></div>
             <div class="modal-body">
                 <div class="readonly-box"><div class="label">Question</div><div class="value" id="masterReviewQuestionDisplay"></div></div>
+                <div class="readonly-box" style="border-left-color:#8e44ad;"><div class="label">Subject Group</div><div class="value" id="masterReviewGroupDisplay"></div></div>
                 <label>Reviewer *</label>
-                <select id="reviewerSelect" class="form-control"><option value="">-- Select --</option></select>
+                <select id="reviewerSelect" class="form-control"><option value="">-- Select Reviewer --</option></select>
                 <label>Comment</label>
                 <textarea id="masterReviewComment" rows="2" placeholder="Optional..."></textarea>
             </div>
@@ -472,8 +473,9 @@
             <div class="modal-header review"><h3><i class="fas fa-user-check"></i> Assign to Approver</h3><button class="close-btn" onclick="closeModal('reviewModal')">&times;</button></div>
             <div class="modal-body">
                 <div class="readonly-box"><div class="label">Question</div><div class="value" id="reviewQuestionDisplay"></div></div>
+                <div class="readonly-box" style="border-left-color:#00bcd4;"><div class="label">Subject Group</div><div class="value" id="reviewGroupDisplay"></div></div>
                 <label>Approver *</label>
-                <select id="approverSelect" class="form-control"><option value="">-- Select --</option></select>
+                <select id="approverSelect" class="form-control"><option value="">-- Select Approver --</option></select>
                 <label>Comment</label>
                 <textarea id="reviewComment" rows="2" placeholder="Optional..."></textarea>
             </div>
@@ -524,6 +526,7 @@
         const currentUserId = {{ user_id|default(0) }};
         const currentUserRole = '{{ session.get("user_role", "writer") }}';
         const currentUsername = '{{ user }}';
+        const currentSubjectGroup = '{{ session.get("subject_group", "") }}';
         
         const permissions = {
             RE: {{ permissions.RE|default('false')|lower }},
@@ -539,6 +542,7 @@
         let allQuestions = [];
         let allGrades = [];
         let allSubjects = [];
+        let allUsers = [];
         let reviewers = [];
         let approvers = [];
         let currentModalId = null;
@@ -588,11 +592,21 @@
         // ============================================
         // LOAD DATA FUNCTIONS
         // ============================================
+        async function loadAllUsers() {
+            try { 
+                const r = await fetch('/api/users'); 
+                const d = await r.json(); 
+                allUsers = d.users || []; 
+                console.log('📊 Loaded all users:', allUsers.length);
+            } catch(e) { console.error('Error loading users:', e); }
+        }
+
         async function loadReviewers() {
             try { 
                 const r = await fetch('/api/reviewers'); 
                 const d = await r.json(); 
                 reviewers = d.reviewers || []; 
+                console.log('📊 Loaded reviewers:', reviewers.length);
                 populateReviewerSelect(); 
             } catch(e) { console.error('Error loading reviewers:', e); }
         }
@@ -602,6 +616,7 @@
                 const r = await fetch('/api/approvers'); 
                 const d = await r.json(); 
                 approvers = d.approvers || []; 
+                console.log('📊 Loaded approvers:', approvers.length);
                 populateApproverSelect(); 
             } catch(e) { console.error('Error loading approvers:', e); }
         }
@@ -610,7 +625,8 @@
             const sel = document.getElementById('reviewerSelect');
             let opts = '<option value="">-- Select Reviewer --</option>';
             reviewers.forEach(r => {
-                opts += `<option value="${r.id}" data-name="${r.username}">${escapeHtml(r.username)} (${r.role})</option>`;
+                const groupInfo = r.group_name ? ` (${r.group_name})` : '';
+                opts += `<option value="${r.id}" data-name="${r.username}" data-group="${r.subject_group || ''}">${escapeHtml(r.username)}${groupInfo}</option>`;
             });
             sel.innerHTML = opts;
         }
@@ -619,9 +635,64 @@
             const sel = document.getElementById('approverSelect');
             let opts = '<option value="">-- Select Approver --</option>';
             approvers.forEach(a => {
-                opts += `<option value="${a.id}" data-name="${a.username}">${escapeHtml(a.username)} (${a.role})</option>`;
+                const groupInfo = a.group_name ? ` (${a.group_name})` : '';
+                opts += `<option value="${a.id}" data-name="${a.username}" data-group="${a.subject_group || ''}">${escapeHtml(a.username)}${groupInfo}</option>`;
             });
             sel.innerHTML = opts;
+        }
+
+        function filterReviewersByGroup(subjectGroup) {
+            const sel = document.getElementById('reviewerSelect');
+            const currentValue = sel.value;
+            sel.innerHTML = '<option value="">-- Select Reviewer --</option>';
+            
+            let filtered = reviewers;
+            if (subjectGroup) {
+                filtered = reviewers.filter(r => r.subject_group === subjectGroup);
+            }
+            
+            filtered.forEach(r => {
+                const groupInfo = r.group_name ? ` (${r.group_name})` : '';
+                opts += `<option value="${r.id}" data-name="${r.username}" data-group="${r.subject_group || ''}">${escapeHtml(r.username)}${groupInfo}</option>`;
+            });
+            
+            // If no reviewers in the group, show all
+            if (filtered.length === 0) {
+                reviewers.forEach(r => {
+                    const groupInfo = r.group_name ? ` (${r.group_name})` : '';
+                    opts += `<option value="${r.id}" data-name="${r.username}" data-group="${r.subject_group || ''}">${escapeHtml(r.username)}${groupInfo}</option>`;
+                });
+            }
+            
+            sel.innerHTML = opts;
+            if (currentValue) sel.value = currentValue;
+        }
+
+        function filterApproversByGroup(subjectGroup) {
+            const sel = document.getElementById('approverSelect');
+            const currentValue = sel.value;
+            sel.innerHTML = '<option value="">-- Select Approver --</option>';
+            
+            let filtered = approvers;
+            if (subjectGroup) {
+                filtered = approvers.filter(a => a.subject_group === subjectGroup);
+            }
+            
+            filtered.forEach(a => {
+                const groupInfo = a.group_name ? ` (${a.group_name})` : '';
+                opts += `<option value="${a.id}" data-name="${a.username}" data-group="${a.subject_group || ''}">${escapeHtml(a.username)}${groupInfo}</option>`;
+            });
+            
+            // If no approvers in the group, show all
+            if (filtered.length === 0) {
+                approvers.forEach(a => {
+                    const groupInfo = a.group_name ? ` (${a.group_name})` : '';
+                    opts += `<option value="${a.id}" data-name="${a.username}" data-group="${a.subject_group || ''}">${escapeHtml(a.username)}${groupInfo}</option>`;
+                });
+            }
+            
+            sel.innerHTML = opts;
+            if (currentValue) sel.value = currentValue;
         }
 
         async function loadGrades() {
@@ -684,7 +755,6 @@
                 allQuestions = d.questions || [];
                 console.log(`📊 Loaded ${allQuestions.length} questions`);
                 
-                // Update stats
                 updatePermissionNote(d);
                 updateStats();
                 renderTabs();
@@ -739,16 +809,35 @@
             const gradeVal = document.getElementById('gradeFilter').value;
             const subjectVal = document.getElementById('subjectFilter').value;
             const statusVal = document.getElementById('statusFilter').value;
-            const search = document.getElementById('searchInput').value.toLowerCase();
+            const search = document.getElementById('searchInput').value.toLowerCase().trim();
 
             return allQuestions.filter(q => {
+                // Grade filter
                 if (gradeVal && q.grade_id != gradeVal) return false;
+                
+                // Subject filter
                 if (subjectVal && q.subject_id != subjectVal) return false;
+                
+                // Status filter
                 if (statusVal && (q.status||'unassigned') !== statusVal) return false;
+                
+                // Search filter - search in question text and answer
                 if (search) {
                     const qText = (q.question_text || q.question || '').toLowerCase();
                     const ans = (q.answer || '').toLowerCase();
-                    if (!qText.includes(search) && !ans.includes(search)) return false;
+                    const competency = (q.competency || '').toLowerCase();
+                    const grade = (q.grade || '').toLowerCase();
+                    const subject = (q.subject || '').toLowerCase();
+                    const createdBy = (q.created_by || '').toLowerCase();
+                    
+                    if (!qText.includes(search) && 
+                        !ans.includes(search) && 
+                        !competency.includes(search) && 
+                        !grade.includes(search) && 
+                        !subject.includes(search) &&
+                        !createdBy.includes(search)) {
+                        return false;
+                    }
                 }
                 return true;
             });
@@ -814,7 +903,8 @@
             let contentHtml = '';
             tabs.forEach((tab, index) => {
                 const isActive = index === activeTab ? 'active' : '';
-                const tabQuestions = allQuestions.filter(tab.filter);
+                const filteredQs = allQuestions.filter(tab.filter);
+                const tabQuestions = filteredQs; // Already filtered
                 
                 let tableRows = '';
                 if (tabQuestions.length === 0) {
@@ -877,14 +967,13 @@
 
             let actions = '';
             if (canEdit) actions += `<button class="action-icon icon-edit" onclick="editQuestion(${q.id})" title="Edit"><i class="fas fa-edit"></i></button>`;
-            if (canMasterReview) actions += `<button class="action-icon icon-assign" onclick="openMasterReview(${q.id})" title="Assign"><i class="fas fa-user-check"></i></button>`;
+            if (canMasterReview) actions += `<button class="action-icon icon-assign" onclick="openMasterReview(${q.id})" title="Assign to Reviewer"><i class="fas fa-user-check"></i></button>`;
             if (canReview) actions += `<button class="action-icon icon-assign" onclick="openReview(${q.id})" title="Send to Approver"><i class="fas fa-paper-plane"></i></button>`;
             if (canApprove || canDirectApprove) actions += `<button class="action-icon icon-approve" onclick="openApprove(${q.id})" title="Approve"><i class="fas fa-check"></i></button>`;
             if (canRework) actions += `<button class="action-icon icon-rework" onclick="openRework(${q.id})" title="Rework"><i class="fas fa-redo"></i></button>`;
             if (canDelete) actions += `<button class="action-icon icon-delete" onclick="deleteQuestion(${q.id})" title="Delete"><i class="fas fa-trash"></i></button>`;
             if (!actions) actions = `<span style="color:rgba(255,255,255,0.2);font-size:10px;">No actions</span>`;
 
-            // Get question text - handle both 'question' and 'question_text' fields
             const questionText = q.question_text || q.question || '';
             const answerText = q.answer || '';
 
@@ -944,10 +1033,15 @@
             if (q) {
                 const questionText = q.question_text || q.question || '';
                 document.getElementById('masterReviewQuestionDisplay').textContent = questionText;
+                
+                // Show subject group
+                const group = q.subject_group || currentSubjectGroup || 'No group';
+                document.getElementById('masterReviewGroupDisplay').textContent = group;
+                
+                // Filter reviewers by subject group
+                filterReviewersByGroup(group);
             }
             document.getElementById('masterReviewModal').classList.add('active');
-            if (!reviewers.length) loadReviewers();
-            document.getElementById('reviewerSelect').value = '';
             document.getElementById('masterReviewComment').value = '';
         }
 
@@ -982,10 +1076,15 @@
             if (q) {
                 const questionText = q.question_text || q.question || '';
                 document.getElementById('reviewQuestionDisplay').textContent = questionText;
+                
+                // Show subject group
+                const group = q.subject_group || currentSubjectGroup || 'No group';
+                document.getElementById('reviewGroupDisplay').textContent = group;
+                
+                // Filter approvers by subject group
+                filterApproversByGroup(group);
             }
             document.getElementById('reviewModal').classList.add('active');
-            if (!approvers.length) loadApprovers();
-            document.getElementById('approverSelect').value = '';
             document.getElementById('reviewComment').value = '';
         }
 
@@ -1161,8 +1260,13 @@
         // ============================================
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🚀 Review Dashboard initializing...');
+            console.log('User Role:', currentUserRole);
+            console.log('Permissions:', permissions);
+            console.log('Subject Group:', currentSubjectGroup);
+            
             await loadGrades();
             await loadSubjects();
+            await loadAllUsers();
             await loadReviewers();
             await loadApprovers();
             await fetchQuestions(true);
@@ -1170,10 +1274,6 @@
             // Auto-refresh every 45 seconds
             setInterval(() => fetchQuestions(false), 45000);
         });
-
-        // Debug - log to console
-        console.log('User Role:', currentUserRole);
-        console.log('Permissions:', permissions);
     </script>
 </body>
 </html>
