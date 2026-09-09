@@ -1178,9 +1178,9 @@
 
             let actions = '';
             if (canEdit) actions += `<button class="action-icon icon-edit" onclick="openEdit(${q.id})" title="Edit"><i class="fas fa-edit"></i></button>`;
-            if (canMasterReview) actions += `<button class="action-icon icon-assign" onclick="openMasterReview(${q.id})" title="Assign to Reviewer"><i class="fas fa-user-check"></i></button>`;
-            if (canReview) actions += `<button class="action-icon icon-assign" onclick="openReview(${q.id})" title="Send to Approver"><i class="fas fa-paper-plane"></i></button>`;
-            if (canApprove) actions += `<button class="action-icon icon-approve" onclick="openApprove(${q.id})" title="Approve"><i class="fas fa-check"></i></button>`;
+            if (canMasterReview) actions += `<button class="action-icon icon-assign" onclick="openMasterReview(${q.id})" title="Assign to Reviewer"><i class="fas fa-check"></i></button>`;
+            if (canReview) actions += `<button class="action-icon icon-assign" onclick="openReview(${q.id})" title="Assign toApprover"><i class="fas fa-check"></i></button>`;
+            if (canApprove) actions += `<button class="action-icon icon-approve" onclick="openApprove(${q.id})" title="Approved"><i class="fas fa-check"></i></button>`;
             if (canRework) actions += `<button class="action-icon icon-rework" onclick="openRework(${q.id})" title="Rework"><i class="fas fa-redo"></i></button>`;
             if (canDelete) actions += `<button class="action-icon icon-delete" onclick="deleteQuestion(${q.id})" title="Delete"><i class="fas fa-trash"></i></button>`;
             if (!actions) actions = `<span style="color:rgba(255,255,255,0.2);font-size:10px;">No actions</span>`;
