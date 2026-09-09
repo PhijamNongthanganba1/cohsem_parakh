@@ -265,7 +265,7 @@
         .badge-rework { background: rgba(243,156,18,0.2); color: #f7dc6f; }
         .badge-source { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5); }
 
-        /* HTML Content Rendering */
+        
         .question-content-html {
             max-width: 250px;
             max-height: 80px;
@@ -477,7 +477,7 @@
             border-radius: 10px;
         }
 
-        /* Edit Modal Styles */
+        
         .edit-modal-content {
             max-width: 600px;
         }
@@ -617,15 +617,15 @@
 
         <div class="tab-container">
             <div class="tab-header" id="tabHeader">
-                <!-- Tabs will be rendered here -->
+                
             </div>
             <div class="tab-content" id="tabContent">
-                <!-- Content will be rendered here -->
+                
             </div>
         </div>
     </div>
 
-    <!-- Master Review Modal -->
+    
     <div class="modal" id="masterReviewModal">
         <div class="modal-content">
             <div class="modal-header master"><h3><i class="fas fa-user-check"></i> Assign to Reviewer</h3><button class="close-btn" onclick="closeModal('masterReviewModal')">&times;</button></div>
@@ -644,7 +644,7 @@
         </div>
     </div>
 
-    <!-- Review Modal -->
+    
     <div class="modal" id="reviewModal">
         <div class="modal-content">
             <div class="modal-header review"><h3><i class="fas fa-user-check"></i> Assign to Approver</h3><button class="close-btn" onclick="closeModal('reviewModal')">&times;</button></div>
@@ -663,7 +663,7 @@
         </div>
     </div>
 
-    <!-- Approve Modal -->
+    
     <div class="modal" id="approveModal">
         <div class="modal-content">
             <div class="modal-header approve"><h3><i class="fas fa-check-circle"></i> Approve</h3><button class="close-btn" onclick="closeModal('approveModal')">&times;</button></div>
@@ -680,7 +680,7 @@
         </div>
     </div>
 
-    <!-- Rework Modal -->
+    
     <div class="modal" id="reworkModal">
         <div class="modal-content">
             <div class="modal-header rework"><h3><i class="fas fa-redo"></i> Rework</h3><button class="close-btn" onclick="closeModal('reworkModal')">&times;</button></div>
@@ -698,7 +698,7 @@
         </div>
     </div>
 
-    <!-- Edit Modal -->
+    
     <div class="modal" id="editModal">
         <div class="modal-content edit-modal-content">
             <div class="modal-header" style="background: linear-gradient(135deg, #b9770e, #f39c12);">
@@ -730,16 +730,16 @@
         </div>
     </div>
 
-    <!-- Image Modal -->
+    
     <div class="image-modal" id="imageModal" onclick="closeImageModal()">
         <button class="image-modal-close" onclick="closeImageModal()">&times;</button>
         <img id="modalImage" alt="Full size image">
     </div>
 
     <script>
-        // ============================================
-        // CONFIGURATION
-        // ============================================
+        
+        
+        
         const currentUserId = {{ user_id|default(0) }};
         const currentUserRole = '{{ session.get("user_role", "writer") }}';
         const currentUsername = '{{ user }}';
@@ -753,9 +753,9 @@
             MASTER: {{ permissions.MASTER|default('false')|lower }}
         };
 
-        // ============================================
-        // STATE
-        // ============================================
+        
+        
+        
         let allQuestions = [];
         let filteredQuestions = [];
         let allGrades = [];
@@ -766,9 +766,9 @@
         let activeTab = 0;
         let isFetching = false;
 
-        // ============================================
-        // UTILITY FUNCTIONS
-        // ============================================
+        
+        
+        
         function escapeHtml(text) { 
             if (!text) return ''; 
             const d = document.createElement('div'); 
@@ -827,15 +827,15 @@
             document.getElementById('imageModal').style.display = 'none';
         }
 
-        // ============================================
-        // LOAD DATA FUNCTIONS
-        // ============================================
+        
+        
+        
         async function loadReviewers() {
             try { 
                 const r = await fetch('/api/reviewers'); 
                 const d = await r.json(); 
                 reviewers = d.reviewers || []; 
-                console.log('📊 Loaded reviewers:', reviewers.length);
+                console.log(' Loaded reviewers:', reviewers.length);
             } catch(e) { console.error('Error loading reviewers:', e); }
         }
         
@@ -844,7 +844,7 @@
                 const r = await fetch('/api/approvers'); 
                 const d = await r.json(); 
                 approvers = d.approvers || []; 
-                console.log('📊 Loaded approvers:', approvers.length);
+                console.log(' Loaded approvers:', approvers.length);
             } catch(e) { console.error('Error loading approvers:', e); }
         }
         
@@ -930,15 +930,15 @@
             sel.innerHTML = opts;
         }
 
-        // ============================================
-        // MAIN FETCH FUNCTION
-        // ============================================
+        
+        
+        
         async function fetchQuestions() {
             if (isFetching) return;
             isFetching = true;
             
             try {
-                console.log('📊 Fetching review questions...');
+                console.log(' Fetching review questions...');
                 const r = await fetch('/api/review-questions');
                 const d = await r.json();
                 
@@ -951,7 +951,7 @@
                 }
                 
                 allQuestions = d.questions || [];
-                console.log(`📊 Loaded ${allQuestions.length} questions`);
+                console.log(` Loaded ${allQuestions.length} questions`);
                 
                 updatePermissionNote(d);
                 updateStats();
@@ -999,9 +999,9 @@
             document.getElementById('approvedCount').textContent = approved;
         }
 
-        // ============================================
-        // FILTER FUNCTIONS - FIXED
-        // ============================================
+        
+        
+        
         function applyFilters() {
             const gradeVal = document.getElementById('gradeFilter').value;
             const subjectVal = document.getElementById('subjectFilter').value;
@@ -1009,16 +1009,16 @@
             const search = document.getElementById('searchInput').value.toLowerCase().trim();
 
             filteredQuestions = allQuestions.filter(q => {
-                // Grade filter
+                
                 if (gradeVal && q.grade_id != parseInt(gradeVal)) return false;
                 
-                // Subject filter
+                
                 if (subjectVal && q.subject_id != parseInt(subjectVal)) return false;
                 
-                // Status filter
+                
                 if (statusVal && (q.status||'unassigned') !== statusVal) return false;
                 
-                // Search filter
+                
                 if (search) {
                     const qText = (q.question_text || q.question || '').toLowerCase();
                     const ans = (q.answer || '').toLowerCase();
@@ -1048,14 +1048,14 @@
             document.getElementById('subjectFilter').value = '';
             document.getElementById('statusFilter').value = '';
             document.getElementById('searchInput').value = '';
-            // Reset subject filter options based on grade
+            
             updateSubjectFilter();
             applyFilters();
         }
 
-        // ============================================
-        // TAB RENDER FUNCTION
-        // ============================================
+        
+        
+        
         function renderTabs() {
             const isAdmin = currentUserRole === 'admin';
             const isMaster = permissions.MASTER || currentUserRole === 'master' || isAdmin;
@@ -1096,7 +1096,7 @@
                 ];
             }
 
-            // Render tabs header
+            
             const header = document.getElementById('tabHeader');
             let headerHtml = '';
             tabs.forEach((tab, index) => {
@@ -1111,7 +1111,7 @@
             });
             header.innerHTML = headerHtml;
 
-            // Render tab content
+            
             const content = document.getElementById('tabContent');
             let contentHtml = '';
             tabs.forEach((tab, index) => {
@@ -1150,9 +1150,9 @@
             content.innerHTML = contentHtml;
         }
 
-        // ============================================
-        // TABLE ROW RENDERER
-        // ============================================
+        
+        
+        
         function renderTableRow(q) {
             const status = q.status || 'unassigned';
             const subject = allSubjects.find(s => s.id == q.subject_id);
@@ -1218,9 +1218,9 @@
             renderTabs();
         }
 
-        // ============================================
-        // ACTION FUNCTIONS
-        // ============================================
+        
+        
+        
         async function deleteQuestion(id) {
             const result = await Swal.fire({
                 title: 'Delete Question?',
@@ -1246,14 +1246,14 @@
             }
         }
 
-        // ============================================
-        // EDIT FUNCTION - FIXED
-        // ============================================
+        
+        
+        
         async function openEdit(id) {
             currentModalId = id;
             
             try {
-                // Fetch the question data from the server
+                
                 const r = await fetch(`/api/question/${id}`);
                 const d = await r.json();
                 
@@ -1264,7 +1264,7 @@
                 
                 const q = d.question;
                 
-                // Set values in the edit modal - using raw text content
+                
                 document.getElementById('editQuestionText').value = getPlainText(q.question_text || '');
                 document.getElementById('editAnswerText').value = getPlainText(q.answer || '');
                 document.getElementById('editMarks').value = q.marks || 1;
@@ -1326,9 +1326,9 @@
             }
         }
 
-        // ============================================
-        // MASTER REVIEW FUNCTIONS
-        // ============================================
+        
+        
+        
         function openMasterReview(id) {
             currentModalId = id;
             const q = allQuestions.find(x => x.id === id);
@@ -1376,9 +1376,9 @@
             }
         }
 
-        // ============================================
-        // REVIEW FUNCTIONS
-        // ============================================
+        
+        
+        
         function openReview(id) {
             currentModalId = id;
             const q = allQuestions.find(x => x.id === id);
@@ -1426,9 +1426,9 @@
             }
         }
 
-        // ============================================
-        // APPROVE FUNCTIONS
-        // ============================================
+        
+        
+        
         function openApprove(id) {
             currentModalId = id;
             const q = allQuestions.find(x => x.id === id);
@@ -1464,9 +1464,9 @@
             }
         }
 
-        // ============================================
-        // REWORK FUNCTIONS
-        // ============================================
+        
+        
+        
         function openRework(id) {
             currentModalId = id;
             const q = allQuestions.find(x => x.id === id);
@@ -1509,9 +1509,9 @@
             }
         }
 
-        // ============================================
-        // EVENT LISTENERS
-        // ============================================
+        
+        
+        
         document.getElementById('gradeFilter').addEventListener('change', function() {
             updateSubjectFilter();
             applyFilters();
@@ -1524,25 +1524,25 @@
             }
         });
 
-        // Close modals on backdrop click
+        
         document.querySelectorAll('.modal').forEach(m => {
             m.addEventListener('click', function(e) {
                 if (e.target === this) this.classList.remove('active');
             });
         });
 
-        // Close image modal on escape
+        
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeImageModal();
             }
         });
 
-        // ============================================
-        // INITIALIZATION
-        // ============================================
+        
+        
+        
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('🚀 Review Dashboard initializing...');
+            console.log(' Review Dashboard initializing...');
             console.log('User Role:', currentUserRole);
             console.log('Permissions:', permissions);
             console.log('Subject Group:', currentSubjectGroup);
@@ -1553,7 +1553,7 @@
             await loadApprovers();
             await fetchQuestions();
             
-            // Auto-refresh every 60 seconds
+            
             setInterval(fetchQuestions, 60000);
         });
     </script>

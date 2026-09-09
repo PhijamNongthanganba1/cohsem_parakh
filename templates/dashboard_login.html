@@ -13,7 +13,7 @@
 
         html, body {
             min-height: 100vh;
-            min-height: 100dvh; /* dynamic viewport height for mobile */
+            min-height: 100dvh; 
         }
 
         body {
@@ -27,12 +27,12 @@
             padding: 20px;
             position: relative;
             overflow-x: hidden;
-            /* force background on mobile */
+            
             background-attachment: fixed;
             background-size: cover;
         }
 
-        /* fallback solid color for very old browsers */
+        
         @media screen and (max-width: 768px) {
             body {
                 background: #0a1a3a;
@@ -41,7 +41,7 @@
             }
         }
 
-        /* pseudo elements for extra depth — fixed to avoid white gaps */
+        
         body::before {
             content: '';
             position: fixed;
@@ -434,7 +434,7 @@
             display: block;
         }
 
-        /* Mobile-first fixes: ensure left panel hidden, right panel full width */
+        
         @media (max-width: 768px) {
             .login-wrapper {
                 flex-direction: column;
@@ -459,7 +459,7 @@
                 border-radius: 24px;
             }
 
-            /* ensure right panel content is visible */
+            
             .right-panel .logo-section h3,
             .right-panel .logo-section p,
             .right-panel .form-group label,
@@ -487,7 +487,7 @@
                 border-top-color: rgba(255, 255, 255, 0.15);
             }
 
-            /* extra safe background for mobile */
+            
             body {
                 background: #0a1a3a;
                 background: linear-gradient(135deg, #0a1a3a 0%, #1a3a6d 30%, #0c2461 60%, #1e3a5f 100%);
@@ -495,13 +495,13 @@
                 padding: 12px;
             }
 
-            /* pseudo elements stay fixed */
+            
             body::before, body::after {
                 position: fixed;
             }
         }
 
-        /* for very small screens */
+        
         @media (max-width: 400px) {
             .right-panel {
                 padding: 20px 16px;
@@ -522,7 +522,7 @@
 </head>
 <body>
     <div class="login-wrapper">
-        <!-- left panel (hidden on mobile) -->
+        
         <div class="left-panel">
             <div class="left-logo-container">
                 <div class="left-logo-item combined-logo">
@@ -555,7 +555,7 @@
             </div>
         </div>
         
-        <!-- right panel: login form -->
+        
         <div class="right-panel">
             <div class="logo-section">
                 <img src="/static/cohsem_ico.png" alt="COHSEM" onerror="this.style.display='none'">
@@ -610,7 +610,7 @@
             }, 5000);
         }
 
-        // Flash messages (from backend) — keep as is
+        
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}

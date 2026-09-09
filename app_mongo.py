@@ -13,12 +13,11 @@ import pymongo
 import sys
 import ssl
 
-print(f"🐍 Python version: {sys.version}")
+print(f" Python version: {sys.version}")
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'cohsem_it_secure_key_2026_change_this_in_production')
 
-# --- MongoDB Configuration ---
 MONGO_URI = 'mongodb+srv://nongthanganbaphijam_db_user:BG2uPkyRu1L4ov30@cluster0.b5arftz.mongodb.net/?retryWrites=true&w=majority'
 
 print(f"🔗 Connecting to MongoDB Atlas...")
@@ -42,7 +41,7 @@ try:
     )
     client.admin.command('ping')
     db = client['cohsemitms']
-    print("✅ MongoDB Atlas connected successfully!")
+    print(" MongoDB Atlas connected successfully!")
     
     app.config["MONGO_URI"] = MONGO_URI
     mongo = PyMongo(app)
@@ -50,7 +49,7 @@ try:
     mongo.cx = client
     
 except Exception as e:
-    print(f"❌ MongoDB connection failed: {e}")
+    print(f" MongoDB connection failed: {e}")
     sys.exit(1)
 
 # --- File Upload Configuration ---
@@ -61,7 +60,6 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# --- Helper Functions ---
 
 def get_next_id(collection_name):
     """Get next numeric ID for a collection"""
@@ -96,10 +94,8 @@ def convert_doc(doc):
                 result[key] = convert_doc(value)
             else:
                 result[key] = value
-        # Ensure 'id' field exists for frontend
         if 'id' not in result and 'id' in doc:
             result['id'] = doc['id']
-        # Ensure numeric IDs are preserved as ints
         for key in ['id', 'grade_id', 'subject_id', 'cg_id', 'chapter_id', 'comp_id', 'textbook_id', 'domain_id', 'difficulty_id', 'knowledge_level_id', 'question_type_id']:
             if key in result and result[key] is not None:
                 try:
@@ -112,7 +108,6 @@ def convert_doc(doc):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# ========== Clean HTML by removing <p> tags ==========
 def clean_editor_html(html_content):
     """
     Remove <p> tags from Quill editor content while preserving the content inside.
@@ -121,19 +116,14 @@ def clean_editor_html(html_content):
     if not html_content:
         return ''
     
-    # Remove <p> tags but keep their content
-    # Handle opening and closing <p> tags with attributes
     clean = re.sub(r'<p[^>]*>', '', html_content)
     clean = re.sub(r'</p>', '', clean)
     
-    # Remove any empty divs that might have been created
     clean = re.sub(r'<div[^>]*>\s*</div>', '', clean)
     
-    # Clean up extra whitespace
     clean = re.sub(r'\n\s*\n', '\n', clean)
     clean = re.sub(r'^\s+|\s+$', '', clean)
     
-    # If the result is just empty or <br>, return empty string
     if clean == '' or clean == '<br>' or clean == '<br/>' or clean == '<br />':
         return ''
     
@@ -160,10 +150,8 @@ def has_actual_content(html_content):
         return True
     return False
 
-# --- Database Initialization ---
 def init_db():
     try:
-        # Initialize counters
         if db.counters.count_documents({}) == 0:
             counters = [
                 {'_id': 'grades', 'seq': 0},
@@ -180,17 +168,14 @@ def init_db():
             db.counters.insert_many(counters)
             print("✓ Initialized counters")
         
-        # Create indexes with error handling
         print("🔄 Creating indexes...")
         
-        # Drop problematic indexes if they exist
         try:
             db.knowledge_levels.drop_index('id_1')
             print("  Dropped existing id_1 index on knowledge_levels")
         except:
             pass
         
-        # Create indexes
         db.grades.create_index('grade_name', unique=True)
         db.grades.create_index('id', unique=True)
         db.subjects.create_index('id', unique=True)
@@ -201,26 +186,23 @@ def init_db():
         db.competencies.create_index('id', unique=True)
         db.competencies.create_index([('cg_id', 1), ('comp_code', 1)], unique=True)
         
-        # Handle knowledge_levels id index with care
         try:
-            # Remove any documents with null id
             db.knowledge_levels.delete_many({'id': None})
             db.knowledge_levels.create_index('id', unique=True)
             print("  ✓ Created id index on knowledge_levels")
         except pymongo.errors.DuplicateKeyError as e:
-            print(f"  ⚠️ DuplicateKeyError on knowledge_levels: {e}")
+            print(f"   DuplicateKeyError on knowledge_levels: {e}")
             db.knowledge_levels.delete_many({'id': None})
             try:
                 db.knowledge_levels.drop_index('id_1')
             except:
                 pass
             db.knowledge_levels.create_index('id', unique=True)
-            print("  ✓ Fixed and created id index on knowledge_levels")
+            print("   Fixed and created id index on knowledge_levels")
         
         db.knowledge_levels.create_index([('domain_id', 1), ('level_name', 1)], unique=True)
         
-        # ============ Cognitive Domains with numeric IDs ============
-        print("🔄 Setting up cognitive domains with numeric IDs...")
+        print(" Setting up cognitive domains with numeric IDs...")
         
         domains_data = [
             {'id': 1, 'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
@@ -232,17 +214,16 @@ def init_db():
             existing = db.cognitive_domains.find_one({'id': domain['id']})
             if not existing:
                 db.cognitive_domains.insert_one(domain)
-                print(f"  ✓ Inserted cognitive domain: {domain['domain_name']} (id: {domain['id']})")
+                print(f"   Inserted cognitive domain: {domain['domain_name']} (id: {domain['id']})")
             else:
                 if existing.get('domain_name') != domain['domain_name'] or existing.get('description') != domain['description']:
                     db.cognitive_domains.update_one(
                         {'id': domain['id']},
                         {'$set': {'domain_name': domain['domain_name'], 'description': domain['description']}}
                     )
-                    print(f"  ✓ Updated cognitive domain: {domain['domain_name']} (id: {domain['id']})")
+                    print(f"   Updated cognitive domain: {domain['domain_name']} (id: {domain['id']})")
         
-        # ============ Difficulty Levels with numeric IDs ============
-        print("🔄 Setting up difficulty levels with numeric IDs...")
+        print(" Setting up difficulty levels with numeric IDs...")
         difficulties_data = [
             {'id': 1, 'level_name': 'Easy'},
             {'id': 2, 'level_name': 'Medium'},
@@ -253,24 +234,22 @@ def init_db():
             existing = db.difficulty_levels.find_one({'id': diff['id']})
             if not existing:
                 db.difficulty_levels.insert_one(diff)
-                print(f"  ✓ Inserted difficulty level: {diff['level_name']} (id: {diff['id']})")
+                print(f"   Inserted difficulty level: {diff['level_name']} (id: {diff['id']})")
         
-        # ============ Knowledge Levels with numeric domain_id ============
-        print("🔄 Setting up knowledge levels with numeric domain_id...")
+        print(" Setting up knowledge levels with numeric domain_id...")
         
         knowledge_data = [
-            # Domain 1: Awareness (id: 1)
             {'id': 1, 'level_name': 'Knowledge', 'description': 'Basic recall of information and facts', 'domain_id': 1, 'difficulty_id': 1, 'is_active': True},
             {'id': 2, 'level_name': 'Remembering', 'description': 'Retrieving knowledge from memory', 'domain_id': 1, 'difficulty_id': 1, 'is_active': True},
             {'id': 3, 'level_name': 'Understanding', 'description': 'Constructing meaning from information', 'domain_id': 1, 'difficulty_id': 1, 'is_active': True},
             {'id': 4, 'level_name': 'Comprehension', 'description': 'Grasping the meaning of information', 'domain_id': 1, 'difficulty_id': 2, 'is_active': True},
-            # Domain 2: Sensitivity (id: 2)
+            
             {'id': 5, 'level_name': 'Application', 'description': 'Apply knowledge to new situations', 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
             {'id': 6, 'level_name': 'Analysis', 'description': 'Break down information into parts', 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
             {'id': 7, 'level_name': 'Synthesis', 'description': 'Combine elements to form a new whole', 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
             {'id': 8, 'level_name': 'Empathy', 'description': "Understanding others' perspectives and feelings", 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
             {'id': 9, 'level_name': 'Interpretation', 'description': 'Explaining and interpreting information', 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
-            # Domain 3: Creativity (id: 3)
+            
             {'id': 10, 'level_name': 'Evaluation', 'description': 'Make judgments based on criteria and standards', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True},
             {'id': 11, 'level_name': 'Creation', 'description': 'Generate new ideas and products', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True},
             {'id': 12, 'level_name': 'Critical Thinking', 'description': 'Deep analysis and evaluation of information', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True},
@@ -283,7 +262,7 @@ def init_db():
             existing = db.knowledge_levels.find_one({'id': level['id']})
             if not existing:
                 db.knowledge_levels.insert_one(level)
-                print(f"  ✓ Inserted knowledge level: {level['level_name']} (domain_id: {level['domain_id']})")
+                print(f"   Inserted knowledge level: {level['level_name']} (domain_id: {level['domain_id']})")
             else:
                 if existing.get('domain_id') != level['domain_id']:
                     db.knowledge_levels.update_one(
@@ -295,10 +274,9 @@ def init_db():
                             'is_active': level['is_active']
                         }}
                     )
-                    print(f"  ✓ Updated knowledge level: {level['level_name']} (domain_id: {level['domain_id']})")
+                    print(f"   Updated knowledge level: {level['level_name']} (domain_id: {level['domain_id']})")
         
-        # ============ Question Types with cognitive_id ============
-        print("🔄 Setting up question types with cognitive_id...")
+        print(" Setting up question types with cognitive_id...")
         question_types_data = [
             {'id': 1, 'type_name': 'Objective', 'cognitive_id': 1, 'description': 'Objective type questions'},
             {'id': 2, 'type_name': 'Very Short Answer', 'cognitive_id': 1, 'description': 'Very short answer type questions'},
@@ -311,9 +289,8 @@ def init_db():
             existing = db.question_types.find_one({'id': qt['id']})
             if not existing:
                 db.question_types.insert_one(qt)
-                print(f"  ✓ Inserted question type: {qt['type_name']} (cognitive_id: {qt['cognitive_id']})")
+                print(f"   Inserted question type: {qt['type_name']} (cognitive_id: {qt['cognitive_id']})")
         
-        # ============ Admin user ============
         if db.users.count_documents({}) == 0:
             hashed_password = generate_password_hash("admin123")
             db.users.insert_one({
@@ -333,7 +310,6 @@ def init_db():
             db.counters.update_one({'_id': 'users'}, {'$set': {'seq': 1}})
             print("✓ Created default admin user")
         
-        # Create test users with different roles if they don't exist
         test_users = [
             {'username': 'master1', 'password': 'master123', 'role': 'master', 'perm_master': True},
             {'username': 'reviewer1', 'password': 'reviewer123', 'role': 'reviewer', 'perm_rc': True},
@@ -362,12 +338,10 @@ def init_db():
                 })
                 print(f"✓ Created test user: {test_user['username']} ({test_user['role']})")
         
-        # ============ Create test questions if no questions exist ============
         if db.simple_questions.count_documents({}) == 0:
             print("🔄 Creating test questions...")
             create_test_questions()
         
-        # Fix existing data - add numeric IDs
         fix_collection_ids('grades')
         fix_collection_ids('subjects')
         fix_collection_ids('textbooks')
@@ -380,24 +354,21 @@ def init_db():
         fix_collection_ids('paper_blueprints')
         fix_collection_ids('knowledge_levels')
         
-        # Fix foreign keys to use numeric IDs
         fix_foreign_keys()
         
-        # Fix knowledge_levels domain_id to be numeric
         fix_knowledge_levels_domain_id()
         
         # Verify the data
         verify_domain_data()
         
-        print("✅ Database initialization complete")
+        print(" Database initialization complete")
     except Exception as e:
-        print(f"⚠️ Database initialization error: {e}")
+        print(f" Database initialization error: {e}")
         traceback.print_exc()
 
 def create_test_questions():
     """Create test questions for development"""
     try:
-        # First ensure we have grades
         if db.grades.count_documents({}) == 0:
             grades = [
                 {'id': 1, 'grade_name': 'Class IX'},
@@ -409,7 +380,6 @@ def create_test_questions():
             db.counters.update_one({'_id': 'grades'}, {'$set': {'seq': 4}})
             print("  ✓ Created test grades")
         
-        # Create subjects
         if db.subjects.count_documents({}) == 0:
             subjects = [
                 {'id': 1, 'subject_name': 'Physics', 'grade_id': 3},
@@ -423,9 +393,8 @@ def create_test_questions():
             ]
             db.subjects.insert_many(subjects)
             db.counters.update_one({'_id': 'subjects'}, {'$set': {'seq': 8}})
-            print("  ✓ Created test subjects")
+            print("   Created test subjects")
         
-        # Create test questions
         questions = [
             {
                 'id': 1,
@@ -533,10 +502,10 @@ def create_test_questions():
         
         db.simple_questions.insert_many(questions)
         db.counters.update_one({'_id': 'simple_questions'}, {'$set': {'seq': 6}})
-        print(f"  ✓ Created {len(questions)} test questions")
+        print(f"   Created {len(questions)} test questions")
         
     except Exception as e:
-        print(f"  ⚠️ Error creating test questions: {e}")
+        print(f"   Error creating test questions: {e}")
 
 def fix_collection_ids(collection_name):
     """Add numeric 'id' field to documents if missing"""
@@ -561,11 +530,10 @@ def fix_collection_ids(collection_name):
             {'_id': collection_name},
             {'$set': {'seq': seq}}
         )
-        print(f"✓ Added numeric IDs to {collection_name} ({seq} documents)")
+        print(f" Added numeric IDs to {collection_name} ({seq} documents)")
 
 def fix_foreign_keys():
     """Fix foreign keys to use numeric IDs"""
-    # Fix subject grade_id
     subjects = db.subjects.find({})
     for subject in subjects:
         grade_id = subject.get('grade_id')
@@ -587,7 +555,6 @@ def fix_foreign_keys():
                     )
                     print(f"  Fixed subject '{subject.get('subject_name')}' grade_id: {grade['id']}")
     
-    # Fix CG subject_id and chapter_id
     cgs = db.curricular_goals.find({})
     for cg in cgs:
         subject_id = cg.get('subject_id')
@@ -609,7 +576,6 @@ def fix_foreign_keys():
                     {'$set': {'chapter_id': chapter['id']}}
                 )
     
-    # Fix Competency cg_id
     comps = db.competencies.find({})
     for comp in comps:
         cg_id = comp.get('cg_id')
@@ -633,14 +599,12 @@ def fix_foreign_keys():
 
 def fix_knowledge_levels_domain_id():
     """Fix knowledge_levels domain_id to be numeric and match cognitive_domains"""
-    print("🔄 Fixing knowledge_levels domain_id...")
+    print(" Fixing knowledge_levels domain_id...")
     
-    # Get all cognitive domains with numeric IDs
     domains = list(db.cognitive_domains.find({}))
     domain_map = {str(d['_id']): d['id'] for d in domains}
     domain_name_map = {d['domain_name']: d['id'] for d in domains}
     
-    # Fix knowledge levels
     levels = list(db.knowledge_levels.find({}))
     fixed_count = 0
     
@@ -764,7 +728,7 @@ def dashboard_login():
                 flash('Invalid username or password!', 'error')
                 return render_template('dashboard_login.html')
         except Exception as e:
-            print(f"❌ Login error: {e}")
+            print(f" Login error: {e}")
             flash(f'Login error: {str(e)}', 'error')
             return render_template('dashboard_login.html')
 
@@ -939,9 +903,6 @@ def logout():
     flash('You have been logged out successfully!', 'success')
     return redirect(url_for('dashboard_login'))
 
-# ============================================
-# API ENDPOINTS
-# ============================================
 
 @app.route('/api/dashboard-stats')
 def dashboard_stats():
@@ -1033,10 +994,6 @@ def dashboard_stats():
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-# ============================================
-# GRADE ENDPOINTS
-# ============================================
-
 @app.route('/api/grades', methods=['GET'])
 def get_grades():
     if 'user' not in session:
@@ -1118,10 +1075,6 @@ def delete_grade(grade_id):
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-# ============================================
-# SUBJECT ENDPOINTS
-# ============================================
 
 @app.route('/api/subjects', methods=['GET'])
 def get_subjects():
@@ -1248,10 +1201,6 @@ def delete_subject(subject_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ============================================
-# PAGE1 DATA - FIXED WITH SUBJECT GROUP FILTERING
-# ============================================
-
 @app.route('/api/page1-data')
 def get_page1_data():
     if 'user' not in session:
@@ -1262,27 +1211,24 @@ def get_page1_data():
         subject_group = session.get('subject_group')
         username = session.get('user', '')
         
-        print(f"📊 Page1 data request - user: {username}, role: {user_role}, group: {subject_group}")
+        print(f" Page1 data request - user: {username}, role: {user_role}, group: {subject_group}")
         
-        # Get all grades initially
         grades = list(db.grades.find({}))
         
-        # If user has a subject group and is not admin, filter grades
         if subject_group and user_role != 'admin':
-            # Get subjects in this group
             group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
             subject_ids = [s['subject_id'] for s in group_subjects]
-            print(f"📊 Subject group {subject_group} has {len(subject_ids)} subjects")
+            print(f" Subject group {subject_group} has {len(subject_ids)} subjects")
             
             if subject_ids:
                 # Get grades that have subjects in this group
                 subjects_in_group = list(db.subjects.find({'id': {'$in': subject_ids}}))
                 grade_ids = list(set([s['grade_id'] for s in subjects_in_group]))
                 grades = [g for g in grades if g['id'] in grade_ids]
-                print(f"📊 Filtered to {len(grades)} grades for group {subject_group}")
+                print(f" Filtered to {len(grades)} grades for group {subject_group}")
             else:
                 grades = []
-                print(f"📊 No subjects found for group {subject_group}")
+                print(f" No subjects found for group {subject_group}")
         
         # Get subjects - filter by subject group if needed
         subjects = list(db.subjects.find({}))
@@ -1291,24 +1237,22 @@ def get_page1_data():
             subject_ids = [s['subject_id'] for s in group_subjects]
             if subject_ids:
                 subjects = [s for s in subjects if s['id'] in subject_ids]
-                print(f"📊 Filtered to {len(subjects)} subjects for group {subject_group}")
+                print(f" Filtered to {len(subjects)} subjects for group {subject_group}")
         
-        # Get CGs - filter by subject group if needed
         cgs = list(db.curricular_goals.find({}))
         if subject_group and user_role != 'admin':
             group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
             subject_ids = [s['subject_id'] for s in group_subjects]
             if subject_ids:
                 cgs = [cg for cg in cgs if cg['subject_id'] in subject_ids]
-                print(f"📊 Filtered to {len(cgs)} CGs for group {subject_group}")
+                print(f" Filtered to {len(cgs)} CGs for group {subject_group}")
         
-        # Get competencies - filter by CG IDs
         competencies = list(db.competencies.find({}))
         if subject_group and user_role != 'admin':
             cg_ids = [cg['id'] for cg in cgs]
             if cg_ids:
                 competencies = [comp for comp in competencies if comp['cg_id'] in cg_ids]
-                print(f"📊 Filtered to {len(competencies)} competencies for group {subject_group}")
+                print(f" Filtered to {len(competencies)} competencies for group {subject_group}")
         
         question_types = list(db.question_types.find({}))
         cognitive_domains = list(db.cognitive_domains.find({}))
@@ -1361,15 +1305,12 @@ def get_page1_data():
             'subject_group': subject_group
         }
         
-        print(f"📊 Returning data: {len(grades)} grades, {len(subjects)} subjects, {len(cgs)} CGs, {len(competencies)} competencies")
+        print(f" Returning data: {len(grades)} grades, {len(subjects)} subjects, {len(cgs)} CGs, {len(competencies)} competencies")
         return jsonify(data)
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-# ============================================
-# PAGE2 DATA - FIXED WITH SUBJECT GROUP FILTERING
-# ============================================
 
 @app.route('/api/page2-data')
 def get_page2_data():
@@ -1386,7 +1327,7 @@ def get_page2_data():
             comp = db.competencies.find_one({'id': int(comp_id)})
             if comp:
                 comp_data = convert_doc(comp)
-                print(f"📊 Found competency: {comp_data.get('comp_code')} - cg_id: {comp_data.get('cg_id')}")
+                print(f" Found competency: {comp_data.get('comp_code')} - cg_id: {comp_data.get('cg_id')}")
         
         domains = list(db.cognitive_domains.find({}).sort('id', 1))
         domains = convert_doc(domains)
@@ -1435,17 +1376,14 @@ def get_page2_data():
             'subject_group': subject_group
         }
         
-        print(f"📊 Returning {len(domains)} domains, {len(question_types)} question types")
-        print(f"📊 question_types_by_domain keys: {list(question_types_by_domain.keys())}")
+        print(f" Returning {len(domains)} domains, {len(question_types)} question types")
+        print(f" question_types_by_domain keys: {list(question_types_by_domain.keys())}")
         
         return jsonify(data)
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-# ============================================
-# KNOWLEDGE LEVELS (SUB-DOMAINS)
-# ============================================
 
 @app.route('/api/knowledge-levels', methods=['GET'])
 def get_knowledge_levels():
@@ -1455,7 +1393,7 @@ def get_knowledge_levels():
     domain_id = request.args.get('domain_id')
     difficulty_id = request.args.get('difficulty_id')
     
-    print(f"📊 get_knowledge_levels called with domain_id: {domain_id}, difficulty_id: {difficulty_id}")
+    print(f" get_knowledge_levels called with domain_id: {domain_id}, difficulty_id: {difficulty_id}")
     
     try:
         query = {'is_active': True}
@@ -1464,9 +1402,9 @@ def get_knowledge_levels():
             try:
                 domain_id_int = int(domain_id)
                 query['domain_id'] = domain_id_int
-                print(f"📊 Querying knowledge levels with domain_id: {domain_id_int}")
+                print(f" Querying knowledge levels with domain_id: {domain_id_int}")
             except:
-                print(f"⚠️ Could not convert domain_id to int: {domain_id}")
+                print(f" Could not convert domain_id to int: {domain_id}")
                 return jsonify({'knowledge_levels': []})
         
         if difficulty_id:
@@ -1477,36 +1415,36 @@ def get_knowledge_levels():
         
         levels = list(db.knowledge_levels.find(query).sort('id', 1))
         
-        print(f"📊 Found {len(levels)} knowledge levels from database")
+        print(f" Found {len(levels)} knowledge levels from database")
         for level in levels:
             print(f"  Level: {level.get('level_name')} - domain_id: {level.get('domain_id')} (type: {type(level.get('domain_id'))})")
         
         if not levels:
-            print("📊 No levels found in database, using default mapping")
+            print(" No levels found in database, using default mapping")
             
             default_mapping = [
-                {'id': 1, 'level_name': 'Knowledge', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Basic recall of information and facts'},
-                {'id': 2, 'level_name': 'Remembering', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Retrieving knowledge from memory'},
-                {'id': 3, 'level_name': 'Understanding', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Constructing meaning from information'},
-                {'id': 4, 'level_name': 'Comprehension', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Grasping the meaning of information'},
-                {'id': 5, 'level_name': 'Application', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Apply knowledge to new situations'},
-                {'id': 6, 'level_name': 'Analysis', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Break down information into parts'},
-                {'id': 7, 'level_name': 'Synthesis', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Combine elements to form a new whole'},
-                {'id': 8, 'level_name': 'Empathy', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': "Understanding others' perspectives and feelings"},
-                {'id': 9, 'level_name': 'Interpretation', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Explaining and interpreting information'},
-                {'id': 10, 'level_name': 'Evaluation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Make judgments based on criteria and standards'},
-                {'id': 11, 'level_name': 'Creation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Generate new ideas and products'},
-                {'id': 12, 'level_name': 'Critical Thinking', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Deep analysis and evaluation of information'},
-                {'id': 13, 'level_name': 'Innovation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Novel approaches and solutions to problems'},
-                {'id': 14, 'level_name': 'Design Thinking', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Human-centered problem solving approach'},
-                {'id': 15, 'level_name': 'Reflection', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Thoughtful consideration and self-assessment'}
+                {'id': 1, 'level_name': 'Knowledge', 'domain_id': 1, 'domain_name': 'Awareness', 'description': ''},
+                {'id': 2, 'level_name': 'Remembering', 'domain_id': 1, 'domain_name': 'Awareness', 'description': ''},
+                {'id': 3, 'level_name': 'Understanding', 'domain_id': 1, 'domain_name': 'Awareness', 'description': ''},
+                {'id': 4, 'level_name': 'Comprehension', 'domain_id': 1, 'domain_name': 'Awareness', 'description': ''},
+                {'id': 5, 'level_name': 'Application', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': ''},
+                {'id': 6, 'level_name': 'Analysis', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': ''},
+                {'id': 7, 'level_name': 'Synthesis', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': ''},
+                {'id': 8, 'level_name': 'Empathy', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': ""},
+                {'id': 9, 'level_name': 'Interpretation', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': ''},
+                {'id': 10, 'level_name': 'Evaluation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': ''},
+                {'id': 11, 'level_name': 'Creation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': ''},
+                {'id': 12, 'level_name': 'Critical Thinking', 'domain_id': 3, 'domain_name': 'Creativity', 'description': ''},
+                {'id': 13, 'level_name': 'Innovation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': ''},
+                {'id': 14, 'level_name': 'Design Thinking', 'domain_id': 3, 'domain_name': 'Creativity', 'description': ''},
+                {'id': 15, 'level_name': 'Reflection', 'domain_id': 3, 'domain_name': 'Creativity', 'description': ''}
             ]
             
             if domain_id:
                 try:
                     domain_id_int = int(domain_id)
                     levels = [l for l in default_mapping if l.get('domain_id') == domain_id_int]
-                    print(f"📊 Filtered default mapping for domain_id {domain_id_int}: {len(levels)} levels")
+                    print(f" Filtered default mapping for domain_id {domain_id_int}: {len(levels)} levels")
                 except:
                     levels = []
             else:
@@ -1518,20 +1456,16 @@ def get_knowledge_levels():
                     level_copy = level.copy()
                     level_copy.pop('domain_name', None)
                     db.knowledge_levels.insert_one(level_copy)
-                    print(f"  ✓ Inserted default knowledge level: {level['level_name']}")
+                    print(f"   Inserted default knowledge level: {level['level_name']}")
         
         levels = convert_doc(levels)
         
-        print(f"📊 Returning {len(levels)} knowledge levels")
+        print(f" Returning {len(levels)} knowledge levels")
         return jsonify({'knowledge_levels': levels})
     except Exception as e:
-        print(f"❌ Error in get_knowledge_levels: {e}")
+        print(f" Error in get_knowledge_levels: {e}")
         traceback.print_exc()
         return jsonify({'knowledge_levels': []})
-
-# ============================================
-# COGNITIVE DOMAINS
-# ============================================
 
 @app.route('/api/cognitive-domains', methods=['GET'])
 def get_cognitive_domains():
@@ -1554,19 +1488,15 @@ def get_cognitive_domains():
             domains = list(db.cognitive_domains.find({}).sort('id', 1))
             domains = convert_doc(domains)
         
-        print(f"📊 Returning {len(domains)} cognitive domains")
+        print(f" Returning {len(domains)} cognitive domains")
         for domain in domains:
             print(f"  Domain: {domain.get('domain_name')} - id: {domain.get('id')}")
         
         return jsonify({'domains': domains})
     except Exception as e:
-        print(f"❌ Error in get_cognitive_domains: {e}")
+        print(f" Error in get_cognitive_domains: {e}")
         traceback.print_exc()
         return jsonify({'domains': []})
-
-# ============================================
-# TEXTBOOK ENDPOINTS
-# ============================================
 
 @app.route('/api/textbooks', methods=['GET'])
 def get_textbooks():
@@ -1714,10 +1644,6 @@ def get_subject_textbooks(subject_id):
         return jsonify({'textbooks': textbooks})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-# ============================================
-# CHAPTER ENDPOINTS
-# ============================================
 
 @app.route('/api/chapters', methods=['GET'])
 def get_chapters():
@@ -1874,10 +1800,6 @@ def get_subject_chapters(subject_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ============================================
-# CG ENDPOINTS
-# ============================================
-
 @app.route('/api/cgs', methods=['GET'])
 def get_cgs():
     if 'user' not in session:
@@ -2012,10 +1934,6 @@ def delete_cg(cg_id):
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-# ============================================
-# COMPETENCY ENDPOINTS
-# ============================================
 
 @app.route('/api/competencies', methods=['GET'])
 def get_competencies_api():
@@ -2165,9 +2083,6 @@ def toggle_competency_status(comp_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ============================================
-# SUBJECT GROUPS ENDPOINTS
-# ============================================
 
 @app.route('/api/subject-groups', methods=['GET'])
 def get_subject_groups():
@@ -2289,9 +2204,6 @@ def delete_subject_group(group_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ============================================
-# USER MANAGEMENT ENDPOINTS
-# ============================================
 
 @app.route('/api/users', methods=['GET'])
 def get_users():
@@ -2462,9 +2374,6 @@ def delete_user(user_id):
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-# ============================================
-# REVIEW WORKFLOW ENDPOINTS - FIXED
-# ============================================
 
 @app.route('/api/reviewers', methods=['GET'])
 def get_reviewers():
@@ -2476,11 +2385,9 @@ def get_reviewers():
     subject_group = session.get('subject_group')
     current_user_id = session.get('user_id')
     
-    # Only admin or master can access reviewers list
     if user_role != 'admin' and not session.get('perm_master', False):
         return jsonify({'error': 'Access denied'}), 403    
     try:
-        # Build query to find users with reviewer permissions
         query = {
             '$or': [
                 {'perm_rc': True},
@@ -2489,25 +2396,22 @@ def get_reviewers():
             ]
         }
         
-        # Exclude current user
         if current_user_id:
             query['id'] = {'$ne': current_user_id}
         
-        # Filter by subject group if not admin
         if user_role != 'admin' and subject_group:
             query['subject_group'] = subject_group
         
         reviewers = list(db.users.find(query).sort('username', 1))
         reviewers = convert_doc(reviewers)
         
-        # Log for debugging
-        print(f"📊 Found {len(reviewers)} reviewers")
+        print(f" Found {len(reviewers)} reviewers")
         for r in reviewers:
             print(f"   - {r.get('username')} (perm_rc: {r.get('perm_rc')}, role: {r.get('role')})")
         
         return jsonify({'reviewers': reviewers})
     except Exception as e:
-        print(f"❌ Error in get_reviewers: {e}")
+        print(f" Error in get_reviewers: {e}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
@@ -2521,12 +2425,10 @@ def get_approvers():
     subject_group = session.get('subject_group')
     current_user_id = session.get('user_id')
     
-    # Only admin, master, or reviewer can access approvers list
     if user_role != 'admin' and not session.get('perm_master', False) and not session.get('perm_rc', False):
         return jsonify({'error': 'Access denied'}), 403
     
     try:
-        # Build query to find users with approver permissions
         query = {
             '$or': [
                 {'perm_ap': True},
@@ -2535,25 +2437,22 @@ def get_approvers():
             ]
         }
         
-        # Exclude current user
         if current_user_id:
             query['id'] = {'$ne': current_user_id}
         
-        # Filter by subject group if not admin
         if user_role != 'admin' and subject_group:
             query['subject_group'] = subject_group
         
         approvers = list(db.users.find(query).sort('username', 1))
         approvers = convert_doc(approvers)
         
-        # Log for debugging
-        print(f"📊 Found {len(approvers)} approvers")
+        print(f" Found {len(approvers)} approvers")
         for a in approvers:
             print(f"   - {a.get('username')} (perm_ap: {a.get('perm_ap')}, role: {a.get('role')})")
         
         return jsonify({'approvers': approvers})
     except Exception as e:
-        print(f"❌ Error in get_approvers: {e}")
+        print(f" Error in get_approvers: {e}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
@@ -2569,7 +2468,6 @@ def master_review_question(question_id):
     subject_group = session.get('subject_group')
     user_id = session.get('user_id')
     
-    # Check if user has master permission
     if user_role != 'admin' and not perm_master:
         return jsonify({'error': 'Master permission required'}), 403
     
@@ -2582,12 +2480,10 @@ def master_review_question(question_id):
         return jsonify({'error': 'Reviewer selection is required'}), 400
     
     try:
-        # Check if question exists
         question = db.simple_questions.find_one({'id': question_id})
         if not question:
             return jsonify({'error': 'Question not found'}), 404
         
-        # Check subject access if not admin
         if user_role != 'admin' and subject_group:
             subject_check = db.subject_groups.find_one({
                 'group_code': subject_group,
@@ -2596,12 +2492,10 @@ def master_review_question(question_id):
             if not subject_check:
                 return jsonify({'error': 'Access denied to this question'}), 403
         
-        # Get the reviewer from database
         reviewer = db.users.find_one({'id': int(reviewer_id)})
         if not reviewer:
             return jsonify({'error': 'Reviewer not found'}), 404
         
-        # Check if the user has reviewer permissions
         has_reviewer_perm = (
             reviewer.get('perm_rc') == True or 
             reviewer.get('role') == 'reviewer' or 
@@ -2609,21 +2503,18 @@ def master_review_question(question_id):
         )
         
         if not has_reviewer_perm:
-            # Log the reviewer data for debugging
-            print(f"⚠️ User {reviewer.get('username')} (id: {reviewer_id}) does not have reviewer permissions")
+            print(f" User {reviewer.get('username')} (id: {reviewer_id}) does not have reviewer permissions")
             print(f"   perm_rc: {reviewer.get('perm_rc')}, role: {reviewer.get('role')}")
             return jsonify({
                 'error': f'Selected user "{reviewer.get("username")}" does not have reviewer permissions. Please select a user with Reviewer role or RC permission.'
             }), 400
         
-        # Verify reviewer is in same subject group (if not admin)
         if user_role != 'admin' and subject_group:
             if reviewer.get('subject_group') != subject_group:
                 return jsonify({'error': 'Reviewer must be in the same subject group'}), 400
         
         reviewer_name = reviewer.get('username', reviewer_name)
         
-        # Update question status
         master_comment = f"[ASSIGNED TO REVIEWER: {reviewer_name}] {comment}" if comment else f"[ASSIGNED TO REVIEWER: {reviewer_name}]"
         
         db.simple_questions.update_one(
@@ -2647,7 +2538,7 @@ def master_review_question(question_id):
         
         return jsonify({'success': True, 'message': f'Question assigned to {reviewer_name} for review'})
     except Exception as e:
-        print(f"❌ Error in master_review_question: {e}")
+        print(f" Error in master_review_question: {e}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
@@ -2675,21 +2566,17 @@ def review_question(question_id):
         return jsonify({'error': 'Approver selection is required'}), 400
     
     try:
-        # Check if question exists and user has access
         question = db.simple_questions.find_one({'id': question_id})
         if not question:
             return jsonify({'error': 'Question not found'}), 404
         
-        # Verify this question is assigned to this reviewer
         if user_role != 'admin' and question.get('assigned_reviewer_id') != user_id:
             return jsonify({'error': 'This question is not assigned to you'}), 403
         
-        # Get the approver from database
         approver = db.users.find_one({'id': int(approver_id)})
         if not approver:
             return jsonify({'error': 'Approver not found'}), 404
         
-        # Check if the user has approver permissions
         has_approver_perm = (
             approver.get('perm_ap') == True or 
             approver.get('role') == 'approver' or 
@@ -2703,14 +2590,12 @@ def review_question(question_id):
                 'error': f'Selected user "{approver.get("username")}" does not have approver permissions. Please select a user with Approver role or AP permission.'
             }), 400
         
-        # Verify approver is in same subject group (if not admin)
         if user_role != 'admin' and subject_group:
             if approver.get('subject_group') != subject_group:
                 return jsonify({'error': 'Approver must be in the same subject group'}), 400
         
         approver_name = approver.get('username', approver_name)
         
-        # Update question status
         reviewer_comment = f"[ASSIGNED TO APPROVER: {approver_name}] {comment}" if comment else f"[ASSIGNED TO APPROVER: {approver_name}]"
         
         db.simple_questions.update_one(
@@ -2729,7 +2614,7 @@ def review_question(question_id):
         
         return jsonify({'success': True, 'message': f'Question assigned to {approver_name} for approval'})
     except Exception as e:
-        print(f"❌ Error in review_question: {e}")
+        print(f" Error in review_question: {e}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
@@ -2752,16 +2637,13 @@ def approve_question(question_id):
     comment = data.get('comment', '') if data else ''
     
     try:
-        # Check if question exists and user has access
         question = db.simple_questions.find_one({'id': question_id})
         if not question:
             return jsonify({'error': 'Question not found'}), 404
         
-        # Verify this question is assigned to this approver
         if user_role != 'admin' and question.get('assigned_approver_id') != user_id:
             return jsonify({'error': 'This question is not assigned to you'}), 403
         
-        # Update question status
         db.simple_questions.update_one(
             {'id': question_id},
             {'$set': {
@@ -2774,7 +2656,7 @@ def approve_question(question_id):
         
         return jsonify({'success': True, 'message': 'Question approved successfully'})
     except Exception as e:
-        print(f"❌ Error in approve_question: {e}")
+        print(f" Error in approve_question: {e}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
@@ -2800,12 +2682,10 @@ def rework_question(question_id):
         return jsonify({'error': 'Rework comment is required'}), 400
     
     try:
-        # Check if question exists
         question = db.simple_questions.find_one({'id': question_id})
         if not question:
             return jsonify({'error': 'Question not found'}), 404
         
-        # Determine if user can rework
         can_rework = False
         
         if user_role == 'admin':
@@ -2824,10 +2704,8 @@ def rework_question(question_id):
         if not can_rework:
             return jsonify({'error': 'Not authorized to rework this question'}), 403
         
-        # Add comment with metadata
         comment_with_meta = f"[REWORK by {username} on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {rework_comment}"
         
-        # Update question status
         db.simple_questions.update_one(
             {'id': question_id},
             {'$set': {
@@ -2852,7 +2730,7 @@ def rework_question(question_id):
         
         return jsonify({'success': True, 'message': 'Question sent back for rework'})
     except Exception as e:
-        print(f"❌ Error in rework_question: {e}")
+        print(f" Error in rework_question: {e}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
@@ -2878,12 +2756,10 @@ def update_question(question_id):
         return jsonify({'error': 'Answer is required'}), 400
     
     try:
-        # Check if question exists
         question = db.simple_questions.find_one({'id': question_id})
         if not question:
             return jsonify({'error': 'Question not found'}), 404
         
-        # Determine if user can edit
         can_edit = False
         if user_role == 'admin':
             can_edit = True
@@ -2893,11 +2769,9 @@ def update_question(question_id):
         if not can_edit:
             return jsonify({'error': 'Not authorized to edit this question'}), 403
         
-        # Clean the HTML content
         question_text_cleaned = clean_editor_html(question_text)
         answer_cleaned = clean_editor_html(answer)
         
-        # Update question
         db.simple_questions.update_one(
             {'id': question_id},
             {'$set': {
@@ -2911,7 +2785,7 @@ def update_question(question_id):
         
         return jsonify({'success': True, 'message': 'Question updated successfully'})
     except Exception as e:
-        print(f"❌ Error in update_question: {e}")
+        print(f" Error in update_question: {e}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
@@ -2938,7 +2812,6 @@ def get_builder_questions():
     count_only = request.args.get('count_only') == 'true'
     
     try:
-        # Build query
         query = {'status': status}
         
         if grade_id:
@@ -2967,7 +2840,6 @@ def get_builder_questions():
             if id_list:
                 query['id'] = {'$in': id_list}
         
-        # Apply subject group filter if not admin
         if user_role != 'admin' and subject_group:
             group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
             subject_ids = [s['subject_id'] for s in group_subjects]
@@ -2980,11 +2852,9 @@ def get_builder_questions():
             count = db.simple_questions.count_documents(query)
             return jsonify({'count': count})
         
-        # Get questions
         questions = list(db.simple_questions.find(query).sort('question_type_name', 1).limit(500))
         questions = convert_doc(questions)
         
-        # Parse images for each question
         for q in questions:
             if q.get('images'):
                 try:
@@ -3000,9 +2870,6 @@ def get_builder_questions():
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-# ============================================
-# REVIEW QUESTIONS
-# ============================================
 
 @app.route('/api/review-questions')
 def get_review_questions():
@@ -3019,25 +2886,21 @@ def get_review_questions():
     status = request.args.get('status', '')
     search = request.args.get('search', '')
     
-    print(f"🔍 Review Questions called by: {username} (role: {user_role}, id: {user_id})")
+    print(f" Review Questions called by: {username} (role: {user_role}, id: {user_id})")
     
     try:
         # First, get total count for debugging
         total_questions = db.simple_questions.count_documents({})
-        print(f"📊 Total questions in database: {total_questions}")
+        print(f" Total questions in database: {total_questions}")
         
         # Build the query
         match_conditions = []
         
-        # Apply role-based filters
         if user_role == 'admin':
-            # Admin sees all questions
             print("👑 Admin user - showing all questions")
         else:
-            # Build permission-based filters
             permission_filters = []
             
-            # Writer (RE): sees own unassigned/rejected questions
             if session.get('perm_re', False):
                 permission_filters.append({
                     '$and': [
@@ -3046,11 +2909,9 @@ def get_review_questions():
                     ]
                 })
             
-            # Master: sees unassigned questions
             if session.get('perm_master', False):
                 permission_filters.append({'status': 'unassigned'})
             
-            # Reviewer (RC): sees questions assigned to them
             if session.get('perm_rc', False):
                 permission_filters.append({
                     '$and': [
@@ -3059,7 +2920,6 @@ def get_review_questions():
                     ]
                 })
             
-            # Approver (AP): sees questions assigned to them
             if session.get('perm_ap', False):
                 permission_filters.append({
                     '$and': [
@@ -3068,11 +2928,9 @@ def get_review_questions():
                     ]
                 })
             
-            # Builder (RA): sees approved questions
             if session.get('perm_ra', False):
                 permission_filters.append({'status': 'approved'})
             
-            # Everyone can see their own questions
             permission_filters.append({'created_by': username})
             
             if permission_filters:
@@ -3080,31 +2938,26 @@ def get_review_questions():
             else:
                 match_conditions.append({'_id': None})
             
-            print(f"🔍 Permission filters: {len(permission_filters)} filters applied")
+            print(f" Permission filters: {len(permission_filters)} filters applied")
         
-        # Apply subject group filter if not admin
         if user_role != 'admin' and subject_group:
             group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
             subject_ids = [s['subject_id'] for s in group_subjects]
             if subject_ids:
                 match_conditions.append({'subject_id': {'$in': subject_ids}})
-                print(f"🔍 Subject group filter: {len(subject_ids)} subjects")
+                print(f" Subject group filter: {len(subject_ids)} subjects")
             else:
                 match_conditions.append({'_id': None})
         
-        # Apply grade filter
         if grade:
             match_conditions.append({'grade_id': int(grade)})
         
-        # Apply subject filter
         if subject:
             match_conditions.append({'subject_id': int(subject)})
         
-        # Apply status filter
         if status:
             match_conditions.append({'status': status})
         
-        # Apply search filter
         if search:
             match_conditions.append({
                 '$or': [
@@ -3149,9 +3002,8 @@ def get_review_questions():
         questions = list(db.simple_questions.aggregate(pipeline))
         questions = convert_doc(questions)
         
-        print(f"📊 Filtered questions count: {len(questions)}")
+        print(f" Filtered questions count: {len(questions)}")
         
-        # Parse images and add permissions
         for q in questions:
             if q.get('images'):
                 try:
@@ -3201,9 +3053,6 @@ def get_review_questions():
         traceback.print_exc()
         return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
 
-# ============================================
-# SIMPLE QUESTIONS ENDPOINTS
-# ============================================
 
 @app.route('/api/simple-questions')
 def get_simple_questions():
@@ -3234,7 +3083,6 @@ def get_simple_questions():
     except Exception as e:
         return jsonify({'questions': []})
 
-# ========== FIXED: create_simple_question with HTML cleaning ==========
 @app.route('/api/create-simple-question', methods=['POST'])
 def create_simple_question():
     if 'user' not in session:
@@ -3282,11 +3130,9 @@ def create_simple_question():
     reference_book = data.get('reference_book')
     reference_page = data.get('reference_page')
     
-    # ========== CLEAN THE HTML CONTENT - REMOVE <p> TAGS ==========
     question_text_cleaned = clean_editor_html(question_text)
     answer_cleaned = clean_editor_html(answer)
     
-    # Validate after cleaning
     if not question_text_cleaned:
         return jsonify({'error': 'Question text is required'}), 400
     
@@ -3380,10 +3226,6 @@ def delete_question(question_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ============================================
-# IMAGE UPLOAD ENDPOINTS
-# ============================================
-
 @app.route('/api/upload-question-images', methods=['POST'])
 def upload_question_images():
     if 'user' not in session:
@@ -3451,10 +3293,6 @@ def serve_question_image(filename):
     if os.path.exists(file_path):
         return send_file(file_path)
     return jsonify({'error': 'Image not found'}), 404
-
-# ============================================
-# PAPER BLUEPRINTS
-# ============================================
 
 @app.route('/api/paper-blueprints', methods=['GET'])
 def get_paper_blueprints():
@@ -3700,10 +3538,6 @@ def delete_paper_blueprint(blueprint_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ============================================
-# UTILITY ENDPOINTS
-# ============================================
-
 @app.route('/api/pending-count')
 def get_pending_count():
     if 'user' not in session:
@@ -3730,10 +3564,6 @@ def debug_session():
             'MASTER': session.get('perm_master', False)
         }
     })
-
-# ============================================
-# DEBUG ENDPOINTS
-# ============================================
 
 @app.route('/api/debug/user/<username>')
 def debug_user(username):
@@ -3783,7 +3613,7 @@ def get_question(question_id):
         
         return jsonify({'question': question})
     except Exception as e:
-        print(f"❌ Error in get_question: {e}")
+        print(f" Error in get_question: {e}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
@@ -3809,10 +3639,6 @@ def debug_questions():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-# ============================================
-# MAIN
-# ============================================
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=False, port=5000)

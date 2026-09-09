@@ -771,7 +771,7 @@
         </div>
     </div>
     
-    <!-- Modals -->
+    
     <div class="modal" id="addEditModal">
         <div class="modal-content">
             <div class="modal-header"><h3><i class="fas fa-plus-circle"></i> <span id="modalTitle">Add Item</span></h3><button class="close-btn" onclick="closeModal('addEditModal')">&times;</button></div>
@@ -1054,9 +1054,9 @@
             });
         }
 
-        // ============================================
-        // GRADE FUNCTIONS
-        // ============================================
+        
+        
+        
 
         async function loadGrades() {
             try {
@@ -1134,14 +1134,14 @@
             }
         }
 
-        // ============================================
-        // SUBJECT FUNCTIONS
-        // ============================================
+        
+        
+        
 
         async function loadSubjects(gradeId) {
             try {
                 const gradeIdStr = gradeId.toString();
-                console.log('🔍 Loading subjects for grade ID:', gradeIdStr);
+                console.log(' Loading subjects for grade ID:', gradeIdStr);
                 
                 const response = await fetch('/api/page1-data');
                 const data = await response.json();
@@ -1151,7 +1151,7 @@
                     return sGradeId === gradeIdStr;
                 }) || [];
                 
-                console.log(`🎯 Filtered ${subjects.length} subjects for grade ${gradeIdStr}`);
+                console.log(` Filtered ${subjects.length} subjects for grade ${gradeIdStr}`);
                 
                 const container = document.getElementById('subjectGrid');
                 if(subjects.length === 0) {
@@ -1178,7 +1178,7 @@
                     </div>
                 `).join('');
             } catch(e) { 
-                console.error('❌ Error loading subjects:', e); 
+                console.error(' Error loading subjects:', e); 
                 document.getElementById('subjectGrid').innerHTML = `
                     <div class="error-message" style="grid-column: span 3;">
                         <i class="fas fa-exclamation-circle"></i>
@@ -1240,9 +1240,9 @@
             }
         }
 
-        // ============================================
-        // TEXTBOOK FUNCTIONS
-        // ============================================
+        
+        
+        
 
         async function loadTextbooks(subjectId) {
             const container = document.getElementById('textbookGrid');
@@ -1454,9 +1454,9 @@
             }
         }
 
-        // ============================================
-        // CHAPTER FUNCTIONS
-        // ============================================
+        
+        
+        
 
         async function loadChapters(textbookId) {
             const container = document.getElementById('chapterGrid');
@@ -1662,10 +1662,6 @@
             }
         }
 
-        // ============================================
-        // CG FUNCTIONS
-        // ============================================
-
         async function loadCGs(subjectId) {
             const container = document.getElementById('cgGrid');
             container.innerHTML = `<div class="loading" style="grid-column: span 3;"><i class="fas fa-spinner fa-pulse"></i><br>Loading curricular goals...</div>`;
@@ -1765,10 +1761,6 @@
             }
         }
 
-        // ============================================
-        // COMPETENCY FUNCTIONS - CRITICAL FIX
-        // ============================================
-
         async function loadCompetencies(cgId) {
             const container = document.getElementById('competencyGrid');
             container.innerHTML = `
@@ -1784,22 +1776,21 @@
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const data = await response.json();
                 
-                console.log('📊 All competencies from API:', data.competencies);
+                console.log(' All competencies from API:', data.competencies);
                 
                 const allComps = data.competencies || [];
                 
-                // CRITICAL FIX: Compare cg_id correctly - convert both to string
                 competencies = allComps.filter(c => {
                     const cCgId = c.cg_id !== undefined && c.cg_id !== null ? c.cg_id.toString() : '';
                     const targetCgId = cgId.toString();
                     const match = cCgId === targetCgId;
                     if (match) {
-                        console.log('✅ Matched competency:', c.comp_code, 'cg_id:', c.cg_id);
+                        console.log(' Matched competency:', c.comp_code, 'cg_id:', c.cg_id);
                     }
                     return match;
                 });
                 
-                console.log(`🎯 Filtered ${competencies.length} competencies for CG ${cgId}`);
+                console.log(` Filtered ${competencies.length} competencies for CG ${cgId}`);
                 
                 if (competencies.length === 0) {
                     container.innerHTML = `
@@ -1939,10 +1930,6 @@
             }
         }
 
-        // ============================================
-        // ADD/EDIT MODAL FUNCTIONS
-        // ============================================
-
         function openAddModal(type) {
             if(!isAdmin) return showViewOnly(type, '');
             document.getElementById('editItemId').value = '';
@@ -2066,10 +2053,10 @@
                     break;
             }
             try {
-                console.log('📤 Saving item:', type, data);
+                console.log(' Saving item:', type, data);
                 const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
                 const result = await response.json();
-                console.log('📥 Save result:', result);
+                console.log(' Save result:', result);
                 if(result.success) {
                     Swal.fire('Success', 'Saved successfully', 'success');
                     closeModal('addEditModal');
@@ -2092,10 +2079,6 @@
                 Swal.fire('Error', 'Failed to save', 'error'); 
             }
         }
-
-        // ============================================
-        // GROUP FUNCTIONS
-        // ============================================
 
         async function loadGroups() {
             try {
@@ -2389,9 +2372,6 @@
             }
         }
 
-        // ============================================
-        // USER FUNCTIONS
-        // ============================================
 
         async function loadUsers() {
             try {
