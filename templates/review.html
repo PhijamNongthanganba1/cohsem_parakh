@@ -976,12 +976,12 @@
             document.getElementById('userRoleDisplay').textContent = role.toUpperCase();
             
             let msg = 'Welcome to Review Dashboard. ';
-            if (role === 'admin') msg = '🔑 Admin – Full access. You can see and manage all questions.';
-            else if (role === 'master' || permissions.MASTER) msg = '📋 Master – Assign questions to reviewers.';
-            else if (role === 'reviewer' || permissions.RC) msg = '📝 Reviewer – Review assigned questions.';
-            else if (role === 'approver' || permissions.AP) msg = '✅ Approver – Approve reviewed questions.';
-            else if (role === 'builder' || permissions.RA) msg = '📊 Builder – View approved questions.';
-            else if (role === 'writer' || permissions.RE) msg = '✏️ Writer – Create & edit own questions.';
+            if (role === 'admin') msg = ' Admin – Full access. You can see and manage all questions.';
+            else if (role === 'master' || permissions.MASTER) msg = ' Master – Assign questions to reviewers.';
+            else if (role === 'reviewer' || permissions.RC) msg = ' Reviewer – Review assigned questions.';
+            else if (role === 'approver' || permissions.AP) msg = ' Approver – Approve reviewed questions.';
+            else if (role === 'builder' || permissions.RA) msg = ' Builder – View approved questions.';
+            else if (role === 'writer' || permissions.RE) msg = ' Writer – Create & edit own questions.';
             note.innerHTML = msg;
         }
 
@@ -1039,7 +1039,7 @@
                 return true;
             });
 
-            console.log(`📊 Filtered: ${filteredQuestions.length} questions (from ${allQuestions.length} total)`);
+            console.log(` Filtered: ${filteredQuestions.length} questions (from ${allQuestions.length} total)`);
             renderTabs();
         }
 
