@@ -23,7 +23,6 @@ MONGO_URI = 'mongodb+srv://nongthanganbaphijam_db_user:BG2uPkyRu1L4ov30@cluster0
 
 print(f"🔗 Connecting to MongoDB Atlas...")
 
-# Custom JSON encoder to handle ObjectId
 class MongoJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, ObjectId):
@@ -52,7 +51,6 @@ try:
     
 except Exception as e:
     print(f"❌ MongoDB connection failed: {e}")
-    print("Please check: 1) IP whitelist 2) Username/password 3) Connection string")
     sys.exit(1)
 
 # --- File Upload Configuration ---
@@ -65,172 +63,62 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # --- Helper Functions ---
 
-def convert_objectid(doc):
-    """
-    Recursively convert ObjectId and datetime to serializable types.
-    CRITICAL FIX: Converts ALL ObjectId fields to strings for frontend compatibility.
-    """
+def get_next_id(collection_name):
+    """Get next numeric ID for a collection"""
+    counter = db.counters.find_one_and_update(
+        {'_id': collection_name},
+        {'$inc': {'seq': 1}},
+        upsert=True,
+        return_document=True
+    )
+    return counter['seq']
+
+def convert_doc(doc):
+    """Convert MongoDB document to frontend-friendly format with numeric IDs"""
     if doc is None:
         return None
     if isinstance(doc, list):
-        return [convert_objectid(item) for item in doc]
+        return [convert_doc(item) for item in doc]
     if isinstance(doc, dict):
         result = {}
         for key, value in doc.items():
-            # Handle _id field - ALWAYS convert to string AND add 'id' field
             if key == '_id':
-                if isinstance(value, ObjectId):
-                    result[key] = str(value)
-                    result['id'] = str(value)
-                else:
-                    result[key] = value
-                    result['id'] = value
-            # CRITICAL: Convert grade_id to string
-            elif key == 'grade_id':
-                if isinstance(value, ObjectId):
-                    result[key] = str(value)
-                elif value is None:
-                    result[key] = None
-                else:
-                    result[key] = str(value)
-            # Convert subject_id to string
-            elif key == 'subject_id':
-                if isinstance(value, ObjectId):
-                    result[key] = str(value)
-                else:
-                    result[key] = value
-            # Convert cg_id to string
-            elif key == 'cg_id':
-                if isinstance(value, ObjectId):
-                    result[key] = str(value)
-                else:
-                    result[key] = value
-            # Convert chapter_id to string
-            elif key == 'chapter_id':
-                if isinstance(value, ObjectId):
-                    result[key] = str(value)
-                else:
-                    result[key] = value
-            # Convert comp_id to string
-            elif key == 'comp_id':
-                if isinstance(value, ObjectId):
-                    result[key] = str(value)
-                else:
-                    result[key] = value
-            # Convert textbook_id to string
-            elif key == 'textbook_id':
-                if isinstance(value, ObjectId):
-                    result[key] = str(value)
-                else:
-                    result[key] = value
-            # Convert domain_id to string
-            elif key == 'domain_id':
-                if isinstance(value, ObjectId):
-                    result[key] = str(value)
-                else:
-                    result[key] = value
-            # Convert difficulty_id to string
-            elif key == 'difficulty_id':
-                if isinstance(value, ObjectId):
-                    result[key] = str(value)
-                else:
-                    result[key] = value
-            # Convert knowledge_level_id to string
-            elif key == 'knowledge_level_id':
-                if isinstance(value, ObjectId):
-                    result[key] = str(value)
-                else:
-                    result[key] = value
-            # Convert question_type_id to string
-            elif key == 'question_type_id':
-                if isinstance(value, ObjectId):
-                    result[key] = str(value)
-                else:
-                    result[key] = value
-            # Handle any other ObjectId
+                result['_id'] = str(value)
+            elif key == 'id':
+                result[key] = value
             elif isinstance(value, ObjectId):
                 result[key] = str(value)
-            # Handle datetime
             elif isinstance(value, datetime):
                 result[key] = value.isoformat()
-            # Recursively process lists
             elif isinstance(value, list):
-                result[key] = [convert_objectid(item) for item in value]
-            # Recursively process dicts
+                result[key] = [convert_doc(item) if isinstance(item, dict) else item for item in value]
             elif isinstance(value, dict):
-                result[key] = convert_objectid(value)
-            # Keep other values as is
+                result[key] = convert_doc(value)
             else:
                 result[key] = value
+        # Ensure 'id' field exists for frontend
+        if 'id' not in result and 'id' in doc:
+            result['id'] = doc['id']
         return result
     return doc
 
-def safe_object_id(value):
-    """Safely convert a value to ObjectId, returns None for invalid values"""
+def get_object_id(value):
+    """Convert value to ObjectId if valid"""
     if value is None:
         return None
     if isinstance(value, ObjectId):
         return value
-    if isinstance(value, str):
-        value = value.strip()
-        if not value or value == 'undefined' or value == 'null' or value == 'None' or value == '':
-            return None
-        if len(value) == 24 and re.match(r'^[0-9a-fA-F]{24}$', value):
-            try:
-                return ObjectId(value)
-            except:
-                return None
+    if isinstance(value, str) and len(value) == 24:
         try:
             return ObjectId(value)
         except:
             pass
     return None
 
-def get_grade_id_from_value(value):
-    """Get grade ObjectId from various formats, handles undefined gracefully"""
-    if value is None:
-        grade = db.grades.find_one({})
-        if grade:
-            return grade['_id']
-        return None
-    
-    if isinstance(value, ObjectId):
-        return value
-    
-    if isinstance(value, str):
-        value = value.strip()
-        if not value or value == 'undefined' or value == 'null' or value == 'None' or value == '':
-            grade = db.grades.find_one({})
-            if grade:
-                return grade['_id']
-            return None
-        
-        try:
-            if len(value) == 24 and re.match(r'^[0-9a-fA-F]{24}$', value):
-                grade = db.grades.find_one({'_id': ObjectId(value)})
-                if grade:
-                    return grade['_id']
-        except:
-            pass
-        
-        grade = db.grades.find_one({'grade_name': value})
-        if grade:
-            return grade['_id']
-        
-        grade = db.grades.find_one({'grade_name': {'$regex': value, '$options': 'i'}})
-        if grade:
-            return grade['_id']
-    
-    try:
-        grade = db.grades.find_one({'_id': ObjectId(value)})
-        if grade:
-            return grade['_id']
-    except:
-        pass
-    
-    grade = db.grades.find_one({})
-    if grade:
-        return grade['_id']
+def get_numeric_id(collection, doc):
+    """Get numeric ID from document, or generate if missing"""
+    if 'id' in doc and doc['id']:
+        return doc['id']
     return None
 
 def allowed_file(filename):
@@ -261,7 +149,7 @@ def get_user_subject_ids(username):
         if not user or not user.get('subject_group'):
             return []
         groups = db.subject_groups.find({'group_code': user['subject_group']})
-        return [str(g['subject_id']) for g in groups]
+        return [g['subject_id'] for g in groups]
     except:
         return []
 
@@ -271,88 +159,100 @@ def get_user_grades(username):
         if not user or not user.get('subject_group'):
             return []
         groups = db.subject_groups.find({'group_code': user['subject_group']})
-        return [str(g['grade_id']) for g in groups]
+        return [g['grade_id'] for g in groups]
     except:
         return []
 
 # --- Database Initialization ---
 def init_db():
     try:
-        # Create indexes for better performance
+        # Initialize counters
+        if db.counters.count_documents({}) == 0:
+            counters = [
+                {'_id': 'grades', 'seq': 0},
+                {'_id': 'subjects', 'seq': 0},
+                {'_id': 'textbooks', 'seq': 0},
+                {'_id': 'chapters', 'seq': 0},
+                {'_id': 'curricular_goals', 'seq': 0},
+                {'_id': 'competencies', 'seq': 0},
+                {'_id': 'subject_groups', 'seq': 0},
+                {'_id': 'users', 'seq': 0},
+                {'_id': 'simple_questions', 'seq': 0},
+                {'_id': 'paper_blueprints', 'seq': 0}
+            ]
+            db.counters.insert_many(counters)
+            print("✓ Initialized counters")
+        
+        # Create indexes
         db.grades.create_index('grade_name', unique=True)
+        db.grades.create_index('id', unique=True)
+        db.subjects.create_index('id', unique=True)
         db.subjects.create_index([('grade_id', 1), ('subject_name', 1)], unique=True)
         db.users.create_index('username', unique=True)
         db.subject_groups.create_index('group_code', unique=True)
         
+        # Cognitive Domains
         if db.cognitive_domains.count_documents({}) == 0:
-            domains_data = [
-                {'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
-                {'domain_name': 'Sensitivity', 'description': 'Sensitivity to applications and real-world connections'},
-                {'domain_name': 'Creativity', 'description': 'Creative thinking and problem solving'}
+            domains = [
+                {'id': 1, 'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
+                {'id': 2, 'domain_name': 'Sensitivity', 'description': 'Sensitivity to applications and real-world connections'},
+                {'id': 3, 'domain_name': 'Creativity', 'description': 'Creative thinking and problem solving'}
             ]
-            db.cognitive_domains.insert_many(domains_data)
+            db.cognitive_domains.insert_many(domains)
             print("✓ Inserted default cognitive domains")
         
+        # Difficulty Levels
         if db.difficulty_levels.count_documents({}) == 0:
-            difficulty_data = ['Easy', 'Medium', 'Hard']
-            db.difficulty_levels.insert_many([{'level_name': level} for level in difficulty_data])
+            difficulties = [
+                {'id': 1, 'level_name': 'Easy'},
+                {'id': 2, 'level_name': 'Medium'},
+                {'id': 3, 'level_name': 'Hard'}
+            ]
+            db.difficulty_levels.insert_many(difficulties)
             print("✓ Inserted default difficulty levels")
         
-        domains = {doc['domain_name']: doc['_id'] for doc in db.cognitive_domains.find()}
-        difficulties = {doc['level_name']: doc['_id'] for doc in db.difficulty_levels.find()}
-        
+        # Knowledge Levels
         if db.knowledge_levels.count_documents({}) == 0:
-            knowledge_levels = [
-                ('Knowledge', 'Basic recall of information and facts', domains.get('Awareness'), difficulties.get('Easy')),
-                ('Remembering', 'Retrieving knowledge from memory', domains.get('Awareness'), difficulties.get('Easy')),
-                ('Understanding', 'Constructing meaning from information', domains.get('Awareness'), difficulties.get('Easy')),
-                ('Comprehension', 'Grasping the meaning of information', domains.get('Awareness'), difficulties.get('Medium')),
-                ('Application', 'Apply knowledge to new situations', domains.get('Sensitivity'), difficulties.get('Medium')),
-                ('Analysis', 'Break down information into parts', domains.get('Sensitivity'), difficulties.get('Medium')),
-                ('Synthesis', 'Combine elements to form a new whole', domains.get('Sensitivity'), difficulties.get('Medium')),
-                ('Empathy', "Understanding others' perspectives and feelings", domains.get('Sensitivity'), difficulties.get('Medium')),
-                ('Interpretation', 'Explaining and interpreting information', domains.get('Sensitivity'), difficulties.get('Medium')),
-                ('Evaluation', 'Make judgments based on criteria and standards', domains.get('Creativity'), difficulties.get('Hard')),
-                ('Creation', 'Generate new ideas and products', domains.get('Creativity'), difficulties.get('Hard')),
-                ('Critical Thinking', 'Deep analysis and evaluation of information', domains.get('Creativity'), difficulties.get('Hard')),
-                ('Innovation', 'Novel approaches and solutions to problems', domains.get('Creativity'), difficulties.get('Hard')),
-                ('Design Thinking', 'Human-centered problem solving approach', domains.get('Creativity'), difficulties.get('Hard')),
-                ('Reflection', 'Thoughtful consideration and self-assessment', domains.get('Creativity'), difficulties.get('Hard'))
+            knowledge = [
+                {'id': 1, 'level_name': 'Knowledge', 'description': 'Basic recall of information and facts', 'domain_id': 1, 'difficulty_id': 1},
+                {'id': 2, 'level_name': 'Remembering', 'description': 'Retrieving knowledge from memory', 'domain_id': 1, 'difficulty_id': 1},
+                {'id': 3, 'level_name': 'Understanding', 'description': 'Constructing meaning from information', 'domain_id': 1, 'difficulty_id': 1},
+                {'id': 4, 'level_name': 'Comprehension', 'description': 'Grasping the meaning of information', 'domain_id': 1, 'difficulty_id': 2},
+                {'id': 5, 'level_name': 'Application', 'description': 'Apply knowledge to new situations', 'domain_id': 2, 'difficulty_id': 2},
+                {'id': 6, 'level_name': 'Analysis', 'description': 'Break down information into parts', 'domain_id': 2, 'difficulty_id': 2},
+                {'id': 7, 'level_name': 'Synthesis', 'description': 'Combine elements to form a new whole', 'domain_id': 2, 'difficulty_id': 2},
+                {'id': 8, 'level_name': 'Empathy', 'description': "Understanding others' perspectives", 'domain_id': 2, 'difficulty_id': 2},
+                {'id': 9, 'level_name': 'Interpretation', 'description': 'Explaining and interpreting information', 'domain_id': 2, 'difficulty_id': 2},
+                {'id': 10, 'level_name': 'Evaluation', 'description': 'Make judgments based on criteria', 'domain_id': 3, 'difficulty_id': 3},
+                {'id': 11, 'level_name': 'Creation', 'description': 'Generate new ideas and products', 'domain_id': 3, 'difficulty_id': 3},
+                {'id': 12, 'level_name': 'Critical Thinking', 'description': 'Deep analysis and evaluation', 'domain_id': 3, 'difficulty_id': 3},
+                {'id': 13, 'level_name': 'Innovation', 'description': 'Novel approaches to problems', 'domain_id': 3, 'difficulty_id': 3},
+                {'id': 14, 'level_name': 'Design Thinking', 'description': 'Human-centered problem solving', 'domain_id': 3, 'difficulty_id': 3},
+                {'id': 15, 'level_name': 'Reflection', 'description': 'Thoughtful self-assessment', 'domain_id': 3, 'difficulty_id': 3}
             ]
-            for level_name, description, domain_id, difficulty_id in knowledge_levels:
-                db.knowledge_levels.insert_one({
-                    'level_name': level_name,
-                    'description': description,
-                    'is_active': True,
-                    'domain_id': domain_id,
-                    'difficulty_id': difficulty_id
-                })
+            db.knowledge_levels.insert_many(knowledge)
             print("✓ Inserted default knowledge levels")
         
+        # Question Types
         if db.question_types.count_documents({}) == 0:
-            question_types = [
-                ('Objective', domains.get('Awareness')),
-                ('Very Short Answer', domains.get('Awareness')),
-                ('Short Answer', domains.get('Sensitivity')),
-                ('Long Answer', domains.get('Sensitivity')),
-                ('MCQ', domains.get('Creativity'))
+            qtypes = [
+                {'id': 1, 'type_name': 'Objective', 'cognitive_id': 1},
+                {'id': 2, 'type_name': 'Very Short Answer', 'cognitive_id': 1},
+                {'id': 3, 'type_name': 'Short Answer', 'cognitive_id': 2},
+                {'id': 4, 'type_name': 'Long Answer', 'cognitive_id': 2},
+                {'id': 5, 'type_name': 'MCQ', 'cognitive_id': 3}
             ]
-            for type_name, cognitive_id in question_types:
-                db.question_types.insert_one({
-                    'type_name': type_name,
-                    'cognitive_id': cognitive_id
-                })
+            db.question_types.insert_many(qtypes)
             print("✓ Inserted default question types")
         
+        # Admin user
         if db.users.count_documents({}) == 0:
-            ADMIN_USERNAME = "admin"
-            ADMIN_PASSWORD = "admin123"
-            ADMIN_ROLE = "admin"
-            hashed_password = generate_password_hash(ADMIN_PASSWORD)
+            hashed_password = generate_password_hash("admin123")
             db.users.insert_one({
-                'username': ADMIN_USERNAME,
+                'id': 1,
+                'username': 'admin',
                 'password': hashed_password,
-                'role': ADMIN_ROLE,
+                'role': 'admin',
                 'subject_group': None,
                 'group_role': 'member',
                 'perm_re': True,
@@ -362,63 +262,77 @@ def init_db():
                 'perm_master': True,
                 'created_at': datetime.now()
             })
+            db.counters.update_one({'_id': 'users'}, {'$set': {'seq': 1}})
             print("✓ Created default admin user")
         
-        # CRITICAL FIX: Fix existing subjects with ObjectId grade_id
-        print("🔧 Fixing existing subjects with ObjectId grade_id...")
+        # Fix existing data - add numeric IDs
+        fix_collection_ids('grades')
+        fix_collection_ids('subjects')
+        fix_collection_ids('textbooks')
+        fix_collection_ids('chapters')
+        fix_collection_ids('curricular_goals')
+        fix_collection_ids('competencies')
+        fix_collection_ids('subject_groups')
+        fix_collection_ids('users')
+        fix_collection_ids('simple_questions')
+        fix_collection_ids('paper_blueprints')
         
-        # Get all grades to map ObjectId to string
-        all_grades = list(db.grades.find({}))
-        grade_map = {str(g['_id']): g['grade_name'] for g in all_grades}
-        print(f"📊 Found {len(all_grades)} grades")
-        
-        # Fix all subjects - convert ObjectId grade_id to string
-        all_subjects = list(db.subjects.find({}))
-        print(f"📊 Found {len(all_subjects)} subjects to fix")
-        
-        for subject in all_subjects:
-            grade_id = subject.get('grade_id')
-            subject_id = subject.get('_id')
-            subject_name = subject.get('subject_name', 'Unknown')
-            
-            # If grade_id is an ObjectId, convert to string
-            if isinstance(grade_id, ObjectId):
-                grade_id_str = str(grade_id)
-                print(f"  🔧 Fixing subject '{subject_name}': Converting grade_id {grade_id} to string {grade_id_str}")
-                db.subjects.update_one(
-                    {'_id': subject_id},
-                    {'$set': {'grade_id': grade_id_str}}
-                )
-            # If grade_id is None or empty, assign first grade
-            elif not grade_id or grade_id == '' or grade_id == 'undefined' or grade_id == 'null':
-                if all_grades:
-                    first_grade_id = str(all_grades[0]['_id'])
-                    print(f"  🔧 Fixing subject '{subject_name}': Assigning grade_id {first_grade_id}")
-                    db.subjects.update_one(
-                        {'_id': subject_id},
-                        {'$set': {'grade_id': first_grade_id}}
-                    )
-        
-        # Also fix any subjects that have grade_id as string but not matching any grade
-        all_subjects = list(db.subjects.find({}))
-        for subject in all_subjects:
-            grade_id = subject.get('grade_id')
-            subject_id = subject.get('_id')
-            subject_name = subject.get('subject_name', 'Unknown')
-            
-            if isinstance(grade_id, str):
-                if grade_id not in grade_map:
-                    if all_grades:
-                        first_grade_id = str(all_grades[0]['_id'])
-                        print(f"  🔧 Fixing subject '{subject_name}': Re-assigning grade_id {first_grade_id} (old: {grade_id})")
-                        db.subjects.update_one(
-                            {'_id': subject_id},
-                            {'$set': {'grade_id': first_grade_id}}
-                        )
+        # Fix grade_id in subjects to be numeric
+        fix_subject_grade_ids()
         
         print("✅ Database initialization complete")
     except Exception as e:
         print(f"⚠️ Database initialization error: {e}")
+
+def fix_collection_ids(collection_name):
+    """Add numeric 'id' field to documents if missing"""
+    collection = db[collection_name]
+    counter = db.counters.find_one({'_id': collection_name})
+    if not counter:
+        db.counters.insert_one({'_id': collection_name, 'seq': 0})
+        counter = db.counters.find_one({'_id': collection_name})
+    
+    seq = counter.get('seq', 0)
+    docs = collection.find({'id': {'$exists': False}})
+    
+    for doc in docs:
+        seq += 1
+        collection.update_one(
+            {'_id': doc['_id']},
+            {'$set': {'id': seq}}
+        )
+    
+    if seq > 0:
+        db.counters.update_one(
+            {'_id': collection_name},
+            {'$set': {'seq': seq}}
+        )
+        print(f"✓ Added numeric IDs to {collection_name} ({seq} documents)")
+
+def fix_subject_grade_ids():
+    """Fix grade_id in subjects to be numeric"""
+    subjects = db.subjects.find({})
+    for subject in subjects:
+        grade_id = subject.get('grade_id')
+        if grade_id:
+            # If grade_id is ObjectId string, find the numeric id
+            if isinstance(grade_id, str) and len(grade_id) == 24:
+                grade = db.grades.find_one({'_id': ObjectId(grade_id)})
+                if grade and 'id' in grade:
+                    db.subjects.update_one(
+                        {'_id': subject['_id']},
+                        {'$set': {'grade_id': grade['id']}}
+                    )
+                    print(f"  Fixed subject '{subject.get('subject_name')}' grade_id: {grade['id']}")
+            # If grade_id is ObjectId
+            elif isinstance(grade_id, ObjectId):
+                grade = db.grades.find_one({'_id': grade_id})
+                if grade and 'id' in grade:
+                    db.subjects.update_one(
+                        {'_id': subject['_id']},
+                        {'$set': {'grade_id': grade['id']}}
+                    )
+                    print(f"  Fixed subject '{subject.get('subject_name')}' grade_id: {grade['id']}")
 
 with app.app_context():
     init_db()
@@ -453,7 +367,7 @@ def dashboard_login():
             
             if check_password_hash(user['password'], password):
                 session['user'] = user['username']
-                session['user_id'] = str(user['_id'])
+                session['user_id'] = user.get('id', str(user['_id']))
                 session['user_role'] = user.get('role', 'writer')
                 session['subject_group'] = user.get('subject_group')
                 session['group_role'] = user.get('group_role', 'member')
@@ -497,7 +411,9 @@ def dashboard_register():
         
         hashed_password = generate_password_hash(password)
         try:
+            next_id = get_next_id('users')
             db.users.insert_one({
+                'id': next_id,
                 'username': username,
                 'password': hashed_password,
                 'role': 'writer',
@@ -658,7 +574,7 @@ def logout():
     return redirect(url_for('dashboard_login'))
 
 # ============================================
-# API ENDPOINTS
+# API ENDPOINTS - WITH NUMERIC IDS
 # ============================================
 
 @app.route('/api/dashboard-stats')
@@ -666,20 +582,16 @@ def dashboard_stats():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
-    username = session.get('user')
-    user_role = session.get('user_role')
-    subject_group = session.get('subject_group')
-    
     try:
         all_subjects = list(db.subjects.find())
-        subjects_dict = {str(s['_id']): s for s in all_subjects}
+        subjects_dict = {s['id']: s for s in all_subjects}
         
         all_grades = list(db.grades.find())
         
         stats = {}
         
         for grade in all_grades:
-            grade_id = str(grade['_id'])
+            grade_id = grade['id']
             grade_name = grade['grade_name']
             
             pipeline = [
@@ -746,10 +658,10 @@ def dashboard_stats():
             {'$limit': 10}
         ]
         recent = list(db.simple_questions.aggregate(pipeline_recent))
-        recent = convert_objectid(recent)
+        recent = convert_doc(recent)
         stats['recent'] = recent
         
-        stats = convert_objectid(stats)
+        stats = convert_doc(stats)
         return jsonify(stats)
     except Exception as e:
         traceback.print_exc()
@@ -764,30 +676,9 @@ def get_grades():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
-    user_role = session.get('user_role')
-    subject_group = session.get('subject_group')
-    
     try:
-        if user_role == 'admin':
-            grades = list(db.grades.find({}).sort('_id', 1))
-        else:
-            subject_groups = list(db.subject_groups.find({'group_code': subject_group}))
-            grade_ids = list(set([str(g['grade_id']) for g in subject_groups if g.get('grade_id')]))
-            if grade_ids:
-                grade_obj_ids = []
-                for gid in grade_ids:
-                    try:
-                        grade_obj_ids.append(ObjectId(gid))
-                    except:
-                        pass
-                if grade_obj_ids:
-                    grades = list(db.grades.find({'_id': {'$in': grade_obj_ids}}))
-                else:
-                    grades = []
-            else:
-                grades = []
-        
-        grades = convert_objectid(grades)
+        grades = list(db.grades.find({}).sort('id', 1))
+        grades = convert_doc(grades)
         return jsonify({'grades': grades})
     except Exception as e:
         traceback.print_exc()
@@ -808,12 +699,16 @@ def create_grade():
         return jsonify({'error': 'Grade name is required'}), 400
     
     try:
-        result = db.grades.insert_one({'grade_name': name})
-        return jsonify({'success': True, 'id': str(result.inserted_id)})
+        next_id = get_next_id('grades')
+        result = db.grades.insert_one({
+            'id': next_id,
+            'grade_name': name
+        })
+        return jsonify({'success': True, 'id': next_id})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/grades/<grade_id>', methods=['PUT'])
+@app.route('/api/grades/<int:grade_id>', methods=['PUT'])
 def update_grade(grade_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -829,7 +724,7 @@ def update_grade(grade_id):
     
     try:
         result = db.grades.update_one(
-            {'_id': ObjectId(grade_id)},
+            {'id': grade_id},
             {'$set': {'grade_name': name}}
         )
         if result.matched_count == 0:
@@ -838,7 +733,7 @@ def update_grade(grade_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/grades/<grade_id>', methods=['DELETE'])
+@app.route('/api/grades/<int:grade_id>', methods=['DELETE'])
 def delete_grade(grade_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -851,7 +746,7 @@ def delete_grade(grade_id):
         if db.subjects.count_documents({'grade_id': grade_id}) > 0:
             return jsonify({'error': 'Cannot delete grade with subjects'}), 400
         
-        result = db.grades.delete_one({'_id': ObjectId(grade_id)})
+        result = db.grades.delete_one({'id': grade_id})
         if result.deleted_count == 0:
             return jsonify({'error': 'Grade not found'}), 404
         return jsonify({'success': True})
@@ -859,7 +754,7 @@ def delete_grade(grade_id):
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# SUBJECT ENDPOINTS - CRITICAL FIX
+# SUBJECT ENDPOINTS - WITH NUMERIC IDS
 # ============================================
 
 @app.route('/api/subjects', methods=['GET'])
@@ -867,66 +762,9 @@ def get_subjects():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
-    user_role = session.get('user_role')
-    subject_group = session.get('subject_group')
-    
     try:
-        all_grades = list(db.grades.find({}))
-        grade_id_map = {str(g['_id']): g['grade_name'] for g in all_grades}
-        
-        # Get all subjects and convert grade_id to string
-        if user_role == 'admin':
-            subjects = list(db.subjects.find({}))
-        else:
-            subject_ids = []
-            if subject_group:
-                groups = db.subject_groups.find({'group_code': subject_group})
-                subject_ids = [str(g['subject_id']) for g in groups]
-            
-            if subject_ids:
-                subject_obj_ids = []
-                for sid in subject_ids:
-                    try:
-                        subject_obj_ids.append(ObjectId(sid))
-                    except:
-                        pass
-                if subject_obj_ids:
-                    subjects = list(db.subjects.find({'_id': {'$in': subject_obj_ids}}))
-                else:
-                    subjects = []
-            else:
-                subjects = []
-        
-        # CRITICAL FIX: Ensure grade_id is a string
-        for s in subjects:
-            if '_id' in s:
-                s['id'] = str(s['_id'])
-                s['_id'] = str(s['_id'])
-            
-            # CRITICAL: Convert grade_id to string
-            if 'grade_id' in s:
-                if isinstance(s['grade_id'], ObjectId):
-                    s['grade_id'] = str(s['grade_id'])
-                elif s['grade_id'] is None or s['grade_id'] == '' or s['grade_id'] == 'undefined' or s['grade_id'] == 'null':
-                    if all_grades:
-                        s['grade_id'] = str(all_grades[0]['_id'])
-                    else:
-                        s['grade_id'] = None
-                else:
-                    s['grade_id'] = str(s['grade_id'])
-            else:
-                if all_grades:
-                    s['grade_id'] = str(all_grades[0]['_id'])
-                else:
-                    s['grade_id'] = None
-            
-            # Update the database to fix the record
-            if s.get('_id') and s.get('grade_id'):
-                db.subjects.update_one(
-                    {'_id': ObjectId(s['_id'])},
-                    {'$set': {'grade_id': s['grade_id']}}
-                )
-        
+        subjects = list(db.subjects.find({}).sort('id', 1))
+        subjects = convert_doc(subjects)
         return jsonify({'subjects': subjects})
     except Exception as e:
         traceback.print_exc()
@@ -949,74 +787,54 @@ def create_subject():
         return jsonify({'error': 'Subject name is required'}), 400
     
     try:
-        # CRITICAL FIX: Get grade as string
-        grade_id_str = None
-        
-        # If grade_id is already a string (ObjectId as string)
+        # Convert grade_id to int
         if isinstance(grade_id, str):
-            # Check if it's a valid ObjectId string (24 hex chars)
-            if len(grade_id) == 24 and re.match(r'^[0-9a-fA-F]{24}$', grade_id):
-                # Verify this grade exists
+            if grade_id.isdigit():
+                grade_id_int = int(grade_id)
+            elif len(grade_id) == 24:
+                # It's an ObjectId string, find the numeric id
                 grade = db.grades.find_one({'_id': ObjectId(grade_id)})
-                if grade:
-                    grade_id_str = grade_id
+                if grade and 'id' in grade:
+                    grade_id_int = grade['id']
                 else:
-                    # Try to find by grade_name
-                    grade = db.grades.find_one({'grade_name': grade_id})
-                    if grade:
-                        grade_id_str = str(grade['_id'])
+                    return jsonify({'error': 'Grade not found'}), 400
             else:
-                # Try to find by grade_name
-                grade = db.grades.find_one({'grade_name': grade_id})
-                if grade:
-                    grade_id_str = str(grade['_id'])
+                return jsonify({'error': 'Invalid grade ID format'}), 400
+        else:
+            grade_id_int = int(grade_id)
         
-        # If grade_id is a dict with id
-        elif isinstance(grade_id, dict) and 'id' in grade_id:
-            grade_id_str = str(grade_id['id'])
+        # Verify grade exists
+        grade = db.grades.find_one({'id': grade_id_int})
+        if not grade:
+            return jsonify({'error': 'Grade not found'}), 400
         
-        # If it's an ObjectId
-        elif isinstance(grade_id, ObjectId):
-            grade_id_str = str(grade_id)
-        
-        # If still no grade_id, get first grade
-        if not grade_id_str:
-            first_grade = db.grades.find_one({})
-            if first_grade:
-                grade_id_str = str(first_grade['_id'])
-            else:
-                return jsonify({'error': 'No grades available. Please create a grade first.'}), 400
-        
-        print(f"📝 Creating subject with grade_id: {grade_id_str} (type: {type(grade_id_str)})")
-        
-        # Check if subject already exists for this grade
+        # Check if subject already exists
         existing = db.subjects.find_one({
             'subject_name': name,
-            'grade_id': grade_id_str
+            'grade_id': grade_id_int
         })
         
         if existing:
             return jsonify({'error': f'Subject "{name}" already exists for this grade'}), 400
         
-        # CRITICAL: Store grade_id as STRING, not ObjectId
+        next_id = get_next_id('subjects')
         result = db.subjects.insert_one({
-            'subject_name': name, 
-            'grade_id': grade_id_str
+            'id': next_id,
+            'subject_name': name,
+            'grade_id': grade_id_int
         })
         
-        print(f"✅ Created subject '{name}' with grade_id: {grade_id_str}")
-        
         return jsonify({
-            'success': True, 
-            'id': str(result.inserted_id), 
-            'grade_id': grade_id_str,
+            'success': True,
+            'id': next_id,
+            'grade_id': grade_id_int,
             'subject_name': name
         })
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/subjects/<subject_id>', methods=['PUT'])
+@app.route('/api/subjects/<int:subject_id>', methods=['PUT'])
 def update_subject(subject_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -1033,31 +851,11 @@ def update_subject(subject_id):
         return jsonify({'error': 'Subject name is required'}), 400
     
     try:
-        # Convert grade_id to string
-        grade_id_str = None
-        if isinstance(grade_id, str) and len(grade_id) == 24:
-            grade = db.grades.find_one({'_id': ObjectId(grade_id)})
-            if grade:
-                grade_id_str = grade_id
-        elif isinstance(grade_id, dict) and 'id' in grade_id:
-            grade_id_str = str(grade_id['id'])
-        elif isinstance(grade_id, ObjectId):
-            grade_id_str = str(grade_id)
-        elif isinstance(grade_id, str):
-            grade = db.grades.find_one({'grade_name': grade_id})
-            if grade:
-                grade_id_str = str(grade['_id'])
-        
-        if not grade_id_str:
-            first_grade = db.grades.find_one({})
-            if first_grade:
-                grade_id_str = str(first_grade['_id'])
-            else:
-                return jsonify({'error': 'No grades available'}), 400
+        grade_id_int = int(grade_id)
         
         result = db.subjects.update_one(
-            {'_id': ObjectId(subject_id)},
-            {'$set': {'subject_name': name, 'grade_id': grade_id_str}}
+            {'id': subject_id},
+            {'$set': {'subject_name': name, 'grade_id': grade_id_int}}
         )
         if result.matched_count == 0:
             return jsonify({'error': 'Subject not found'}), 404
@@ -1065,7 +863,7 @@ def update_subject(subject_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/subjects/<subject_id>', methods=['DELETE'])
+@app.route('/api/subjects/<int:subject_id>', methods=['DELETE'])
 def delete_subject(subject_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -1078,7 +876,7 @@ def delete_subject(subject_id):
         if db.curricular_goals.count_documents({'subject_id': subject_id}) > 0:
             return jsonify({'error': 'Cannot delete subject with CGs'}), 400
         
-        result = db.subjects.delete_one({'_id': ObjectId(subject_id)})
+        result = db.subjects.delete_one({'id': subject_id})
         if result.deleted_count == 0:
             return jsonify({'error': 'Subject not found'}), 404
         return jsonify({'success': True})
@@ -1086,7 +884,7 @@ def delete_subject(subject_id):
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# PAGE1 DATA - CRITICAL FIX
+# PAGE1 DATA - WITH NUMERIC IDS
 # ============================================
 
 @app.route('/api/page1-data')
@@ -1094,115 +892,52 @@ def get_page1_data():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
-    user_role = session.get('user_role')
-    subject_group = session.get('subject_group')
-    
     try:
-        # Get all grades
-        grades = list(db.grades.find())
-        grades = convert_objectid(grades)
-        
-        # Get all subjects
-        subjects = list(db.subjects.find())
-        
-        # CRITICAL FIX: Ensure all subjects have grade_id as string
-        all_grades = list(db.grades.find({}))
-        grade_id_map = {str(g['_id']): g['grade_name'] for g in all_grades}
-        
-        for s in subjects:
-            if '_id' in s:
-                s['id'] = str(s['_id'])
-                s['_id'] = str(s['_id'])
-            
-            # CRITICAL: Convert grade_id to string
-            if 'grade_id' in s:
-                if isinstance(s['grade_id'], ObjectId):
-                    s['grade_id'] = str(s['grade_id'])
-                elif s['grade_id'] is None or s['grade_id'] == '' or s['grade_id'] == 'undefined' or s['grade_id'] == 'null':
-                    if all_grades:
-                        s['grade_id'] = str(all_grades[0]['_id'])
-                    else:
-                        s['grade_id'] = None
-                else:
-                    s['grade_id'] = str(s['grade_id'])
-            else:
-                if all_grades:
-                    s['grade_id'] = str(all_grades[0]['_id'])
-                else:
-                    s['grade_id'] = None
-            
-            # Debug log
-            print(f"📊 Subject: {s.get('subject_name')} - grade_id: {s.get('grade_id')} (type: {type(s.get('grade_id'))})")
-        
-        # Get CGs
-        cgs = list(db.curricular_goals.find())
-        for cg in cgs:
-            if '_id' in cg:
-                cg['id'] = str(cg['_id'])
-                cg['_id'] = str(cg['_id'])
-            if cg.get('subject_id') and isinstance(cg['subject_id'], ObjectId):
-                cg['subject_id'] = str(cg['subject_id'])
-            elif cg.get('subject_id'):
-                cg['subject_id'] = str(cg['subject_id'])
-        
-        # Get Competencies
+        # Get all data with numeric IDs
+        grades = list(db.grades.find({}))
+        subjects = list(db.subjects.find({}))
+        cgs = list(db.curricular_goals.find({}))
         competencies = list(db.competencies.find({'status': 1}))
-        for comp in competencies:
-            if '_id' in comp:
-                comp['id'] = str(comp['_id'])
-                comp['_id'] = str(comp['_id'])
-            if comp.get('cg_id') and isinstance(comp['cg_id'], ObjectId):
-                comp['cg_id'] = str(comp['cg_id'])
-            elif comp.get('cg_id'):
-                comp['cg_id'] = str(comp['cg_id'])
+        question_types = list(db.question_types.find({}))
+        cognitive_domains = list(db.cognitive_domains.find({}))
         
-        # Get Question Types
-        question_types = list(db.question_types.find())
-        for qt in question_types:
-            if '_id' in qt:
-                qt['id'] = str(qt['_id'])
-                qt['_id'] = str(qt['_id'])
-        
-        # Get Cognitive Domains
-        cognitive_domains = list(db.cognitive_domains.find())
-        for cd in cognitive_domains:
-            if '_id' in cd:
-                cd['id'] = str(cd['_id'])
-                cd['_id'] = str(cd['_id'])
+        # Convert to frontend format
+        grades = convert_doc(grades)
+        subjects = convert_doc(subjects)
+        cgs = convert_doc(cgs)
+        competencies = convert_doc(competencies)
+        question_types = convert_doc(question_types)
+        cognitive_domains = convert_doc(cognitive_domains)
         
         # Build subjects_by_grade
         subjects_by_grade = {}
         for s in subjects:
-            grade_id_str = s.get('grade_id')
-            if grade_id_str:
-                if grade_id_str not in subjects_by_grade:
-                    subjects_by_grade[grade_id_str] = []
-                subjects_by_grade[grade_id_str].append(s)
-        
-        # Debug log
-        print("📊 subjects_by_grade keys:", list(subjects_by_grade.keys()))
-        for key, value in subjects_by_grade.items():
-            print(f"  Grade {key}: {len(value)} subjects")
-            for s in value:
-                print(f"    - {s.get('subject_name')} (grade_id: {s.get('grade_id')})")
+            grade_id = s.get('grade_id')
+            if grade_id:
+                grade_key = str(grade_id)
+                if grade_key not in subjects_by_grade:
+                    subjects_by_grade[grade_key] = []
+                subjects_by_grade[grade_key].append(s)
         
         # Build cgs_by_subject
         cgs_by_subject = {}
         for cg in cgs:
-            subject_id_str = cg.get('subject_id')
-            if subject_id_str:
-                if subject_id_str not in cgs_by_subject:
-                    cgs_by_subject[subject_id_str] = []
-                cgs_by_subject[subject_id_str].append(cg)
+            subject_id = cg.get('subject_id')
+            if subject_id:
+                subject_key = str(subject_id)
+                if subject_key not in cgs_by_subject:
+                    cgs_by_subject[subject_key] = []
+                cgs_by_subject[subject_key].append(cg)
         
         # Build comps_by_cg
         comps_by_cg = {}
         for comp in competencies:
-            cg_id_str = comp.get('cg_id')
-            if cg_id_str:
-                if cg_id_str not in comps_by_cg:
-                    comps_by_cg[cg_id_str] = []
-                comps_by_cg[cg_id_str].append(comp)
+            cg_id = comp.get('cg_id')
+            if cg_id:
+                cg_key = str(cg_id)
+                if cg_key not in comps_by_cg:
+                    comps_by_cg[cg_key] = []
+                comps_by_cg[cg_key].append(comp)
         
         data = {
             'grades': grades,
@@ -1215,6 +950,12 @@ def get_page1_data():
             'question_types': question_types,
             'cognitive_domains': cognitive_domains
         }
+        
+        print("📊 subjects_by_grade keys:", list(data['subjects_by_grade'].keys()))
+        for key, value in data['subjects_by_grade'].items():
+            print(f"  Grade {key}: {len(value)} subjects")
+            for s in value:
+                print(f"    - {s.get('subject_name')} (grade_id: {s.get('grade_id')})")
         
         return jsonify(data)
     except Exception as e:
@@ -1233,28 +974,20 @@ def get_textbooks():
     subject_id = request.args.get('subject_id')
     grade_id = request.args.get('grade_id')
     book_type = request.args.get('book_type')
-    user_role = session.get('user_role')
-    subject_group = session.get('subject_group')
     
     try:
         query = {}
-        
-        if user_role != 'admin' and subject_group:
-            subject_ids = [str(row['subject_id']) for row in db.subject_groups.find({'group_code': subject_group})]
-            if subject_ids:
-                query['subject_id'] = {'$in': subject_ids}
-        
         if subject_id:
-            query['subject_id'] = subject_id
+            query['subject_id'] = int(subject_id)
         if grade_id:
-            query['grade_id'] = grade_id
+            query['grade_id'] = int(grade_id)
         if book_type == 'textbook':
             query['is_reference'] = {'$ne': 1}
         elif book_type == 'reference':
             query['is_reference'] = 1
         
         textbooks = list(db.textbooks.find(query).sort('textbook_name', 1))
-        textbooks = convert_objectid(textbooks)
+        textbooks = convert_doc(textbooks)
         return jsonify({'textbooks': textbooks})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1279,45 +1012,28 @@ def create_textbook():
         return jsonify({'error': 'Textbook name, subject, and grade are required'}), 400
     
     try:
-        # Get grade_id as string
-        grade_id_str = None
-        if isinstance(grade_id, str) and len(grade_id) == 24:
-            grade = db.grades.find_one({'_id': ObjectId(grade_id)})
-            if grade:
-                grade_id_str = grade_id
-        elif isinstance(grade_id, dict) and 'id' in grade_id:
-            grade_id_str = str(grade_id['id'])
-        elif isinstance(grade_id, ObjectId):
-            grade_id_str = str(grade_id)
-        elif isinstance(grade_id, str):
-            grade = db.grades.find_one({'grade_name': grade_id})
-            if grade:
-                grade_id_str = str(grade['_id'])
+        subject_id_int = int(subject_id)
+        grade_id_int = int(grade_id)
         
-        if not grade_id_str:
-            first_grade = db.grades.find_one({})
-            if first_grade:
-                grade_id_str = str(first_grade['_id'])
-            else:
-                return jsonify({'error': 'No grades available'}), 400
-        
-        existing = db.textbooks.find_one({'textbook_name': textbook_name, 'subject_id': subject_id})
+        existing = db.textbooks.find_one({'textbook_name': textbook_name, 'subject_id': subject_id_int})
         if existing:
             return jsonify({'error': 'Book already exists for this subject'}), 400
         
+        next_id = get_next_id('textbooks')
         result = db.textbooks.insert_one({
+            'id': next_id,
             'textbook_name': textbook_name,
-            'subject_id': subject_id,
-            'grade_id': grade_id_str,
+            'subject_id': subject_id_int,
+            'grade_id': grade_id_int,
             'publisher': publisher,
             'is_reference': is_reference,
             'created_at': datetime.now()
         })
-        return jsonify({'success': True, 'id': str(result.inserted_id), 'message': 'Book saved successfully'})
+        return jsonify({'success': True, 'id': next_id, 'message': 'Book saved successfully'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/textbooks/<textbook_id>', methods=['PUT'])
+@app.route('/api/textbooks/<int:textbook_id>', methods=['PUT'])
 def update_textbook(textbook_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -1337,33 +1053,15 @@ def update_textbook(textbook_id):
         return jsonify({'error': 'Textbook name, subject, and grade are required'}), 400
     
     try:
-        grade_id_str = None
-        if isinstance(grade_id, str) and len(grade_id) == 24:
-            grade = db.grades.find_one({'_id': ObjectId(grade_id)})
-            if grade:
-                grade_id_str = grade_id
-        elif isinstance(grade_id, dict) and 'id' in grade_id:
-            grade_id_str = str(grade_id['id'])
-        elif isinstance(grade_id, ObjectId):
-            grade_id_str = str(grade_id)
-        elif isinstance(grade_id, str):
-            grade = db.grades.find_one({'grade_name': grade_id})
-            if grade:
-                grade_id_str = str(grade['_id'])
-        
-        if not grade_id_str:
-            first_grade = db.grades.find_one({})
-            if first_grade:
-                grade_id_str = str(first_grade['_id'])
-            else:
-                return jsonify({'error': 'No grades available'}), 400
+        subject_id_int = int(subject_id)
+        grade_id_int = int(grade_id)
         
         result = db.textbooks.update_one(
-            {'_id': ObjectId(textbook_id)},
+            {'id': textbook_id},
             {'$set': {
                 'textbook_name': textbook_name,
-                'subject_id': subject_id,
-                'grade_id': grade_id_str,
+                'subject_id': subject_id_int,
+                'grade_id': grade_id_int,
                 'publisher': publisher,
                 'is_reference': is_reference
             }}
@@ -1374,7 +1072,7 @@ def update_textbook(textbook_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/textbooks/<textbook_id>', methods=['DELETE'])
+@app.route('/api/textbooks/<int:textbook_id>', methods=['DELETE'])
 def delete_textbook(textbook_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -1388,14 +1086,14 @@ def delete_textbook(textbook_id):
         if count > 0:
             return jsonify({'error': f'Cannot delete textbook because it has {count} chapter(s) associated.'}), 400
         
-        result = db.textbooks.delete_one({'_id': ObjectId(textbook_id)})
+        result = db.textbooks.delete_one({'id': textbook_id})
         if result.deleted_count == 0:
             return jsonify({'error': 'Book not found'}), 404
         return jsonify({'success': True, 'message': 'Book deleted successfully'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/subjects/<subject_id>/textbooks', methods=['GET'])
+@app.route('/api/subjects/<int:subject_id>/textbooks', methods=['GET'])
 def get_subject_textbooks(subject_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -1410,7 +1108,7 @@ def get_subject_textbooks(subject_id):
             query['is_reference'] = 1
         
         textbooks = list(db.textbooks.find(query).sort('textbook_name', 1))
-        textbooks = convert_objectid(textbooks)
+        textbooks = convert_doc(textbooks)
         return jsonify({'textbooks': textbooks})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1425,24 +1123,17 @@ def get_chapters():
         return jsonify({'error': 'Not authenticated'}), 401
     
     subject_id = request.args.get('subject_id')
-    user_role = session.get('user_role')
-    subject_group = session.get('subject_group')
     
     try:
         query = {}
         if subject_id:
-            query['subject_id'] = subject_id
-        
-        if user_role != 'admin' and subject_group:
-            subject_ids = [str(row['subject_id']) for row in db.subject_groups.find({'group_code': subject_group})]
-            if subject_ids:
-                query['subject_id'] = {'$in': subject_ids}
+            query['subject_id'] = int(subject_id)
         
         pipeline = [
             {'$match': query},
-            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': '_id', 'as': 'subject_info'}},
-            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
-            {'$lookup': {'from': 'textbooks', 'localField': 'textbook_id', 'foreignField': '_id', 'as': 'textbook_info'}},
+            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': 'id', 'as': 'subject_info'}},
+            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': 'id', 'as': 'grade_info'}},
+            {'$lookup': {'from': 'textbooks', 'localField': 'textbook_id', 'foreignField': 'id', 'as': 'textbook_info'}},
             {'$addFields': {
                 'subject_name': {'$arrayElemAt': ['$subject_info.subject_name', 0]},
                 'grade_name': {'$arrayElemAt': ['$grade_info.grade_name', 0]},
@@ -1455,7 +1146,7 @@ def get_chapters():
         ]
         
         chapters = list(db.chapters.aggregate(pipeline))
-        chapters = convert_objectid(chapters)
+        chapters = convert_doc(chapters)
         return jsonify({'chapters': chapters})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1482,32 +1173,33 @@ def create_chapter():
         return jsonify({'error': 'Textbook selection is required'}), 400
     
     try:
+        subject_id_int = int(subject_id)
+        textbook_id_int = int(textbook_id)
+        
         # Get grade_id from subject
-        subject = db.subjects.find_one({'_id': ObjectId(subject_id)})
+        subject = db.subjects.find_one({'id': subject_id_int})
         grade_id = subject.get('grade_id') if subject else None
         
-        # Ensure grade_id is string
-        if grade_id and isinstance(grade_id, ObjectId):
-            grade_id = str(grade_id)
-        
-        existing = db.chapters.find_one({'subject_id': subject_id, 'chapter_name': chapter_name})
+        existing = db.chapters.find_one({'subject_id': subject_id_int, 'chapter_name': chapter_name})
         if existing:
             return jsonify({'error': 'Chapter already exists for this subject'}), 400
         
+        next_id = get_next_id('chapters')
         result = db.chapters.insert_one({
-            'subject_id': subject_id,
+            'id': next_id,
+            'subject_id': subject_id_int,
             'chapter_name': chapter_name,
             'chapter_number': chapter_number,
-            'textbook_id': textbook_id,
+            'textbook_id': textbook_id_int,
             'reference_book': reference_book,
             'grade_id': grade_id,
             'created_at': datetime.now()
         })
-        return jsonify({'success': True, 'id': str(result.inserted_id), 'message': 'Chapter created successfully'})
+        return jsonify({'success': True, 'id': next_id, 'message': 'Chapter created successfully'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/chapters/<chapter_id>', methods=['PUT'])
+@app.route('/api/chapters/<int:chapter_id>', methods=['PUT'])
 def update_chapter(chapter_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -1529,13 +1221,16 @@ def update_chapter(chapter_id):
         return jsonify({'error': 'Textbook selection is required'}), 400
     
     try:
+        subject_id_int = int(subject_id)
+        textbook_id_int = int(textbook_id)
+        
         result = db.chapters.update_one(
-            {'_id': ObjectId(chapter_id)},
+            {'id': chapter_id},
             {'$set': {
-                'subject_id': subject_id,
+                'subject_id': subject_id_int,
                 'chapter_name': chapter_name,
                 'chapter_number': chapter_number,
-                'textbook_id': textbook_id,
+                'textbook_id': textbook_id_int,
                 'reference_book': reference_book
             }}
         )
@@ -1545,7 +1240,7 @@ def update_chapter(chapter_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/chapters/<chapter_id>', methods=['DELETE'])
+@app.route('/api/chapters/<int:chapter_id>', methods=['DELETE'])
 def delete_chapter(chapter_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -1559,21 +1254,21 @@ def delete_chapter(chapter_id):
         if count > 0:
             return jsonify({'error': f'Cannot delete chapter because it has {count} question(s).'}), 400
         
-        result = db.chapters.delete_one({'_id': ObjectId(chapter_id)})
+        result = db.chapters.delete_one({'id': chapter_id})
         if result.deleted_count == 0:
             return jsonify({'error': 'Chapter not found'}), 404
         return jsonify({'success': True, 'message': 'Chapter deleted successfully'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/subjects/<subject_id>/chapters', methods=['GET'])
+@app.route('/api/subjects/<int:subject_id>/chapters', methods=['GET'])
 def get_subject_chapters(subject_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
     try:
         chapters = list(db.chapters.find({'subject_id': subject_id}).sort('chapter_number', 1))
-        chapters = convert_objectid(chapters)
+        chapters = convert_doc(chapters)
         return jsonify({'chapters': chapters})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1589,26 +1284,19 @@ def get_cgs():
     
     subject_id = request.args.get('subject_id')
     chapter_id = request.args.get('chapter_id')
-    user_role = session.get('user_role')
-    subject_group = session.get('subject_group')
     
     try:
         query = {}
         if subject_id:
-            query['subject_id'] = subject_id
+            query['subject_id'] = int(subject_id)
         if chapter_id:
-            query['chapter_id'] = chapter_id
-        
-        if user_role != 'admin' and subject_group:
-            subject_ids = [str(row['subject_id']) for row in db.subject_groups.find({'group_code': subject_group})]
-            if subject_ids:
-                query['subject_id'] = {'$in': subject_ids}
+            query['chapter_id'] = int(chapter_id)
         
         pipeline = [
             {'$match': query},
-            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': '_id', 'as': 'subject_info'}},
-            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
-            {'$lookup': {'from': 'chapters', 'localField': 'chapter_id', 'foreignField': '_id', 'as': 'chapter_info'}},
+            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': 'id', 'as': 'subject_info'}},
+            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': 'id', 'as': 'grade_info'}},
+            {'$lookup': {'from': 'chapters', 'localField': 'chapter_id', 'foreignField': 'id', 'as': 'chapter_info'}},
             {'$addFields': {
                 'subject_name': {'$arrayElemAt': ['$subject_info.subject_name', 0]},
                 'grade_name': {'$arrayElemAt': ['$grade_info.grade_name', 0]},
@@ -1619,7 +1307,7 @@ def get_cgs():
         ]
         
         cgs = list(db.curricular_goals.aggregate(pipeline))
-        cgs = convert_objectid(cgs)
+        cgs = convert_doc(cgs)
         return jsonify({'cgs': cgs})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1643,26 +1331,31 @@ def create_cg():
         return jsonify({'error': 'Code and subject required'}), 400
     
     try:
-        dup_query = {'cg_code': code, 'subject_id': subject_id}
-        if chapter_id:
-            dup_query['chapter_id'] = chapter_id
+        subject_id_int = int(subject_id)
+        chapter_id_int = int(chapter_id) if chapter_id else None
+        
+        dup_query = {'cg_code': code, 'subject_id': subject_id_int}
+        if chapter_id_int:
+            dup_query['chapter_id'] = chapter_id_int
         else:
             dup_query['chapter_id'] = None
         
         if db.curricular_goals.find_one(dup_query):
             return jsonify({'error': f'Curricular Goal "{code}" already exists'}), 400
         
+        next_id = get_next_id('curricular_goals')
         result = db.curricular_goals.insert_one({
+            'id': next_id,
             'cg_code': code,
             'cg_description': description,
-            'subject_id': subject_id,
-            'chapter_id': chapter_id
+            'subject_id': subject_id_int,
+            'chapter_id': chapter_id_int
         })
-        return jsonify({'success': True, 'id': str(result.inserted_id)})
+        return jsonify({'success': True, 'id': next_id})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/cgs/<cg_id>', methods=['PUT'])
+@app.route('/api/cgs/<int:cg_id>', methods=['PUT'])
 def update_cg(cg_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -1681,13 +1374,16 @@ def update_cg(cg_id):
         return jsonify({'error': 'Code and subject required'}), 400
     
     try:
+        subject_id_int = int(subject_id)
+        chapter_id_int = int(chapter_id) if chapter_id else None
+        
         result = db.curricular_goals.update_one(
-            {'_id': ObjectId(cg_id)},
+            {'id': cg_id},
             {'$set': {
                 'cg_code': code,
                 'cg_description': description,
-                'subject_id': subject_id,
-                'chapter_id': chapter_id
+                'subject_id': subject_id_int,
+                'chapter_id': chapter_id_int
             }}
         )
         if result.matched_count == 0:
@@ -1696,7 +1392,7 @@ def update_cg(cg_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/cgs/<cg_id>', methods=['DELETE'])
+@app.route('/api/cgs/<int:cg_id>', methods=['DELETE'])
 def delete_cg(cg_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -1709,7 +1405,7 @@ def delete_cg(cg_id):
         if db.competencies.count_documents({'cg_id': cg_id}) > 0:
             return jsonify({'error': 'Cannot delete CG with competencies'}), 400
         
-        result = db.curricular_goals.delete_one({'_id': ObjectId(cg_id)})
+        result = db.curricular_goals.delete_one({'id': cg_id})
         if result.deleted_count == 0:
             return jsonify({'error': 'CG not found'}), 404
         return jsonify({'success': True})
@@ -1725,24 +1421,16 @@ def get_competencies_api():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
-    user_role = session.get('user_role')
-    subject_group = session.get('subject_group')
-    
     try:
         pipeline = [
-            {'$lookup': {'from': 'curricular_goals', 'localField': 'cg_id', 'foreignField': '_id', 'as': 'cg_info'}},
+            {'$lookup': {'from': 'curricular_goals', 'localField': 'cg_id', 'foreignField': 'id', 'as': 'cg_info'}},
             {'$addFields': {'cg_code': {'$arrayElemAt': ['$cg_info.cg_code', 0]}, 'subject_id': {'$arrayElemAt': ['$cg_info.subject_id', 0]}}},
             {'$project': {'cg_info': 0}},
             {'$match': {'status': 1}}
         ]
         
-        if user_role != 'admin' and subject_group:
-            subject_ids = [str(row['subject_id']) for row in db.subject_groups.find({'group_code': subject_group})]
-            if subject_ids:
-                pipeline.insert(0, {'$match': {'subject_id': {'$in': subject_ids}}})
-        
         comps = list(db.competencies.aggregate(pipeline))
-        comps = convert_objectid(comps)
+        comps = convert_doc(comps)
         return jsonify({'competencies': comps})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1766,17 +1454,21 @@ def create_competency():
         return jsonify({'error': 'Code and CG required'}), 400
     
     try:
+        cg_id_int = int(cg_id)
+        
+        next_id = get_next_id('competencies')
         result = db.competencies.insert_one({
+            'id': next_id,
             'comp_code': code,
             'comp_description': description,
-            'cg_id': cg_id,
+            'cg_id': cg_id_int,
             'status': status
         })
-        return jsonify({'success': True, 'id': str(result.inserted_id)})
+        return jsonify({'success': True, 'id': next_id})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/competencies/<comp_id>', methods=['PUT'])
+@app.route('/api/competencies/<int:comp_id>', methods=['PUT'])
 def update_competency(comp_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -1795,12 +1487,14 @@ def update_competency(comp_id):
         return jsonify({'error': 'Code and CG required'}), 400
     
     try:
+        cg_id_int = int(cg_id)
+        
         result = db.competencies.update_one(
-            {'_id': ObjectId(comp_id)},
+            {'id': comp_id},
             {'$set': {
                 'comp_code': code,
                 'comp_description': description,
-                'cg_id': cg_id,
+                'cg_id': cg_id_int,
                 'status': status
             }}
         )
@@ -1810,7 +1504,7 @@ def update_competency(comp_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/competencies/<comp_id>', methods=['DELETE'])
+@app.route('/api/competencies/<int:comp_id>', methods=['DELETE'])
 def delete_competency(comp_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -1823,14 +1517,14 @@ def delete_competency(comp_id):
         if db.simple_questions.count_documents({'comp_id': comp_id}) > 0:
             return jsonify({'error': 'Cannot delete competency with questions'}), 400
         
-        result = db.competencies.delete_one({'_id': ObjectId(comp_id)})
+        result = db.competencies.delete_one({'id': comp_id})
         if result.deleted_count == 0:
             return jsonify({'error': 'Competency not found'}), 404
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/competencies/<comp_id>/toggle', methods=['POST'])
+@app.route('/api/competencies/<int:comp_id>/toggle', methods=['POST'])
 def toggle_competency_status(comp_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -1844,7 +1538,7 @@ def toggle_competency_status(comp_id):
     
     try:
         result = db.competencies.update_one(
-            {'_id': ObjectId(comp_id)},
+            {'id': comp_id},
             {'$set': {'status': status}}
         )
         if result.matched_count == 0:
@@ -1862,21 +1556,10 @@ def get_subject_groups():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
-    user_role = session.get('user_role')
-    subject_group = session.get('subject_group')
-    
     try:
-        query = {}
-        if user_role != 'admin':
-            if subject_group:
-                query['group_code'] = subject_group
-            else:
-                return jsonify({'groups': []})
-        
         pipeline = [
-            {'$match': query},
-            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
-            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': '_id', 'as': 'subject_info'}},
+            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': 'id', 'as': 'grade_info'}},
+            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': 'id', 'as': 'subject_info'}},
             {'$addFields': {
                 'grade_name': {'$arrayElemAt': ['$grade_info.grade_name', 0]},
                 'subject_name': {'$arrayElemAt': ['$subject_info.subject_name', 0]}
@@ -1885,7 +1568,7 @@ def get_subject_groups():
         ]
         
         groups = list(db.subject_groups.aggregate(pipeline))
-        groups = convert_objectid(groups)
+        groups = convert_doc(groups)
         return jsonify({'groups': groups})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1909,43 +1592,27 @@ def create_subject_group():
         return jsonify({'error': 'All fields are required'}), 400
     
     try:
-        grade_id_str = None
-        if isinstance(grade_id, str) and len(grade_id) == 24:
-            grade = db.grades.find_one({'_id': ObjectId(grade_id)})
-            if grade:
-                grade_id_str = grade_id
-        elif isinstance(grade_id, dict) and 'id' in grade_id:
-            grade_id_str = str(grade_id['id'])
-        elif isinstance(grade_id, ObjectId):
-            grade_id_str = str(grade_id)
-        elif isinstance(grade_id, str):
-            grade = db.grades.find_one({'grade_name': grade_id})
-            if grade:
-                grade_id_str = str(grade['_id'])
-        
-        if not grade_id_str:
-            first_grade = db.grades.find_one({})
-            if first_grade:
-                grade_id_str = str(first_grade['_id'])
-            else:
-                return jsonify({'error': 'No grades available'}), 400
+        grade_id_int = int(grade_id)
+        subject_id_int = int(subject_id)
         
         existing = db.subject_groups.find_one({'group_code': group_code})
         if existing:
             return jsonify({'error': 'Group code already exists'}), 400
         
+        next_id = get_next_id('subject_groups')
         result = db.subject_groups.insert_one({
+            'id': next_id,
             'group_code': group_code,
             'group_name': group_name,
-            'grade_id': grade_id_str,
-            'subject_id': subject_id,
+            'grade_id': grade_id_int,
+            'subject_id': subject_id_int,
             'created_at': datetime.now()
         })
-        return jsonify({'success': True, 'id': str(result.inserted_id), 'message': 'Group created successfully'})
+        return jsonify({'success': True, 'id': next_id, 'message': 'Group created successfully'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/subject-groups/<group_id>', methods=['PUT'])
+@app.route('/api/subject-groups/<int:group_id>', methods=['PUT'])
 def update_subject_group(group_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -1961,34 +1628,16 @@ def update_subject_group(group_id):
     subject_id = data.get('subject_id')
     
     try:
-        grade_id_str = None
-        if isinstance(grade_id, str) and len(grade_id) == 24:
-            grade = db.grades.find_one({'_id': ObjectId(grade_id)})
-            if grade:
-                grade_id_str = grade_id
-        elif isinstance(grade_id, dict) and 'id' in grade_id:
-            grade_id_str = str(grade_id['id'])
-        elif isinstance(grade_id, ObjectId):
-            grade_id_str = str(grade_id)
-        elif isinstance(grade_id, str):
-            grade = db.grades.find_one({'grade_name': grade_id})
-            if grade:
-                grade_id_str = str(grade['_id'])
-        
-        if not grade_id_str:
-            first_grade = db.grades.find_one({})
-            if first_grade:
-                grade_id_str = str(first_grade['_id'])
-            else:
-                return jsonify({'error': 'No grades available'}), 400
+        grade_id_int = int(grade_id)
+        subject_id_int = int(subject_id)
         
         result = db.subject_groups.update_one(
-            {'_id': ObjectId(group_id)},
+            {'id': group_id},
             {'$set': {
                 'group_code': group_code,
                 'group_name': group_name,
-                'grade_id': grade_id_str,
-                'subject_id': subject_id
+                'grade_id': grade_id_int,
+                'subject_id': subject_id_int
             }}
         )
         if result.matched_count == 0:
@@ -1997,7 +1646,7 @@ def update_subject_group(group_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/subject-groups/<group_id>', methods=['DELETE'])
+@app.route('/api/subject-groups/<int:group_id>', methods=['DELETE'])
 def delete_subject_group(group_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -2007,7 +1656,7 @@ def delete_subject_group(group_id):
         return jsonify({'error': 'Only Administrators can delete subject groups'}), 403
     
     try:
-        group = db.subject_groups.find_one({'_id': ObjectId(group_id)})
+        group = db.subject_groups.find_one({'id': group_id})
         if not group:
             return jsonify({'error': 'Group not found'}), 404
         
@@ -2015,7 +1664,7 @@ def delete_subject_group(group_id):
         if user_count > 0:
             return jsonify({'error': f'Cannot delete group because it has {user_count} user(s) assigned.'}), 400
         
-        result = db.subject_groups.delete_one({'_id': ObjectId(group_id)})
+        result = db.subject_groups.delete_one({'id': group_id})
         if result.deleted_count == 0:
             return jsonify({'error': 'Group not found'}), 404
         return jsonify({'success': True, 'message': 'Group deleted successfully'})
@@ -2042,7 +1691,7 @@ def get_users():
         ]
         
         users = list(db.users.aggregate(pipeline))
-        users = convert_objectid(users)
+        users = convert_doc(users)
         return jsonify({'users': users})
     except Exception as e:
         traceback.print_exc()
@@ -2087,7 +1736,9 @@ def create_user():
         elif role == 'builder':
             perm_ra = True
         
+        next_id = get_next_id('users')
         result = db.users.insert_one({
+            'id': next_id,
             'username': username,
             'password': hashed_password,
             'role': role,
@@ -2106,7 +1757,7 @@ def create_user():
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/users/<user_id>', methods=['PUT'])
+@app.route('/api/users/<int:user_id>', methods=['PUT'])
 def update_user(user_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -2129,7 +1780,7 @@ def update_user(user_id):
     
     try:
         result = db.users.update_one(
-            {'_id': ObjectId(user_id)},
+            {'id': user_id},
             {'$set': {
                 'username': username,
                 'role': role,
@@ -2149,7 +1800,7 @@ def update_user(user_id):
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/users/reset-password/<user_id>', methods=['POST'])
+@app.route('/api/users/reset-password/<int:user_id>', methods=['POST'])
 def reset_user_password(user_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -2164,7 +1815,7 @@ def reset_user_password(user_id):
     try:
         hashed_password = generate_password_hash(new_password)
         result = db.users.update_one(
-            {'_id': ObjectId(user_id)},
+            {'id': user_id},
             {'$set': {'password': hashed_password}}
         )
         if result.matched_count == 0:
@@ -2174,7 +1825,7 @@ def reset_user_password(user_id):
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/users/<user_id>', methods=['DELETE'])
+@app.route('/api/users/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -2185,7 +1836,7 @@ def delete_user(user_id):
         return jsonify({'error': 'Cannot delete your own account'}), 400
     
     try:
-        result = db.users.delete_one({'_id': ObjectId(user_id)})
+        result = db.users.delete_one({'id': user_id})
         if result.deleted_count == 0:
             return jsonify({'error': 'User not found'}), 404
         return jsonify({'success': True, 'message': 'User deleted successfully'})
@@ -2193,194 +1844,9 @@ def delete_user(user_id):
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/user-permissions')
-def get_user_permissions():
-    if 'user' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    return jsonify({
-        'username': session.get('user'),
-        'permissions': {
-            'RE': session.get('perm_re', False),
-            'RA': session.get('perm_ra', False),
-            'RC': session.get('perm_rc', False),
-            'AP': session.get('perm_ap', False),
-            'MASTER': session.get('perm_master', False)
-        },
-        'subject_group': session.get('subject_group'),
-        'group_role': session.get('group_role'),
-        'user_role': session.get('user_role'),
-        'user_id': session.get('user_id')
-    })
-
-@app.route('/api/reviewers', methods=['GET'])
-def get_reviewers():
-    if 'user' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    user_role = session.get('user_role')
-    subject_group = session.get('subject_group')
-    current_user_id = session.get('user_id')
-    
-    try:
-        query = {'_id': {'$ne': ObjectId(current_user_id)}}
-        
-        if user_role == 'admin':
-            query['$or'] = [{'perm_rc': 1}, {'role': 'admin'}, {'role': 'reviewer'}]
-        else:
-            query['$and'] = [
-                {'$or': [{'perm_rc': 1}, {'role': 'admin'}, {'role': 'reviewer'}]},
-                {'subject_group': subject_group}
-            ]
-        
-        users = list(db.users.find(query))
-        users = convert_objectid(users)
-        return jsonify({'reviewers': users})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/approvers', methods=['GET'])
-def get_approvers():
-    if 'user' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    user_role = session.get('user_role')
-    subject_group = session.get('subject_group')
-    current_user_id = session.get('user_id')
-    
-    try:
-        query = {'_id': {'$ne': ObjectId(current_user_id)}}
-        
-        if user_role == 'admin':
-            query['$or'] = [{'perm_ap': 1}, {'role': 'admin'}, {'role': 'approver'}]
-        else:
-            query['$and'] = [
-                {'$or': [{'perm_ap': 1}, {'role': 'admin'}, {'role': 'approver'}]},
-                {'subject_group': subject_group}
-            ]
-        
-        users = list(db.users.find(query))
-        users = convert_objectid(users)
-        return jsonify({'approvers': users})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
 # ============================================
-# QUESTION REVIEW OPERATIONS
+# REVIEW ENDPOINTS
 # ============================================
-
-@app.route('/api/master-review-question/<question_id>', methods=['POST'])
-def master_review_question(question_id):
-    if 'user' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    username = session.get('user', '')
-    user_role = session.get('user_role', 'writer')
-    perm_master = session.get('perm_master', False)
-    subject_group = session.get('subject_group')
-    
-    if user_role != 'admin' and not perm_master:
-        return jsonify({'error': 'Master permission required'}), 403
-    
-    data = request.json
-    comment = data.get('comment', '') if data else ''
-    reviewer_id = data.get('reviewer_id')
-    reviewer_name = data.get('reviewer_name')
-    
-    try:
-        question = db.simple_questions.find_one({'_id': ObjectId(question_id)})
-        if not question:
-            return jsonify({'error': 'Question not found'}), 404
-        
-        if reviewer_id:
-            reviewer = db.users.find_one({'_id': ObjectId(reviewer_id)})
-            if not reviewer:
-                return jsonify({'error': 'Reviewer not found'}), 404
-            reviewer_name = reviewer.get('username')
-        
-        if reviewer_name:
-            master_comment = f"[ASSIGNED TO REVIEWER: {reviewer_name}] {comment}" if comment else f"[ASSIGNED TO REVIEWER: {reviewer_name}]"
-        else:
-            master_comment = comment if comment else 'Question assigned for review'
-        
-        result = db.simple_questions.update_one(
-            {'_id': ObjectId(question_id)},
-            {'$set': {
-                'status': 'under_review',
-                'master_reviewed_by': username,
-                'master_reviewed_at': datetime.now(),
-                'master_reviewed_comment': master_comment,
-                'assigned_reviewer_id': reviewer_id,
-                'assigned_reviewer_name': reviewer_name,
-                'reviewed_by': None,
-                'reviewed_comment': None,
-                'reviewed_at': None,
-                'approved_by': None,
-                'approved_at': None
-            }}
-        )
-        
-        if result.matched_count == 0:
-            return jsonify({'error': 'Question not found'}), 404
-        
-        return jsonify({'success': True, 'message': f'Question assigned to {reviewer_name or "reviewer"} for review'})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/review-question/<question_id>', methods=['POST'])
-def review_question(question_id):
-    if 'user' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    username = session.get('user', '')
-    user_id = session.get('user_id')
-    user_role = session.get('user_role', 'writer')
-    perm_rc = session.get('perm_rc', False)
-    subject_group = session.get('subject_group')
-    
-    if user_role != 'admin' and not perm_rc:
-        return jsonify({'error': 'Reviewer (RC) permission required'}), 403
-    
-    data = request.json
-    comment = data.get('comment', '') if data else ''
-    approver_id = data.get('approver_id')
-    approver_name = data.get('approver_name')
-    
-    try:
-        question = db.simple_questions.find_one({'_id': ObjectId(question_id)})
-        if not question:
-            return jsonify({'error': 'Question not found'}), 404
-        
-        if approver_id:
-            approver = db.users.find_one({'_id': ObjectId(approver_id)})
-            if not approver:
-                return jsonify({'error': 'Approver not found'}), 404
-            approver_name = approver.get('username')
-        
-        if approver_name:
-            reviewer_comment = f"[ASSIGNED TO APPROVER: {approver_name}] {comment}" if comment else f"[ASSIGNED TO APPROVER: {approver_name}]"
-        else:
-            reviewer_comment = comment if comment else 'Question passed for approval'
-        
-        result = db.simple_questions.update_one(
-            {'_id': ObjectId(question_id)},
-            {'$set': {
-                'status': 'reviewed_completed',
-                'reviewed_by': username,
-                'reviewed_at': datetime.now(),
-                'reviewed_comment': reviewer_comment,
-                'assigned_approver_id': approver_id,
-                'assigned_approver_name': approver_name,
-                'approved_by': None,
-                'approved_at': None
-            }}
-        )
-        
-        if result.matched_count == 0:
-            return jsonify({'error': 'Question not found'}), 404
-        
-        return jsonify({'success': True, 'message': f'Question assigned to {approver_name or "approver"} for approval'})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/review-questions')
 def get_review_questions():
@@ -2389,555 +1855,43 @@ def get_review_questions():
     
     username = session.get('user', '')
     user_role = session.get('user_role', 'writer')
-    user_id = session.get('user_id')
-    perm_re = session.get('perm_re', False)
-    perm_ra = session.get('perm_ra', False)
-    perm_rc = session.get('perm_rc', False)
-    perm_ap = session.get('perm_ap', False)
-    perm_master = session.get('perm_master', False)
-    subject_group = session.get('subject_group')
-    
-    grade = request.args.get('grade', '')
-    subject = request.args.get('subject', '')
-    status = request.args.get('status', '')
-    search = request.args.get('search', '')
+    user_id = session.get('user_id', 0)
     
     try:
         match = {}
-        
-        if user_role == 'admin':
-            pass
-        else:
-            permission_filters = []
-            
-            if perm_re:
-                permission_filters.append({
-                    '$and': [
-                        {'created_by': username},
-                        {'status': {'$in': ['unassigned', 'rejected']}}
-                    ]
-                })
-            
-            if perm_master:
-                permission_filters.append({'status': 'unassigned'})
-            
-            if perm_rc:
-                permission_filters.append({
-                    '$and': [
-                        {'status': 'under_review'},
-                        {'assigned_reviewer_id': user_id}
-                    ]
-                })
-            
-            if perm_ap:
-                permission_filters.append({
-                    '$and': [
-                        {'status': 'reviewed_completed'},
-                        {'assigned_approver_id': user_id}
-                    ]
-                })
-            
-            if perm_ra:
-                permission_filters.append({'status': 'approved'})
-            
-            permission_filters.append({'created_by': username})
-            
-            if permission_filters:
-                match['$or'] = permission_filters
-            else:
-                match['_id'] = None
-        
-        if grade:
-            match['grade_id'] = grade
-        if subject:
-            match['subject_id'] = subject
-        if status:
-            match['status'] = status
-        if search:
-            match['$or'] = [
-                {'question_text': {'$regex': search, '$options': 'i'}},
-                {'answer': {'$regex': search, '$options': 'i'}}
-            ]
+        if user_role != 'admin':
+            match['created_by'] = username
         
         pipeline = [
             {'$match': match},
-            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
-            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': '_id', 'as': 'subject_info'}},
-            {'$lookup': {'from': 'chapters', 'localField': 'chapter_id', 'foreignField': '_id', 'as': 'chapter_info'}},
-            {'$lookup': {'from': 'competencies', 'localField': 'comp_id', 'foreignField': '_id', 'as': 'comp_info'}},
-            {'$lookup': {'from': 'cognitive_domains', 'localField': 'domain_id', 'foreignField': '_id', 'as': 'domain_info'}},
-            {'$lookup': {'from': 'knowledge_levels', 'localField': 'knowledge_level_id', 'foreignField': '_id', 'as': 'knowledge_info'}},
-            {'$lookup': {'from': 'difficulty_levels', 'localField': 'difficulty_id', 'foreignField': '_id', 'as': 'difficulty_info'}},
+            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': 'id', 'as': 'grade_info'}},
+            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': 'id', 'as': 'subject_info'}},
+            {'$lookup': {'from': 'chapters', 'localField': 'chapter_id', 'foreignField': 'id', 'as': 'chapter_info'}},
+            {'$lookup': {'from': 'competencies', 'localField': 'comp_id', 'foreignField': 'id', 'as': 'comp_info'}},
             {'$addFields': {
                 'grade': {'$arrayElemAt': ['$grade_info.grade_name', 0]},
-                'grade_id': {'$arrayElemAt': ['$grade_info._id', 0]},
+                'grade_id': {'$arrayElemAt': ['$grade_info.id', 0]},
                 'subject': {'$arrayElemAt': ['$subject_info.subject_name', 0]},
-                'subject_id': {'$arrayElemAt': ['$subject_info._id', 0]},
+                'subject_id': {'$arrayElemAt': ['$subject_info.id', 0]},
                 'chapter': {'$arrayElemAt': ['$chapter_info.chapter_name', 0]},
-                'chapter_id': {'$arrayElemAt': ['$chapter_info._id', 0]},
-                'competency': {'$arrayElemAt': ['$comp_info.comp_code', 0]},
-                'domain_name': {'$arrayElemAt': ['$domain_info.domain_name', 0]},
-                'knowledge_level_name': {'$arrayElemAt': ['$knowledge_info.level_name', 0]},
-                'difficulty_name': {'$arrayElemAt': ['$difficulty_info.level_name', 0]}
+                'chapter_id': {'$arrayElemAt': ['$chapter_info.id', 0]},
+                'competency': {'$arrayElemAt': ['$comp_info.comp_code', 0]}
             }},
-            {'$project': {
-                'grade_info': 0, 'subject_info': 0, 'chapter_info': 0,
-                'comp_info': 0, 'domain_info': 0, 'knowledge_info': 0, 'difficulty_info': 0
-            }},
+            {'$project': {'grade_info': 0, 'subject_info': 0, 'chapter_info': 0, 'comp_info': 0}},
             {'$sort': {'created_at': -1}}
         ]
         
         questions = list(db.simple_questions.aggregate(pipeline))
+        questions = convert_doc(questions)
         
-        for q in questions:
-            q['id'] = str(q['_id'])
-            if '_id' in q:
-                q['_id'] = str(q['_id'])
-            
-            can_edit = False
-            can_review = False
-            can_approve = False
-            can_build = False
-            can_delete = user_role == 'admin'
-            can_rework = False
-            can_master_review = False
-            
-            is_assigned_reviewer = q.get('assigned_reviewer_id') == user_id
-            is_assigned_approver = q.get('assigned_approver_id') == user_id
-            is_my_question = q.get('created_by') == username
-            
-            if perm_re and is_my_question:
-                if q.get('status') in ['unassigned', 'rejected', 'rework']:
-                    can_edit = True
-                if q.get('status') == 'rejected':
-                    can_rework = True
-            
-            if perm_master and q.get('status') == 'unassigned':
-                can_master_review = True
-            
-            if perm_rc and q.get('status') == 'under_review' and is_assigned_reviewer:
-                can_review = True
-                can_rework = True
-            
-            if perm_ap and q.get('status') == 'reviewed_completed' and is_assigned_approver:
-                can_approve = True
-                can_rework = True
-            
-            if perm_ra and q.get('status') == 'approved':
-                can_build = True
-            
-            if user_role == 'admin':
-                can_edit = True
-                can_review = True
-                can_approve = True
-                can_build = True
-                can_delete = True
-                can_rework = True
-                can_master_review = True
-            
-            q['can_edit'] = can_edit
-            q['can_review'] = can_review
-            q['can_approve'] = can_approve
-            q['can_build'] = can_build
-            q['can_delete'] = can_delete
-            q['can_rework'] = can_rework
-            q['can_master_review'] = can_master_review
-            q['is_assigned_to_me'] = is_assigned_reviewer or is_assigned_approver
-            q['is_my_question'] = is_my_question
-        
-        return jsonify({
-            'questions': questions,
-            'permissions': {
-                'RE': perm_re,
-                'RA': perm_ra,
-                'RC': perm_rc,
-                'AP': perm_ap,
-                'MASTER': perm_master
-            },
-            'subject_group': subject_group,
-            'user_role': user_role,
-            'user_id': user_id
-        })
+        return jsonify({'questions': questions})
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/approve-question/<question_id>', methods=['POST'])
-def approve_question(question_id):
-    if 'user' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    username = session.get('user', '')
-    user_id = session.get('user_id')
-    user_role = session.get('user_role', 'writer')
-    perm_ap = session.get('perm_ap', False)
-    
-    if user_role != 'admin' and not perm_ap:
-        return jsonify({'error': 'Approver (AP) permission required'}), 403
-    
-    data = request.json
-    comment = data.get('comment', '') if data else ''
-    
-    try:
-        question = db.simple_questions.find_one({'_id': ObjectId(question_id)})
-        if not question:
-            return jsonify({'error': 'Question not found'}), 404
-        
-        result = db.simple_questions.update_one(
-            {'_id': ObjectId(question_id)},
-            {'$set': {
-                'status': 'approved',
-                'reviewed_comment': comment,
-                'approved_at': datetime.now(),
-                'approved_by': username
-            }}
-        )
-        
-        if result.matched_count == 0:
-            return jsonify({'error': 'Question not found'}), 404
-        
-        return jsonify({'success': True, 'message': 'Question approved successfully'})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/rework-question/<question_id>', methods=['POST'])
-def rework_question(question_id):
-    if 'user' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    username = session.get('user', '')
-    user_id = session.get('user_id')
-    user_role = session.get('user_role', 'writer')
-    perm_re = session.get('perm_re', False)
-    perm_rc = session.get('perm_rc', False)
-    perm_ap = session.get('perm_ap', False)
-    perm_master = session.get('perm_master', False)
-    
-    data = request.json
-    rework_comment = data.get('comment', '') if data else ''
-    
-    try:
-        question = db.simple_questions.find_one({'_id': ObjectId(question_id)})
-        if not question:
-            return jsonify({'error': 'Question not found'}), 404
-        
-        comment_with_meta = f"[REWORK by {username} on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {rework_comment}"
-        
-        result = db.simple_questions.update_one(
-            {'_id': ObjectId(question_id)},
-            {'$set': {
-                'status': 'unassigned',
-                'reviewed_by': None,
-                'reviewed_at': None,
-                'reviewed_comment': comment_with_meta,
-                'master_reviewed_by': None,
-                'master_reviewed_at': None,
-                'master_reviewed_comment': None,
-                'rejection_reason': None,
-                'rejected_by': None,
-                'rejected_at': None,
-                'approved_by': None,
-                'approved_at': None,
-                'assigned_reviewer_id': None,
-                'assigned_reviewer_name': None,
-                'assigned_approver_id': None,
-                'assigned_approver_name': None
-            }}
-        )
-        
-        if result.matched_count == 0:
-            return jsonify({'error': 'Question not found'}), 404
-        
-        return jsonify({'success': True, 'message': 'Question moved to unassigned for rework'})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/update-question/<question_id>', methods=['POST'])
-def update_question(question_id):
-    if 'user' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    username = session.get('user', '')
-    user_role = session.get('user_role', 'writer')
-    perm_re = session.get('perm_re', False)
-    
-    data = request.json
-    question_text = data.get('question_text')
-    answer = data.get('answer')
-    marks = data.get('marks', 1)
-    duration_minutes = data.get('duration_minutes', 0)
-    
-    if not question_text:
-        return jsonify({'error': 'Question text is required'}), 400
-    
-    if not has_actual_content(question_text):
-        return jsonify({'error': 'Question text must have actual content'}), 400
-    
-    if not answer:
-        return jsonify({'error': 'Answer is required'}), 400
-    
-    try:
-        question = db.simple_questions.find_one({'_id': ObjectId(question_id)})
-        if not question:
-            return jsonify({'error': 'Question not found'}), 404
-        
-        chapter_id = data.get('chapter_id')
-        cg_id = data.get('cg_id')
-        comp_id = data.get('comp_id')
-        domain_id = data.get('domain_id')
-        knowledge_level_id = data.get('knowledge_level_id')
-        question_type_id = data.get('question_type_id')
-        difficulty_id = data.get('difficulty_id')
-        images = data.get('images', '[]')
-        language = data.get('language', 'en')
-        textbook_id = data.get('textbook_id')
-        textbook_name = data.get('textbook_name')
-        textbook_publisher = data.get('textbook_publisher')
-        textbook_page = data.get('textbook_page')
-        reference_book = data.get('reference_book')
-        reference_page = data.get('reference_page')
-        
-        update_data = {
-            'question_text': question_text,
-            'answer': answer,
-            'marks': marks,
-            'duration_minutes': duration_minutes,
-            'chapter_id': chapter_id,
-            'cg_id': cg_id,
-            'comp_id': comp_id,
-            'domain_id': domain_id,
-            'knowledge_level_id': knowledge_level_id,
-            'question_type_id': question_type_id,
-            'difficulty_id': difficulty_id,
-            'images': images,
-            'language': language,
-            'textbook_id': textbook_id,
-            'textbook_name': textbook_name,
-            'textbook_publisher': textbook_publisher,
-            'textbook_page': textbook_page,
-            'reference_book': reference_book,
-            'reference_page': reference_page,
-            'updated_at': datetime.now()
-        }
-        
-        if data.get('status') is not None:
-            update_data['status'] = data.get('status')
-        
-        result = db.simple_questions.update_one(
-            {'_id': ObjectId(question_id)},
-            {'$set': update_data}
-        )
-        
-        if result.matched_count == 0:
-            return jsonify({'error': 'Question not found'}), 404
-        
-        return jsonify({'success': True, 'message': 'Question updated successfully'})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/builder-questions', methods=['GET'])
-def get_builder_questions():
-    if 'user' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    user_role = session.get('user_role', 'writer')
-    perm_ra = session.get('perm_ra', False)
-    
-    if user_role != 'admin' and not perm_ra:
-        return jsonify({'error': 'Builder (RA) permission required'}), 403
-    
-    grade_id = request.args.get('grade_id')
-    subject_id = request.args.get('subject_id')
-    chapter_ids = request.args.get('chapter_ids')
-    cg_ids = request.args.get('cg_ids')
-    comp_ids = request.args.get('comp_ids')
-    question_ids = request.args.get('question_ids')
-    status = request.args.get('status', 'approved')
-    count_only = request.args.get('count_only') == 'true'
-    
-    try:
-        match = {}
-        
-        if status:
-            match['status'] = status
-        
-        if question_ids:
-            ids = [str(x.strip()) for x in question_ids.split(',') if x.strip()]
-            if ids:
-                match['_id'] = {'$in': [ObjectId(id) for id in ids]}
-        
-        if chapter_ids:
-            ids = [str(x.strip()) for x in chapter_ids.split(',') if x.strip()]
-            if ids:
-                match['chapter_id'] = {'$in': ids}
-        
-        if cg_ids:
-            ids = [str(x.strip()) for x in cg_ids.split(',') if x.strip()]
-            if ids:
-                match['cg_id'] = {'$in': ids}
-        
-        if comp_ids:
-            ids = [str(x.strip()) for x in comp_ids.split(',') if x.strip()]
-            if ids:
-                match['comp_id'] = {'$in': ids}
-        
-        if grade_id:
-            match['grade_id'] = grade_id
-        
-        if subject_id:
-            match['subject_id'] = subject_id
-        
-        if count_only:
-            chapters = list(db.chapters.find({}))
-            result = {}
-            for ch in chapters:
-                count = db.simple_questions.count_documents({
-                    'chapter_id': str(ch['_id']),
-                    'status': 'approved'
-                })
-                result[str(ch['_id'])] = count
-            return jsonify({'chapter_counts': result})
-        
-        pipeline = [
-            {'$match': match},
-            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
-            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': '_id', 'as': 'subject_info'}},
-            {'$lookup': {'from': 'chapters', 'localField': 'chapter_id', 'foreignField': '_id', 'as': 'chapter_info'}},
-            {'$addFields': {
-                'grade_name': {'$arrayElemAt': ['$grade_info.grade_name', 0]},
-                'subject_name': {'$arrayElemAt': ['$subject_info.subject_name', 0]},
-                'chapter_name': {'$arrayElemAt': ['$chapter_info.chapter_name', 0]}
-            }},
-            {'$project': {'grade_info': 0, 'subject_info': 0, 'chapter_info': 0}},
-            {'$sort': {'question_type_name': 1, 'difficulty_name': 1}},
-            {'$limit': 500}
-        ]
-        
-        questions = list(db.simple_questions.aggregate(pipeline))
-        questions = convert_objectid(questions)
-        return jsonify({'questions': questions})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/page2-data')
-def get_page2_data():
-    if 'user' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    comp_id = request.args.get('comp_id')
-    
-    try:
-        comp_data = None
-        if comp_id:
-            comp = db.competencies.find_one({'_id': ObjectId(comp_id)})
-            if comp:
-                comp_data = convert_objectid(comp)
-        
-        domains = list(db.cognitive_domains.find())
-        domains = convert_objectid(domains)
-        
-        if not domains:
-            domains = [
-                {'id': '1', 'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
-                {'id': '2', 'domain_name': 'Sensitivity', 'description': 'Sensitivity to applications and real-world connections'},
-                {'id': '3', 'domain_name': 'Creativity', 'description': 'Creative thinking and problem solving'}
-            ]
-        
-        question_types = list(db.question_types.find())
-        question_types = convert_objectid(question_types)
-        
-        difficulty_levels = list(db.difficulty_levels.find())
-        difficulty_levels = convert_objectid(difficulty_levels)
-        
-        if not difficulty_levels:
-            difficulty_levels = [
-                {'id': '1', 'level_name': 'Easy'},
-                {'id': '2', 'level_name': 'Medium'},
-                {'id': '3', 'level_name': 'Hard'}
-            ]
-        
-        data = {
-            'domains': domains,
-            'question_types_by_domain': {},
-            'difficulty_levels': difficulty_levels,
-            'comp': comp_data
-        }
-        
-        for qt in question_types:
-            cognitive_id = qt.get('cognitive_id')
-            if cognitive_id:
-                cognitive_key = str(cognitive_id)
-                if cognitive_key not in data['question_types_by_domain']:
-                    data['question_types_by_domain'][cognitive_key] = []
-                data['question_types_by_domain'][cognitive_key].append(qt)
-        
-        return jsonify(data)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/knowledge-levels', methods=['GET'])
-def get_knowledge_levels():
-    if 'user' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    domain_id = request.args.get('domain_id')
-    difficulty_id = request.args.get('difficulty_id')
-    
-    try:
-        query = {'is_active': True}
-        if domain_id:
-            query['domain_id'] = domain_id
-        elif difficulty_id:
-            query['difficulty_id'] = difficulty_id
-        
-        levels = list(db.knowledge_levels.find(query))
-        levels = convert_objectid(levels)
-        
-        if not levels:
-            default_levels = [
-                {'id': '1', 'level_name': 'Knowledge', 'description': 'Basic recall of information and facts'},
-                {'id': '2', 'level_name': 'Remembering', 'description': 'Retrieving knowledge from memory'},
-                {'id': '3', 'level_name': 'Understanding', 'description': 'Constructing meaning from information'},
-                {'id': '4', 'level_name': 'Comprehension', 'description': 'Grasping the meaning of information'},
-                {'id': '5', 'level_name': 'Application', 'description': 'Apply knowledge to new situations'},
-                {'id': '6', 'level_name': 'Analysis', 'description': 'Break down information into parts'},
-                {'id': '7', 'level_name': 'Synthesis', 'description': 'Combine elements to form a new whole'},
-                {'id': '8', 'level_name': 'Empathy', 'description': "Understanding others' perspectives and feelings"},
-                {'id': '9', 'level_name': 'Interpretation', 'description': 'Explaining and interpreting information'},
-                {'id': '10', 'level_name': 'Evaluation', 'description': 'Make judgments based on criteria and standards'},
-                {'id': '11', 'level_name': 'Creation', 'description': 'Generate new ideas and products'},
-                {'id': '12', 'level_name': 'Critical Thinking', 'description': 'Deep analysis and evaluation of information'},
-                {'id': '13', 'level_name': 'Innovation', 'description': 'Novel approaches and solutions to problems'},
-                {'id': '14', 'level_name': 'Design Thinking', 'description': 'Human-centered problem solving approach'},
-                {'id': '15', 'level_name': 'Reflection', 'description': 'Thoughtful consideration and self-assessment'}
-            ]
-            if domain_id:
-                return jsonify({'knowledge_levels': default_levels})
-            return jsonify({'knowledge_levels': default_levels})
-        
-        return jsonify({'knowledge_levels': levels})
-    except Exception as e:
-        return jsonify({'knowledge_levels': []})
-
-@app.route('/api/cognitive-domains', methods=['GET'])
-def get_cognitive_domains():
-    if 'user' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    try:
-        domains = list(db.cognitive_domains.find())
-        domains = convert_objectid(domains)
-        
-        if not domains:
-            domains = [
-                {'id': '1', 'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
-                {'id': '2', 'domain_name': 'Sensitivity', 'description': 'Sensitivity to applications and real-world connections'},
-                {'id': '3', 'domain_name': 'Creativity', 'description': 'Creative thinking and problem solving'}
-            ]
-        
-        return jsonify({'domains': domains})
-    except Exception as e:
-        return jsonify({'domains': []})
+# ============================================
+# SIMPLE QUESTIONS ENDPOINTS
+# ============================================
 
 @app.route('/api/simple-questions')
 def get_simple_questions():
@@ -2946,22 +1900,14 @@ def get_simple_questions():
     
     comp_id = request.args.get('comp_id')
     username = session.get('user')
-    subject_group = session.get('subject_group')
-    user_role = session.get('user_role')
     
     try:
         match = {'created_by': username}
-        
-        if user_role != 'admin' and subject_group:
-            subject_ids = [str(row['subject_id']) for row in db.subject_groups.find({'group_code': subject_group})]
-            if subject_ids:
-                match['subject_id'] = {'$in': subject_ids}
-        
         if comp_id and comp_id != '0':
-            match['comp_id'] = comp_id
+            match['comp_id'] = int(comp_id)
         
         questions = list(db.simple_questions.find(match).sort('_id', -1).limit(50))
-        questions = convert_objectid(questions)
+        questions = convert_doc(questions)
         
         for q in questions:
             if q.get('images'):
@@ -2975,10 +1921,6 @@ def get_simple_questions():
         return jsonify({'questions': questions})
     except Exception as e:
         return jsonify({'questions': []})
-
-@app.route('/api/page2-questions')
-def get_page2_questions():
-    return get_simple_questions()
 
 @app.route('/api/create-simple-question', methods=['POST'])
 def create_simple_question():
@@ -2997,17 +1939,8 @@ def create_simple_question():
     
     data = request.json
     
-    raw_question = data.get('question_text', '')
-    raw_answer = data.get('answer', '')
-    
-    question_text = strip_html_tags(raw_question)
-    answer = strip_html_tags(raw_answer)
-    
-    if not question_text:
-        question_text = 'Question content'
-    if not answer:
-        answer = 'Answer content'
-    
+    question_text = data.get('question_text', '')
+    answer = data.get('answer', '')
     marks = data.get('marks', 1)
     duration_minutes = data.get('duration_minutes', 0)
     comp_id = data.get('comp_id')
@@ -3027,8 +1960,6 @@ def create_simple_question():
     grade_name = data.get('grade_name')
     subject_name = data.get('subject_name')
     chapter_name = data.get('chapter_name')
-    chapter_code = data.get('chapter_code')
-    cg_code = data.get('cg_code')
     images = data.get('images', '[]')
     language = data.get('language', 'en')
     textbook_id = data.get('textbook_id')
@@ -3044,40 +1975,38 @@ def create_simple_question():
     if not answer:
         return jsonify({'error': 'Answer is required'}), 400
     
-    subject_group = session.get('subject_group')
-    user_role = session.get('user_role')
-    
-    if user_role != 'admin' and subject_group and subject_id:
-        group = db.subject_groups.find_one({'group_code': subject_group, 'subject_id': subject_id})
-        if not group:
-            return jsonify({'error': 'Access denied to this subject'}), 403
-    
     try:
         username = session.get('user', 'Unknown')
         current_time = datetime.now()
         
-        if comp_id:
-            comp = db.competencies.find_one({'_id': ObjectId(comp_id)})
-            if not comp:
-                comp_id = None
-                competency_code = None
+        # Convert string IDs to integers
+        comp_id_int = int(comp_id) if comp_id else None
+        grade_id_int = int(grade_id) if grade_id else None
+        subject_id_int = int(subject_id) if subject_id else None
+        chapter_id_int = int(chapter_id) if chapter_id else None
+        cg_id_int = int(cg_id) if cg_id else None
+        domain_id_int = int(domain_id) if domain_id else None
+        knowledge_level_id_int = int(knowledge_level_id) if knowledge_level_id else None
+        question_type_id_int = int(question_type_id) if question_type_id else None
+        difficulty_id_int = int(difficulty_id) if difficulty_id else None
+        textbook_id_int = int(textbook_id) if textbook_id else None
         
         question_doc = {
             'question_text': question_text,
             'answer': answer,
             'marks': marks,
             'duration_minutes': duration_minutes,
-            'comp_id': comp_id,
+            'comp_id': comp_id_int,
             'created_by': username,
             'created_at': current_time,
-            'grade_id': grade_id,
-            'subject_id': subject_id,
-            'chapter_id': chapter_id,
-            'cg_id': cg_id,
-            'domain_id': domain_id,
-            'knowledge_level_id': knowledge_level_id,
-            'question_type_id': question_type_id,
-            'difficulty_id': difficulty_id,
+            'grade_id': grade_id_int,
+            'subject_id': subject_id_int,
+            'chapter_id': chapter_id_int,
+            'cg_id': cg_id_int,
+            'domain_id': domain_id_int,
+            'knowledge_level_id': knowledge_level_id_int,
+            'question_type_id': question_type_id_int,
+            'difficulty_id': difficulty_id_int,
             'competency_code': competency_code,
             'domain_name': domain_name,
             'knowledge_level_name': knowledge_level_name,
@@ -3086,12 +2015,10 @@ def create_simple_question():
             'grade_name': grade_name,
             'subject_name': subject_name,
             'chapter_name': chapter_name,
-            'chapter_code': chapter_code,
-            'cg_code': cg_code,
             'images': images,
             'language': language,
             'status': 'unassigned',
-            'textbook_id': textbook_id,
+            'textbook_id': textbook_id_int,
             'textbook_name': textbook_name,
             'textbook_publisher': textbook_publisher,
             'textbook_page': textbook_page,
@@ -3099,14 +2026,18 @@ def create_simple_question():
             'reference_page': reference_page
         }
         
+        # Remove None values
         question_doc = {k: v for k, v in question_doc.items() if v is not None}
+        
+        next_id = get_next_id('simple_questions')
+        question_doc['id'] = next_id
         
         result = db.simple_questions.insert_one(question_doc)
         
         return jsonify({
             'success': True, 
             'message': 'Question saved successfully',
-            'id': str(result.inserted_id),
+            'id': next_id,
             'language': language,
             'status': 'unassigned'
         })
@@ -3118,18 +2049,22 @@ def create_simple_question():
 def create_question():
     return create_simple_question()
 
-@app.route('/api/delete-question/<question_id>', methods=['DELETE'])
+@app.route('/api/delete-question/<int:question_id>', methods=['DELETE'])
 def delete_question(question_id):
     if 'user' not in session or session.get('user_role') != 'admin':
         return jsonify({'error': 'Admin access required'}), 403
     
     try:
-        result = db.simple_questions.delete_one({'_id': ObjectId(question_id)})
+        result = db.simple_questions.delete_one({'id': question_id})
         if result.deleted_count == 0:
             return jsonify({'error': 'Question not found'}), 404
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# ============================================
+# IMAGE UPLOAD ENDPOINTS
+# ============================================
 
 @app.route('/api/upload-question-images', methods=['POST'])
 def upload_question_images():
@@ -3210,22 +2145,16 @@ def get_paper_blueprints():
     
     username = session.get('user')
     user_role = session.get('user_role')
-    subject_group = session.get('subject_group')
     
     try:
         match = {}
         if user_role != 'admin':
             match['created_by'] = username
         
-        if user_role != 'admin' and subject_group:
-            subject_ids = [str(row['subject_id']) for row in db.subject_groups.find({'group_code': subject_group})]
-            if subject_ids:
-                match['subject_id'] = {'$in': subject_ids}
-        
         pipeline = [
             {'$match': match},
-            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
-            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': '_id', 'as': 'subject_info'}},
+            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': 'id', 'as': 'grade_info'}},
+            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': 'id', 'as': 'subject_info'}},
             {'$addFields': {
                 'grade_name': {'$arrayElemAt': ['$grade_info.grade_name', 0]},
                 'subject_name': {'$arrayElemAt': ['$subject_info.subject_name', 0]}
@@ -3235,7 +2164,7 @@ def get_paper_blueprints():
         ]
         
         blueprints = list(db.paper_blueprints.aggregate(pipeline))
-        blueprints = convert_objectid(blueprints)
+        blueprints = convert_doc(blueprints)
         
         for bp in blueprints:
             if bp.get('cg_ids'):
@@ -3306,10 +2235,12 @@ def create_paper_blueprint():
         del main_config['cognitive']
     
     try:
+        next_id = get_next_id('paper_blueprints')
         result = db.paper_blueprints.insert_one({
+            'id': next_id,
             'name': name,
-            'grade_id': grade_id,
-            'subject_id': subject_id,
+            'grade_id': int(grade_id) if grade_id else None,
+            'subject_id': int(subject_id) if subject_id else None,
             'cg_ids': ','.join(map(str, cg_ids)) if cg_ids else None,
             'comp_ids': ','.join(map(str, comp_ids)) if comp_ids else None,
             'question_ids': ','.join(map(str, question_ids)) if question_ids else None,
@@ -3320,20 +2251,20 @@ def create_paper_blueprint():
             'updated_at': datetime.now(),
             'status': status
         })
-        return jsonify({'success': True, 'id': str(result.inserted_id), 'message': 'Blueprint saved successfully'})
+        return jsonify({'success': True, 'id': next_id, 'message': 'Blueprint saved successfully'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/paper-blueprints/<blueprint_id>', methods=['GET'])
+@app.route('/api/paper-blueprints/<int:blueprint_id>', methods=['GET'])
 def get_paper_blueprint(blueprint_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
     try:
         pipeline = [
-            {'$match': {'_id': ObjectId(blueprint_id)}},
-            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
-            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': '_id', 'as': 'subject_info'}},
+            {'$match': {'id': blueprint_id}},
+            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': 'id', 'as': 'grade_info'}},
+            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': 'id', 'as': 'subject_info'}},
             {'$addFields': {
                 'grade_name': {'$arrayElemAt': ['$grade_info.grade_name', 0]},
                 'subject_name': {'$arrayElemAt': ['$subject_info.subject_name', 0]}
@@ -3346,7 +2277,7 @@ def get_paper_blueprint(blueprint_id):
         if not blueprint:
             return jsonify({'error': 'Blueprint not found'}), 404
         
-        bp = convert_objectid(blueprint[0])
+        bp = convert_doc(blueprint[0])
         
         if bp.get('cg_ids'):
             try:
@@ -3393,7 +2324,7 @@ def get_paper_blueprint(blueprint_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/paper-blueprints/<blueprint_id>', methods=['PUT'])
+@app.route('/api/paper-blueprints/<int:blueprint_id>', methods=['PUT'])
 def update_paper_blueprint(blueprint_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -3416,11 +2347,11 @@ def update_paper_blueprint(blueprint_id):
     
     try:
         result = db.paper_blueprints.update_one(
-            {'_id': ObjectId(blueprint_id)},
+            {'id': blueprint_id},
             {'$set': {
                 'name': name,
-                'grade_id': grade_id,
-                'subject_id': subject_id,
+                'grade_id': int(grade_id) if grade_id else None,
+                'subject_id': int(subject_id) if subject_id else None,
                 'cg_ids': ','.join(map(str, cg_ids)) if cg_ids else None,
                 'comp_ids': ','.join(map(str, comp_ids)) if comp_ids else None,
                 'question_ids': ','.join(map(str, question_ids)) if question_ids else None,
@@ -3438,13 +2369,13 @@ def update_paper_blueprint(blueprint_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/paper-blueprints/<blueprint_id>', methods=['DELETE'])
+@app.route('/api/paper-blueprints/<int:blueprint_id>', methods=['DELETE'])
 def delete_paper_blueprint(blueprint_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
     try:
-        result = db.paper_blueprints.delete_one({'_id': ObjectId(blueprint_id)})
+        result = db.paper_blueprints.delete_one({'id': blueprint_id})
         if result.deleted_count == 0:
             return jsonify({'error': 'Blueprint not found'}), 404
         return jsonify({'success': True, 'message': 'Blueprint deleted successfully'})
@@ -3460,17 +2391,8 @@ def get_pending_count():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
-    user_role = session.get('user_role')
-    subject_group = session.get('subject_group')
-    
     try:
-        match = {'status': {'$in': ['unassigned', 'under_review']}}
-        if user_role != 'admin' and subject_group:
-            subject_ids = [str(row['subject_id']) for row in db.subject_groups.find({'group_code': subject_group})]
-            if subject_ids:
-                match['subject_id'] = {'$in': subject_ids}
-        
-        count = db.simple_questions.count_documents(match)
+        count = db.simple_questions.count_documents({'status': {'$in': ['unassigned', 'under_review']}})
         return jsonify({'pending_count': count})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -3491,74 +2413,6 @@ def debug_session():
         }
     })
 
-@app.route('/api/debug-questions')
-def debug_questions():
-    if 'user' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    try:
-        pipeline = [{'$group': {'_id': '$status', 'count': {'$sum': 1}}}]
-        status_counts = list(db.simple_questions.aggregate(pipeline))
-        status_counts = convert_objectid(status_counts)
-        
-        sample_questions = list(db.simple_questions.find({'status': 'approved'}).limit(10))
-        sample_questions = convert_objectid(sample_questions)
-        
-        pipeline2 = [
-            {'$match': {'status': 'approved'}},
-            {'$group': {'_id': '$subject_id', 'approved_count': {'$sum': 1}}},
-            {'$lookup': {'from': 'subjects', 'localField': '_id', 'foreignField': '_id', 'as': 'subject_info'}},
-            {'$addFields': {'subject_name': {'$arrayElemAt': ['$subject_info.subject_name', 0]}}},
-            {'$project': {'subject_info': 0}},
-            {'$sort': {'approved_count': -1}}
-        ]
-        subjects_with_questions = list(db.simple_questions.aggregate(pipeline2))
-        subjects_with_questions = convert_objectid(subjects_with_questions)
-        
-        total_questions = db.simple_questions.count_documents({})
-        
-        return jsonify({
-            'status_counts': status_counts,
-            'sample_approved_questions': sample_questions,
-            'subjects_with_questions': subjects_with_questions,
-            'total_questions': total_questions
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/debug/cgs')
-def debug_cgs():
-    if 'user' not in session or session.get('user_role') != 'admin':
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    try:
-        pipeline = [
-            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': '_id', 'as': 'subject_info'}},
-            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
-            {'$lookup': {'from': 'chapters', 'localField': 'chapter_id', 'foreignField': '_id', 'as': 'chapter_info'}},
-            {'$addFields': {
-                'subject_name': {'$arrayElemAt': ['$subject_info.subject_name', 0]},
-                'grade_name': {'$arrayElemAt': ['$grade_info.grade_name', 0]},
-                'chapter_name': {'$arrayElemAt': ['$chapter_info.chapter_name', 0]}
-            }},
-            {'$project': {'subject_info': 0, 'grade_info': 0, 'chapter_info': 0}},
-            {'$sort': {'_id': 1}}
-        ]
-        cgs = list(db.curricular_goals.aggregate(pipeline))
-        cgs = convert_objectid(cgs)
-        
-        comps = list(db.competencies.find())
-        comps = convert_objectid(comps)
-        
-        return jsonify({
-            'curricular_goals': cgs,
-            'competencies': comps,
-            'cg_count': len(cgs),
-            'comp_count': len(comps)
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
 @app.route('/api/debug/subjects')
 def debug_subjects():
     if 'user' not in session:
@@ -3571,16 +2425,16 @@ def debug_subjects():
         subjects_data = []
         for s in subjects:
             subjects_data.append({
-                'id': str(s['_id']),
+                'id': s.get('id'),
                 'subject_name': s.get('subject_name'),
-                'grade_id': str(s.get('grade_id')) if s.get('grade_id') else None,
+                'grade_id': s.get('grade_id'),
                 'grade_id_type': type(s.get('grade_id')).__name__
             })
         
         grades_data = []
         for g in grades:
             grades_data.append({
-                'id': str(g['_id']),
+                'id': g.get('id'),
                 'grade_name': g.get('grade_name')
             })
         
