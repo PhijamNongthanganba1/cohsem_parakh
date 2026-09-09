@@ -126,7 +126,6 @@
         .filter-select option { background: #1a2a4a; color: white; }
         .search-input::placeholder { color: rgba(255,255,255,0.3); }
 
-        
         .tab-container {
             background: rgba(255,255,255,0.06);
             backdrop-filter: blur(6px);
@@ -179,11 +178,12 @@
         .tab-pane { display: none; }
         .tab-pane.active { display: block; }
 
-        
         .table-wrapper {
             overflow-x: auto;
             border-radius: 8px;
             background: rgba(0,0,0,0.15);
+            max-height: 500px;
+            overflow-y: auto;
         }
         table {
             width: 100%;
@@ -301,7 +301,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        
         .modal {
             display: none;
             position: fixed;
@@ -412,13 +411,11 @@
             </div>
         </div>
 
-        
         <div class="permission-note" id="permissionNote">
             <i class="fas fa-info-circle"></i> 
             <span id="permissionText">Loading permissions...</span>
         </div>
 
-        
         <div class="stats-grid">
             <div class="stat-card"><div class="stat-value" id="totalCount">0</div><div class="stat-label">Total</div></div>
             <div class="stat-card"><div class="stat-value" id="unassignedCount">0</div><div class="stat-label">Unassigned</div></div>
@@ -427,7 +424,6 @@
             <div class="stat-card"><div class="stat-value" id="approvedCount">0</div><div class="stat-label">Approved</div></div>
         </div>
 
-        
         <div class="filter-section">
             <select class="filter-select" id="gradeFilter"><option value="">All Grades</option></select>
             <select class="filter-select" id="subjectFilter"><option value="">All Subjects</option></select>
@@ -443,18 +439,17 @@
             <input type="text" class="search-input" id="searchInput" placeholder="Search...">
         </div>
 
-        
         <div class="tab-container">
             <div class="tab-header" id="tabHeader">
-                
+                <!-- Tabs will be rendered here -->
             </div>
             <div class="tab-content" id="tabContent">
-                
+                <!-- Content will be rendered here -->
             </div>
         </div>
     </div>
 
-    
+    <!-- Modals -->
     <div class="modal" id="masterReviewModal">
         <div class="modal-content">
             <div class="modal-header master"><h3><i class="fas fa-user-check"></i> Assign to Reviewer</h3><button class="close-btn" onclick="closeModal('masterReviewModal')">&times;</button></div>
@@ -523,7 +518,9 @@
     </div>
 
     <script>
-        
+        // ============================================
+        // CONFIGURATION
+        // ============================================
         const currentUserId = {{ user_id|default(0) }};
         const currentUserRole = '{{ session.get("user_role", "writer") }}';
         const currentUsername = '{{ user }}';
@@ -536,7 +533,9 @@
             MASTER: {{ permissions.MASTER|default('false')|lower }}
         };
 
-        
+        // ============================================
+        // STATE
+        // ============================================
         let allQuestions = [];
         let allGrades = [];
         let allSubjects = [];
@@ -548,8 +547,15 @@
         let lastFetchTime = 0;
         const MIN_FETCH_INTERVAL = 30000;
 
-        
-        function escapeHtml(text) { if (!text) return ''; const d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+        function escapeHtml(text) { 
+            if (!text) return ''; 
+            const d = document.createElement('div'); 
+            d.textContent = text; 
+            return d.innerHTML; 
+        }
         
         function getStatusClass(s) {
             const map = {
@@ -575,15 +581,31 @@
             return map[s] || s || 'Unassigned';
         }
 
-        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+        function closeModal(id) { 
+            document.getElementById(id).classList.remove('active'); 
+        }
 
-        
+        // ============================================
+        // LOAD DATA FUNCTIONS
+        // ============================================
         async function loadReviewers() {
-            try { const r = await fetch('/api/reviewers'); const d = await r.json(); reviewers = d.reviewers || []; populateReviewerSelect(); } catch(e) { console.error(e); }
+            try { 
+                const r = await fetch('/api/reviewers'); 
+                const d = await r.json(); 
+                reviewers = d.reviewers || []; 
+                populateReviewerSelect(); 
+            } catch(e) { console.error('Error loading reviewers:', e); }
         }
+        
         async function loadApprovers() {
-            try { const r = await fetch('/api/approvers'); const d = await r.json(); approvers = d.approvers || []; populateApproverSelect(); } catch(e) { console.error(e); }
+            try { 
+                const r = await fetch('/api/approvers'); 
+                const d = await r.json(); 
+                approvers = d.approvers || []; 
+                populateApproverSelect(); 
+            } catch(e) { console.error('Error loading approvers:', e); }
         }
+        
         function populateReviewerSelect() {
             const sel = document.getElementById('reviewerSelect');
             let opts = '<option value="">-- Select Reviewer --</option>';
@@ -592,6 +614,7 @@
             });
             sel.innerHTML = opts;
         }
+        
         function populateApproverSelect() {
             const sel = document.getElementById('approverSelect');
             let opts = '<option value="">-- Select Approver --</option>';
@@ -602,64 +625,91 @@
         }
 
         async function loadGrades() {
-            try { const r = await fetch('/api/grades'); const d = await r.json(); allGrades = d.grades || []; updateGradeFilter(); } catch(e) { console.error(e); }
+            try { 
+                const r = await fetch('/api/grades'); 
+                const d = await r.json(); 
+                allGrades = d.grades || []; 
+                updateGradeFilter(); 
+            } catch(e) { console.error('Error loading grades:', e); }
         }
+        
         async function loadSubjects() {
-            try { const r = await fetch('/api/subjects'); const d = await r.json(); allSubjects = d.subjects || []; updateSubjectFilter(); } catch(e) { console.error(e); }
+            try { 
+                const r = await fetch('/api/subjects'); 
+                const d = await r.json(); 
+                allSubjects = d.subjects || []; 
+                updateSubjectFilter(); 
+            } catch(e) { console.error('Error loading subjects:', e); }
         }
+        
         function updateGradeFilter() {
             const sel = document.getElementById('gradeFilter');
             let opts = '<option value="">All Grades</option>';
             allGrades.forEach(g => { opts += `<option value="${g.id}">${escapeHtml(g.grade_name)}</option>`; });
             sel.innerHTML = opts;
         }
+        
         function updateSubjectFilter() {
             const gradeId = document.getElementById('gradeFilter').value;
             const sel = document.getElementById('subjectFilter');
             let filtered = gradeId ? allSubjects.filter(s => s.grade_id == gradeId) : allSubjects;
             let opts = '<option value="">All Subjects</option>';
-            if (!gradeId) {
-                const grouped = {};
-                filtered.forEach(s => { if (!grouped[s.grade_id]) grouped[s.grade_id] = []; grouped[s.grade_id].push(s); });
-                Object.keys(grouped).forEach(gid => {
-                    const grade = allGrades.find(g => g.id == gid);
-                    opts += `<optgroup label="${grade ? escapeHtml(grade.grade_name) : 'Grade '+gid}">`;
-                    grouped[gid].forEach(s => { opts += `<option value="${s.id}">${escapeHtml(s.subject_name)}</option>`; });
-                    opts += '</optgroup>';
-                });
-            } else {
-                filtered.forEach(s => { opts += `<option value="${s.id}">${escapeHtml(s.subject_name)}</option>`; });
-            }
+            filtered.forEach(s => { opts += `<option value="${s.id}">${escapeHtml(s.subject_name)}</option>`; });
             sel.innerHTML = opts;
         }
 
-        
+        // ============================================
+        // MAIN FETCH FUNCTION
+        // ============================================
         async function fetchQuestions(force = false) {
             if (isFetching) return;
             const now = Date.now();
             if (!force && now - lastFetchTime < MIN_FETCH_INTERVAL) return;
-            isFetching = true; lastFetchTime = now;
+            isFetching = true;
+            lastFetchTime = now;
+            
             try {
+                console.log('📊 Fetching review questions...');
                 const r = await fetch('/api/review-questions');
                 const d = await r.json();
+                
+                if (d.error) {
+                    console.error('API Error:', d.error);
+                    document.getElementById('tabContent').innerHTML = `
+                        <div class="no-data"><i class="fas fa-exclamation-circle"></i> Error: ${escapeHtml(d.error)}</div>
+                    `;
+                    return;
+                }
+                
                 allQuestions = d.questions || [];
+                console.log(`📊 Loaded ${allQuestions.length} questions`);
+                
+                // Update stats
                 updatePermissionNote(d);
                 updateStats();
                 renderTabs();
+                
             } catch(e) {
-                console.error(e);
-                document.getElementById('tabContent').innerHTML = `<div class="no-data"><i class="fas fa-exclamation-circle"></i> Error loading questions<br><button class="btn btn-primary btn-sm" onclick="fetchQuestions(true)" style="margin-top:8px;">Retry</button></div>`;
-            } finally { isFetching = false; }
+                console.error('Error fetching questions:', e);
+                document.getElementById('tabContent').innerHTML = `
+                    <div class="no-data">
+                        <i class="fas fa-exclamation-circle"></i> Error loading questions<br>
+                        <button class="btn btn-primary btn-sm" onclick="fetchQuestions(true)" style="margin-top:8px;">Retry</button>
+                        <br><span style="font-size:11px;color:rgba(255,255,255,0.3);">${escapeHtml(e.message)}</span>
+                    </div>
+                `;
+            } finally {
+                isFetching = false;
+            }
         }
 
         function updatePermissionNote(data) {
             const note = document.getElementById('permissionText');
-            const role = data.user_role || currentUserRole;
+            const role = data?.user_role || currentUserRole;
             document.getElementById('userRoleDisplay').textContent = role.toUpperCase();
-            if (data.permissions) Object.assign(permissions, data.permissions);
             
             let msg = 'Welcome to Review Dashboard. ';
-            if (role === 'admin') msg = '🔑 Admin – Full access.';
+            if (role === 'admin') msg = '🔑 Admin – Full access. You can see and manage all questions.';
             else if (role === 'master' || permissions.MASTER) msg = '📋 Master – Assign questions to reviewers.';
             else if (role === 'reviewer' || permissions.RC) msg = '📝 Reviewer – Review assigned questions.';
             else if (role === 'approver' || permissions.AP) msg = '✅ Approver – Approve reviewed questions.';
@@ -674,6 +724,7 @@
             const under = allQuestions.filter(q => q.status === 'under_review').length;
             const reviewed = allQuestions.filter(q => q.status === 'reviewed_completed').length;
             const approved = allQuestions.filter(q => q.status === 'approved').length;
+            
             document.getElementById('totalCount').textContent = total;
             document.getElementById('unassignedCount').textContent = unassigned;
             document.getElementById('underReviewCount').textContent = under;
@@ -681,7 +732,9 @@
             document.getElementById('approvedCount').textContent = approved;
         }
 
-        
+        // ============================================
+        // FILTER AND RENDER FUNCTIONS
+        // ============================================
         function getFilteredQuestions() {
             const gradeVal = document.getElementById('gradeFilter').value;
             const subjectVal = document.getElementById('subjectFilter').value;
@@ -693,15 +746,14 @@
                 if (subjectVal && q.subject_id != subjectVal) return false;
                 if (statusVal && (q.status||'unassigned') !== statusVal) return false;
                 if (search) {
-                    const qText = (q.question||'').toLowerCase();
-                    const ans = (q.answer||'').toLowerCase();
+                    const qText = (q.question_text || q.question || '').toLowerCase();
+                    const ans = (q.answer || '').toLowerCase();
                     if (!qText.includes(search) && !ans.includes(search)) return false;
                 }
                 return true;
             });
         }
 
-        
         function renderTabs() {
             const isAdmin = currentUserRole === 'admin';
             const isMaster = permissions.MASTER || currentUserRole === 'master' || isAdmin;
@@ -730,8 +782,11 @@
             } else if (isApprover) {
                 tabs = [
                     { id: 'approver_self', icon: 'fa-user-edit', label: 'My Questions', filter: q => q.created_by === currentUsername && (q.status === 'unassigned' || q.status === 'rejected' || q.status === 'rework'), showAssign: false },
-                    { id: 'approver_from_reviewer', icon: 'fa-arrow-right', label: 'From Reviewers', filter: q => q.status === 'under_review' && q.assigned_reviewer_id !== currentUserId && q.assigned_reviewer_id !== null, showAssign: false },
                     { id: 'approver_ready', icon: 'fa-check-double', label: 'Ready to Approve', filter: q => q.status === 'reviewed_completed' && q.assigned_approver_id === currentUserId, showAssign: false }
+                ];
+            } else if (isWriter) {
+                tabs = [
+                    { id: 'writer_self', icon: 'fa-user-edit', label: 'My Questions', filter: q => q.created_by === currentUsername, showAssign: false }
                 ];
             } else {
                 tabs = [
@@ -739,7 +794,7 @@
                 ];
             }
 
-            
+            // Render tabs header
             const header = document.getElementById('tabHeader');
             let headerHtml = '';
             tabs.forEach((tab, index) => {
@@ -754,7 +809,7 @@
             });
             header.innerHTML = headerHtml;
 
-            
+            // Render tab content
             const content = document.getElementById('tabContent');
             let contentHtml = '';
             tabs.forEach((tab, index) => {
@@ -793,7 +848,9 @@
             content.innerHTML = contentHtml;
         }
 
-        
+        // ============================================
+        // TABLE ROW RENDERER
+        // ============================================
         function renderTableRow(q, showAssign, isAdmin) {
             const status = q.status || 'unassigned';
             const subject = allSubjects.find(s => s.id == q.subject_id);
@@ -827,11 +884,15 @@
             if (canDelete) actions += `<button class="action-icon icon-delete" onclick="deleteQuestion(${q.id})" title="Delete"><i class="fas fa-trash"></i></button>`;
             if (!actions) actions = `<span style="color:rgba(255,255,255,0.2);font-size:10px;">No actions</span>`;
 
+            // Get question text - handle both 'question' and 'question_text' fields
+            const questionText = q.question_text || q.question || '';
+            const answerText = q.answer || '';
+
             return `
                 <tr>
                     <td style="color:rgba(255,255,255,0.2);font-size:10px;">${q.id}</td>
-                    <td><span class="question-text" title="${escapeHtml(q.question)}">${escapeHtml(q.question)}</span></td>
-                    <td><span class="answer-text" title="${escapeHtml(q.answer || 'N/A')}">${escapeHtml(q.answer || 'N/A')}</span></td>
+                    <td><span class="question-text" title="${escapeHtml(questionText)}">${escapeHtml(questionText)}</span></td>
+                    <td><span class="answer-text" title="${escapeHtml(answerText)}">${escapeHtml(answerText)}</span></td>
                     <td><span class="badge badge-grade">${escapeHtml(gradeName)}</span></td>
                     <td><span class="badge badge-subject">${escapeHtml(subjectName)}</span></td>
                     <td><span class="badge ${getStatusClass(status)}">${getStatusText(status)}</span></td>
@@ -841,13 +902,17 @@
             `;
         }
 
-        
+        // ============================================
+        // TAB SWITCHING
+        // ============================================
         function switchTab(index) {
             activeTab = index;
             renderTabs();
         }
 
-        
+        // ============================================
+        // ACTION FUNCTIONS
+        // ============================================
         async function deleteQuestion(id) {
             const result = await Swal.fire({
                 title: 'Delete Question?',
@@ -861,16 +926,25 @@
                 try {
                     const r = await fetch(`/api/delete-question/${id}`, { method: 'DELETE' });
                     const d = await r.json();
-                    if (d.success) { Swal.fire('Deleted!', '', 'success'); fetchQuestions(true); }
-                    else Swal.fire('Error', d.error || 'Failed', 'error');
-                } catch(e) { Swal.fire('Error', 'Failed to delete', 'error'); }
+                    if (d.success) { 
+                        Swal.fire('Deleted!', '', 'success'); 
+                        fetchQuestions(true); 
+                    } else {
+                        Swal.fire('Error', d.error || 'Failed', 'error');
+                    }
+                } catch(e) { 
+                    Swal.fire('Error', 'Failed to delete', 'error'); 
+                }
             }
         }
 
         function openMasterReview(id) {
             currentModalId = id;
             const q = allQuestions.find(x => x.id === id);
-            if (q) document.getElementById('masterReviewQuestionDisplay').textContent = q.question || '';
+            if (q) {
+                const questionText = q.question_text || q.question || '';
+                document.getElementById('masterReviewQuestionDisplay').textContent = questionText;
+            }
             document.getElementById('masterReviewModal').classList.add('active');
             if (!reviewers.length) loadReviewers();
             document.getElementById('reviewerSelect').value = '';
@@ -890,15 +964,25 @@
                     body: JSON.stringify({ comment, reviewer_id: reviewerId, reviewer_name: reviewerName })
                 });
                 const d = await r.json();
-                if (d.success) { Swal.fire('Assigned!', '', 'success'); closeModal('masterReviewModal'); fetchQuestions(true); }
-                else Swal.fire('Error', d.error || 'Failed', 'error');
-            } catch(e) { Swal.fire('Error', 'Failed', 'error'); }
+                if (d.success) { 
+                    Swal.fire('Assigned!', '', 'success'); 
+                    closeModal('masterReviewModal'); 
+                    fetchQuestions(true); 
+                } else {
+                    Swal.fire('Error', d.error || 'Failed', 'error');
+                }
+            } catch(e) { 
+                Swal.fire('Error', 'Failed', 'error'); 
+            }
         }
 
         function openReview(id) {
             currentModalId = id;
             const q = allQuestions.find(x => x.id === id);
-            if (q) document.getElementById('reviewQuestionDisplay').textContent = q.question || '';
+            if (q) {
+                const questionText = q.question_text || q.question || '';
+                document.getElementById('reviewQuestionDisplay').textContent = questionText;
+            }
             document.getElementById('reviewModal').classList.add('active');
             if (!approvers.length) loadApprovers();
             document.getElementById('approverSelect').value = '';
@@ -918,17 +1002,26 @@
                     body: JSON.stringify({ comment, approver_id: approverId, approver_name: approverName })
                 });
                 const d = await r.json();
-                if (d.success) { Swal.fire('Assigned!', '', 'success'); closeModal('reviewModal'); fetchQuestions(true); }
-                else Swal.fire('Error', d.error || 'Failed', 'error');
-            } catch(e) { Swal.fire('Error', 'Failed', 'error'); }
+                if (d.success) { 
+                    Swal.fire('Assigned!', '', 'success'); 
+                    closeModal('reviewModal'); 
+                    fetchQuestions(true); 
+                } else {
+                    Swal.fire('Error', d.error || 'Failed', 'error');
+                }
+            } catch(e) { 
+                Swal.fire('Error', 'Failed', 'error'); 
+            }
         }
 
         function openApprove(id) {
             currentModalId = id;
             const q = allQuestions.find(x => x.id === id);
             if (q) {
-                document.getElementById('approveQuestionDisplay').textContent = q.question || '';
-                document.getElementById('approveAnswerDisplay').textContent = q.answer || '';
+                const questionText = q.question_text || q.question || '';
+                const answerText = q.answer || '';
+                document.getElementById('approveQuestionDisplay').textContent = questionText;
+                document.getElementById('approveAnswerDisplay').textContent = answerText;
             }
             document.getElementById('approveComment').value = '';
             document.getElementById('approveModal').classList.add('active');
@@ -943,9 +1036,16 @@
                     body: JSON.stringify({ comment: comment || '' })
                 });
                 const d = await r.json();
-                if (d.success) { Swal.fire('Approved!', '', 'success'); closeModal('approveModal'); fetchQuestions(true); }
-                else Swal.fire('Error', d.error || 'Failed', 'error');
-            } catch(e) { Swal.fire('Error', 'Failed', 'error'); }
+                if (d.success) { 
+                    Swal.fire('Approved!', '', 'success'); 
+                    closeModal('approveModal'); 
+                    fetchQuestions(true); 
+                } else {
+                    Swal.fire('Error', d.error || 'Failed', 'error');
+                }
+            } catch(e) { 
+                Swal.fire('Error', 'Failed', 'error'); 
+            }
         }
 
         function openRework(id) {
@@ -953,10 +1053,16 @@
             const q = allQuestions.find(x => x.id === id);
             if (!q) return;
             const reason = document.getElementById('reworkReasonDisplay');
-            if (q.rejection_reason) { reason.innerHTML = `<strong>Previous:</strong> ${escapeHtml(q.rejection_reason)}`; reason.style.display = 'block'; } 
-            else reason.style.display = 'none';
-            document.getElementById('reworkQuestionDisplay').textContent = q.question || '';
-            document.getElementById('reworkAnswerDisplay').textContent = q.answer || '';
+            if (q.rejection_reason) { 
+                reason.innerHTML = `<strong>Previous:</strong> ${escapeHtml(q.rejection_reason)}`; 
+                reason.style.display = 'block'; 
+            } else {
+                reason.style.display = 'none';
+            }
+            const questionText = q.question_text || q.question || '';
+            const answerText = q.answer || '';
+            document.getElementById('reworkQuestionDisplay').textContent = questionText;
+            document.getElementById('reworkAnswerDisplay').textContent = answerText;
             document.getElementById('reworkComment').value = '';
             document.getElementById('reworkModal').classList.add('active');
         }
@@ -971,22 +1077,32 @@
                     body: JSON.stringify({ comment })
                 });
                 const d = await r.json();
-                if (d.success) { Swal.fire('Sent!', '', 'success'); closeModal('reworkModal'); fetchQuestions(true); }
-                else Swal.fire('Error', d.error || 'Failed', 'error');
-            } catch(e) { Swal.fire('Error', 'Failed', 'error'); }
+                if (d.success) { 
+                    Swal.fire('Sent!', '', 'success'); 
+                    closeModal('reworkModal'); 
+                    fetchQuestions(true); 
+                } else {
+                    Swal.fire('Error', d.error || 'Failed', 'error');
+                }
+            } catch(e) { 
+                Swal.fire('Error', 'Failed', 'error'); 
+            }
         }
 
         async function editQuestion(id) {
             const q = allQuestions.find(x => x.id === id);
             if (!q) return;
+            const questionText = q.question_text || q.question || '';
+            const answerText = q.answer || '';
+            
             const { value: form } = await Swal.fire({
                 title: 'Edit Question',
                 html: `
-                    <textarea id="swal-question" class="swal2-textarea" style="border-radius:6px;padding:8px;width:100%;margin-bottom:8px;">${escapeHtml(q.question)}</textarea>
-                    <textarea id="swal-answer" class="swal2-textarea" style="border-radius:6px;padding:8px;width:100%;margin-bottom:8px;">${escapeHtml(q.answer || '')}</textarea>
+                    <textarea id="swal-question" class="swal2-textarea" style="border-radius:6px;padding:8px;width:100%;margin-bottom:8px;background:#1a2a4a;color:white;border:1px solid rgba(255,255,255,0.1);">${escapeHtml(questionText)}</textarea>
+                    <textarea id="swal-answer" class="swal2-textarea" style="border-radius:6px;padding:8px;width:100%;margin-bottom:8px;background:#1a2a4a;color:white;border:1px solid rgba(255,255,255,0.1);">${escapeHtml(answerText)}</textarea>
                     <div style="display:flex;gap:8px;">
-                        <input id="swal-marks" class="swal2-input" type="number" value="${q.marks || 1}" min="0" max="100" style="flex:1;border-radius:6px;padding:8px;">
-                        <input id="swal-duration" class="swal2-input" type="number" value="${q.duration_minutes || 0}" min="0" max="180" style="flex:1;border-radius:6px;padding:8px;">
+                        <input id="swal-marks" class="swal2-input" type="number" value="${q.marks || 1}" min="0" max="100" style="flex:1;border-radius:6px;padding:8px;background:#1a2a4a;color:white;border:1px solid rgba(255,255,255,0.1);">
+                        <input id="swal-duration" class="swal2-input" type="number" value="${q.duration_minutes || 0}" min="0" max="180" style="flex:1;border-radius:6px;padding:8px;background:#1a2a4a;color:white;border:1px solid rgba(255,255,255,0.1);">
                     </div>
                 `,
                 focusConfirm: false,
@@ -1010,13 +1126,21 @@
                         body: JSON.stringify(form)
                     });
                     const d = await r.json();
-                    if (d.success) { Swal.fire('Updated!', '', 'success'); fetchQuestions(true); }
-                    else Swal.fire('Error', d.error || 'Failed', 'error');
-                } catch(e) { Swal.fire('Error', 'Failed to update', 'error'); }
+                    if (d.success) { 
+                        Swal.fire('Updated!', '', 'success'); 
+                        fetchQuestions(true); 
+                    } else {
+                        Swal.fire('Error', d.error || 'Failed', 'error');
+                    }
+                } catch(e) { 
+                    Swal.fire('Error', 'Failed to update', 'error'); 
+                }
             }
         }
 
-        
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
         document.getElementById('gradeFilter').addEventListener('change', function() {
             updateSubjectFilter();
             renderTabs();
@@ -1025,22 +1149,31 @@
         document.getElementById('statusFilter').addEventListener('change', renderTabs);
         document.getElementById('searchInput').addEventListener('input', renderTabs);
 
-        
+        // Close modals on backdrop click
         document.querySelectorAll('.modal').forEach(m => {
             m.addEventListener('click', function(e) {
                 if (e.target === this) this.classList.remove('active');
             });
         });
 
-        
+        // ============================================
+        // INITIALIZATION
+        // ============================================
         document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🚀 Review Dashboard initializing...');
             await loadGrades();
             await loadSubjects();
             await loadReviewers();
             await loadApprovers();
-            fetchQuestions(true);
+            await fetchQuestions(true);
+            
+            // Auto-refresh every 45 seconds
             setInterval(() => fetchQuestions(false), 45000);
         });
+
+        // Debug - log to console
+        console.log('User Role:', currentUserRole);
+        console.log('Permissions:', permissions);
     </script>
 </body>
 </html>
