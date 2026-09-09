@@ -1076,6 +1076,7 @@
         }
 
         function selectGrade(id, name) {
+            // Store grade ID as string
             currentSelections.grade = { id: id.toString(), name: name };
             currentSelections.subject = null;
             currentSelections.textbook = null;
@@ -1134,26 +1135,57 @@
             try {
                 // Make sure gradeId is a string for comparison
                 const gradeIdStr = gradeId.toString();
+                console.log('🔍 Loading subjects for grade ID:', gradeIdStr);
                 
                 // Fetch fresh data from API
                 const response = await fetch('/api/page1-data');
                 const data = await response.json();
+                console.log('📦 API response received');
+                console.log('📚 Total subjects in response:', data.subjects?.length || 0);
                 
-                // Filter subjects by grade_id (convert both to strings for comparison)
+                // Log all subjects to debug
+                if (data.subjects && data.subjects.length > 0) {
+                    console.log('📋 All subjects:', data.subjects.map(s => ({
+                        id: s.id,
+                        name: s.subject_name,
+                        grade_id: s.grade_id,
+                        grade_id_type: typeof s.grade_id
+                    })));
+                }
+                
+                // Filter subjects by grade_id - compare as strings
                 subjects = data.subjects?.filter(s => {
                     const sGradeId = s.grade_id ? s.grade_id.toString() : '';
-                    return sGradeId === gradeIdStr;
+                    const match = sGradeId === gradeIdStr;
+                    if (match) {
+                        console.log('✅ Matched subject:', s.subject_name, 'grade_id:', sGradeId);
+                    }
+                    return match;
                 }) || [];
+                
+                console.log(`🎯 Filtered ${subjects.length} subjects for grade ${gradeIdStr}`);
                 
                 const container = document.getElementById('subjectGrid');
                 if(subjects.length === 0) {
-                    container.innerHTML = '<div class="no-data">No subjects found. Click "Add New Subject" to create one.</div>';
+                    container.innerHTML = `
+                        <div class="no-data" style="grid-column: span 3; padding: 40px;">
+                            <i class="fas fa-book" style="font-size: 40px; display: block; margin-bottom: 10px; opacity: 0.3;"></i>
+                            <h3 style="color: white; margin-bottom: 10px;">No Subjects Found</h3>
+                            <p style="color: rgba(255,255,255,0.5);">No subjects found for this grade.</p>
+                            <p style="color: rgba(255,255,255,0.3); font-size: 12px;">Grade ID: ${gradeIdStr}</p>
+                            ${isAdmin ? `<br><button class="btn btn-success" onclick="openAddModal('subject')"><i class="fas fa-plus"></i> Add New Subject</button>` : ''}
+                            <div style="margin-top: 10px;">
+                                <button class="btn btn-primary" onclick="loadSubjects('${gradeIdStr}')"><i class="fas fa-redo"></i> Refresh</button>
+                            </div>
+                        </div>
+                    `;
                     return;
                 }
                 container.innerHTML = subjects.map(s => `
                     <div class="card" onclick="selectSubject('${s.id}', '${s.subject_name}')">
                         <div class="card-icon"><i class="fas fa-book"></i></div>
                         <h3>${s.subject_name}</h3>
+                        <p style="font-size: 10px; color: rgba(255,255,255,0.3);">ID: ${s.id}</p>
                         <div class="metadata-actions">
                             ${isAdmin ? `
                                 <button class="action-btn action-edit" onclick="event.stopPropagation(); openEditModal('subject', '${s.id}', '${s.subject_name}', '${s.grade_id}')"><i class="fas fa-edit"></i></button>
@@ -1163,8 +1195,16 @@
                     </div>
                 `).join('');
             } catch(e) { 
-                console.error('Error loading subjects:', e); 
-                document.getElementById('subjectGrid').innerHTML = '<div class="no-data">Error loading subjects. Please refresh.</div>';
+                console.error('❌ Error loading subjects:', e); 
+                document.getElementById('subjectGrid').innerHTML = `
+                    <div class="error-message" style="grid-column: span 3;">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <strong>Error:</strong> ${e.message}
+                        <div style="margin-top: 10px;">
+                            <button class="btn btn-primary" onclick="loadSubjects('${gradeId}')"><i class="fas fa-redo"></i> Retry</button>
+                        </div>
+                    </div>
+                `;
             }
         }
 
@@ -1949,6 +1989,7 @@
                     if (!selectedGradeId && grades.length > 0) {
                         selectedGradeId = grades[0].id;
                     }
+                    console.log('📝 Selected grade for new subject:', selectedGradeId);
                     fields = `
                         <div class="form-group"><label>Subject Name *</label><input type="text" id="editName" class="form-control" placeholder="e.g., Physics, Chemistry" required></div>
                         <div class="form-group"><label>Grade *</label>
@@ -2041,7 +2082,11 @@
                         Swal.fire('Error', 'Please select a grade', 'error');
                         return;
                     }
-                    data = { name: document.getElementById('editName').value, grade_id: gradeId }; 
+                    console.log('📝 Saving subject with grade_id:', gradeId);
+                    data = { 
+                        name: document.getElementById('editName').value, 
+                        grade_id: gradeId 
+                    }; 
                     url = id ? `/api/subjects/${id}` : '/api/subjects'; 
                     break;
                 case 'cg': 
@@ -2054,24 +2099,30 @@
                     break;
             }
             try {
+                console.log('📤 Saving item:', type, data);
                 const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
                 const result = await response.json();
+                console.log('📥 Save result:', result);
                 if(result.success) {
                     Swal.fire('Success', 'Saved successfully', 'success');
                     closeModal('addEditModal');
-                    // Refresh the current view
-                    if(currentStage === 1) loadGrades();
-                    else if(currentStage === 2 && currentSelections.grade) loadSubjects(currentSelections.grade.id);
-                    else if(currentStage === 3 && currentSelections.subject) loadTextbooks(currentSelections.subject.id);
-                    else if(currentStage === 4 && currentSelections.textbook) loadChapters(currentSelections.textbook.id);
-                    else if(currentStage === 5 && currentSelections.subject) loadCGs(currentSelections.subject.id);
-                    else if(currentStage === 6 && currentSelections.cg) loadCompetencies(currentSelections.cg.id);
+                    // Refresh the current view with a delay
+                    setTimeout(() => {
+                        if(currentStage === 1) loadGrades();
+                        else if(currentStage === 2 && currentSelections.grade) {
+                            loadSubjects(currentSelections.grade.id);
+                        }
+                        else if(currentStage === 3 && currentSelections.subject) loadTextbooks(currentSelections.subject.id);
+                        else if(currentStage === 4 && currentSelections.textbook) loadChapters(currentSelections.textbook.id);
+                        else if(currentStage === 5 && currentSelections.subject) loadCGs(currentSelections.subject.id);
+                        else if(currentStage === 6 && currentSelections.cg) loadCompetencies(currentSelections.cg.id);
+                    }, 300);
                     loadStats();
                 } else {
                     Swal.fire('Error', result.error || 'Failed to save', 'error');
                 }
             } catch(e) { 
-                console.error('Error:', e); 
+                console.error('❌ Error saving:', e); 
                 Swal.fire('Error', 'Failed to save', 'error'); 
             }
         }
@@ -2159,10 +2210,15 @@
                 const data = await response.json();
                 // Filter subjects by grade_id (convert to string for comparison)
                 const gradeIdStr = gradeId.toString();
+                console.log('🔍 Loading subjects for group, grade:', gradeIdStr);
+                
                 const subjectList = data.subjects?.filter(s => {
                     const sGradeId = s.grade_id ? s.grade_id.toString() : '';
                     return sGradeId === gradeIdStr;
                 }) || [];
+                
+                console.log('📚 Filtered subjects for group:', subjectList.length);
+                
                 const subjectSelect = document.getElementById('groupSubject');
                 subjectSelect.innerHTML = '<option value="">Select Subject</option>';
                 subjectSelect.disabled = false;
@@ -2555,20 +2611,6 @@
         function closeModal(modalId) {
             document.getElementById(modalId).classList.remove('active');
         }
-
-        // ============================================
-        // FIX: After saving, refresh the view
-        // ============================================
-        // This ensures that after creating a new subject, 
-        // the subjects list is refreshed
-        const originalSaveItem = saveItem;
-        saveItem = async function() {
-            await originalSaveItem();
-            // After saving, if we're on stage 2, reload subjects
-            if (currentStage === 2 && currentSelections.grade) {
-                loadSubjects(currentSelections.grade.id);
-            }
-        };
     </script>
 </body>
 </html>
