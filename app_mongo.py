@@ -150,7 +150,7 @@ def convert_objectid(doc):
             # Recursively process lists
             elif isinstance(value, list):
                 result[key] = [convert_objectid(item) for item in value]
-            # Recursively process dicts
+            # Recursively process dicts - THIS IS THE CRITICAL FIX
             elif isinstance(value, dict):
                 result[key] = convert_objectid(value)
             # Keep other values as is
@@ -201,11 +201,12 @@ def get_grade_id_from_value(value):
         if grade:
             return grade['_id']
         
-        # Try to find by string ID
+        # Try to find by string ID - convert to ObjectId if valid
         try:
-            grade = db.grades.find_one({'_id': ObjectId(value)})
-            if grade:
-                return grade['_id']
+            if len(value) == 24 and re.match(r'^[0-9a-fA-F]{24}$', value):
+                grade = db.grades.find_one({'_id': ObjectId(value)})
+                if grade:
+                    return grade['_id']
         except:
             pass
         
@@ -905,7 +906,12 @@ def create_subject():
         })
         
         # Return with ID as string
-        return jsonify({'success': True, 'id': str(result.inserted_id), 'grade_id': str(grade_id_obj)})
+        return jsonify({
+            'success': True, 
+            'id': str(result.inserted_id), 
+            'grade_id': str(grade_id_obj),
+            'subject_name': name
+        })
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
@@ -1092,6 +1098,13 @@ def get_page1_data():
             if '_id' in cd:
                 del cd['_id']
             data['cognitive_domains'].append(cd)
+        
+        # DEBUG: Log the subjects_by_grade to see what's being sent
+        print("📊 subjects_by_grade keys:", list(data['subjects_by_grade'].keys()))
+        for key, value in data['subjects_by_grade'].items():
+            print(f"  Grade {key}: {len(value)} subjects")
+            for s in value:
+                print(f"    - {s.get('subject_name')} (grade_id: {s.get('grade_id')})")
         
         return jsonify(data)
     except Exception as e:
@@ -2590,10 +2603,6 @@ def update_question(question_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ============================================
-# BUILDER QUESTIONS ENDPOINTS
-# ============================================
-
 @app.route('/api/builder-questions', methods=['GET'])
 def get_builder_questions():
     if 'user' not in session:
@@ -2677,10 +2686,6 @@ def get_builder_questions():
         return jsonify({'questions': questions})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-# ============================================
-# PAGE2 DATA ENDPOINTS
-# ============================================
 
 @app.route('/api/page2-data')
 def get_page2_data():
