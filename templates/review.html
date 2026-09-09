@@ -455,7 +455,7 @@
             <div class="modal-header master"><h3><i class="fas fa-user-check"></i> Assign to Reviewer</h3><button class="close-btn" onclick="closeModal('masterReviewModal')">&times;</button></div>
             <div class="modal-body">
                 <div class="readonly-box"><div class="label">Question</div><div class="value" id="masterReviewQuestionDisplay"></div></div>
-                <div class="readonly-box" style="border-left-color:#8e44ad;"><div class="label">Subject Group</div><div class="value" id="masterReviewGroupDisplay"></div></div>
+                <div class="readonly-box" style="border-left-color:#8e44ad;"><div class="label">Subject Group</div><div class="value" id="masterReviewGroupDisplay">Loading...</div></div>
                 <label>Reviewer *</label>
                 <select id="reviewerSelect" class="form-control"><option value="">-- Select Reviewer --</option></select>
                 <label>Comment</label>
@@ -473,7 +473,7 @@
             <div class="modal-header review"><h3><i class="fas fa-user-check"></i> Assign to Approver</h3><button class="close-btn" onclick="closeModal('reviewModal')">&times;</button></div>
             <div class="modal-body">
                 <div class="readonly-box"><div class="label">Question</div><div class="value" id="reviewQuestionDisplay"></div></div>
-                <div class="readonly-box" style="border-left-color:#00bcd4;"><div class="label">Subject Group</div><div class="value" id="reviewGroupDisplay"></div></div>
+                <div class="readonly-box" style="border-left-color:#00bcd4;"><div class="label">Subject Group</div><div class="value" id="reviewGroupDisplay">Loading...</div></div>
                 <label>Approver *</label>
                 <select id="approverSelect" class="form-control"><option value="">-- Select Approver --</option></select>
                 <label>Comment</label>
@@ -607,7 +607,6 @@
                 const d = await r.json(); 
                 reviewers = d.reviewers || []; 
                 console.log('📊 Loaded reviewers:', reviewers.length);
-                populateReviewerSelect(); 
             } catch(e) { console.error('Error loading reviewers:', e); }
         }
         
@@ -617,82 +616,63 @@
                 const d = await r.json(); 
                 approvers = d.approvers || []; 
                 console.log('📊 Loaded approvers:', approvers.length);
-                populateApproverSelect(); 
             } catch(e) { console.error('Error loading approvers:', e); }
         }
         
-        function populateReviewerSelect() {
+        function populateReviewerSelect(questionGroup) {
             const sel = document.getElementById('reviewerSelect');
-            let opts = '<option value="">-- Select Reviewer --</option>';
-            reviewers.forEach(r => {
-                const groupInfo = r.group_name ? ` (${r.group_name})` : '';
-                opts += `<option value="${r.id}" data-name="${r.username}" data-group="${r.subject_group || ''}">${escapeHtml(r.username)}${groupInfo}</option>`;
-            });
-            sel.innerHTML = opts;
-        }
-        
-        function populateApproverSelect() {
-            const sel = document.getElementById('approverSelect');
-            let opts = '<option value="">-- Select Approver --</option>';
-            approvers.forEach(a => {
-                const groupInfo = a.group_name ? ` (${a.group_name})` : '';
-                opts += `<option value="${a.id}" data-name="${a.username}" data-group="${a.subject_group || ''}">${escapeHtml(a.username)}${groupInfo}</option>`;
-            });
-            sel.innerHTML = opts;
-        }
-
-        function filterReviewersByGroup(subjectGroup) {
-            const sel = document.getElementById('reviewerSelect');
-            const currentValue = sel.value;
             sel.innerHTML = '<option value="">-- Select Reviewer --</option>';
             
+            // First try to filter by subject group
             let filtered = reviewers;
-            if (subjectGroup) {
-                filtered = reviewers.filter(r => r.subject_group === subjectGroup);
+            if (questionGroup && questionGroup !== 'No group' && questionGroup !== 'Loading...') {
+                filtered = reviewers.filter(r => r.subject_group === questionGroup);
+                console.log(`🔍 Filtering reviewers by group: ${questionGroup}, found ${filtered.length}`);
+            }
+            
+            // If no reviewers in the group, show all reviewers
+            if (filtered.length === 0) {
+                filtered = reviewers;
+                console.log(`📊 No reviewers in group, showing all ${filtered.length} reviewers`);
             }
             
             filtered.forEach(r => {
-                const groupInfo = r.group_name ? ` (${r.group_name})` : '';
-                opts += `<option value="${r.id}" data-name="${r.username}" data-group="${r.subject_group || ''}">${escapeHtml(r.username)}${groupInfo}</option>`;
+                const groupInfo = r.subject_group ? ` (${r.subject_group})` : '';
+                const roleInfo = r.role ? ` [${r.role}]` : '';
+                sel.innerHTML += `<option value="${r.id}" data-name="${r.username}" data-group="${r.subject_group || ''}">${escapeHtml(r.username)}${groupInfo}${roleInfo}</option>`;
             });
             
-            // If no reviewers in the group, show all
             if (filtered.length === 0) {
-                reviewers.forEach(r => {
-                    const groupInfo = r.group_name ? ` (${r.group_name})` : '';
-                    opts += `<option value="${r.id}" data-name="${r.username}" data-group="${r.subject_group || ''}">${escapeHtml(r.username)}${groupInfo}</option>`;
-                });
+                sel.innerHTML += '<option value="" disabled>No reviewers available</option>';
             }
-            
-            sel.innerHTML = opts;
-            if (currentValue) sel.value = currentValue;
         }
 
-        function filterApproversByGroup(subjectGroup) {
+        function populateApproverSelect(questionGroup) {
             const sel = document.getElementById('approverSelect');
-            const currentValue = sel.value;
             sel.innerHTML = '<option value="">-- Select Approver --</option>';
             
+            // First try to filter by subject group
             let filtered = approvers;
-            if (subjectGroup) {
-                filtered = approvers.filter(a => a.subject_group === subjectGroup);
+            if (questionGroup && questionGroup !== 'No group' && questionGroup !== 'Loading...') {
+                filtered = approvers.filter(a => a.subject_group === questionGroup);
+                console.log(`🔍 Filtering approvers by group: ${questionGroup}, found ${filtered.length}`);
+            }
+            
+            // If no approvers in the group, show all approvers
+            if (filtered.length === 0) {
+                filtered = approvers;
+                console.log(`📊 No approvers in group, showing all ${filtered.length} approvers`);
             }
             
             filtered.forEach(a => {
-                const groupInfo = a.group_name ? ` (${a.group_name})` : '';
-                opts += `<option value="${a.id}" data-name="${a.username}" data-group="${a.subject_group || ''}">${escapeHtml(a.username)}${groupInfo}</option>`;
+                const groupInfo = a.subject_group ? ` (${a.subject_group})` : '';
+                const roleInfo = a.role ? ` [${a.role}]` : '';
+                sel.innerHTML += `<option value="${a.id}" data-name="${a.username}" data-group="${a.subject_group || ''}">${escapeHtml(a.username)}${groupInfo}${roleInfo}</option>`;
             });
             
-            // If no approvers in the group, show all
             if (filtered.length === 0) {
-                approvers.forEach(a => {
-                    const groupInfo = a.group_name ? ` (${a.group_name})` : '';
-                    opts += `<option value="${a.id}" data-name="${a.username}" data-group="${a.subject_group || ''}">${escapeHtml(a.username)}${groupInfo}</option>`;
-                });
+                sel.innerHTML += '<option value="" disabled>No approvers available</option>';
             }
-            
-            sel.innerHTML = opts;
-            if (currentValue) sel.value = currentValue;
         }
 
         async function loadGrades() {
@@ -903,8 +883,7 @@
             let contentHtml = '';
             tabs.forEach((tab, index) => {
                 const isActive = index === activeTab ? 'active' : '';
-                const filteredQs = allQuestions.filter(tab.filter);
-                const tabQuestions = filteredQs; // Already filtered
+                const tabQuestions = allQuestions.filter(tab.filter);
                 
                 let tableRows = '';
                 if (tabQuestions.length === 0) {
@@ -1034,15 +1013,17 @@
                 const questionText = q.question_text || q.question || '';
                 document.getElementById('masterReviewQuestionDisplay').textContent = questionText;
                 
-                // Show subject group
-                const group = q.subject_group || currentSubjectGroup || 'No group';
+                // Get the subject group - try multiple sources
+                let group = q.subject_group || q.user_group || currentSubjectGroup || 'No group';
                 document.getElementById('masterReviewGroupDisplay').textContent = group;
                 
-                // Filter reviewers by subject group
-                filterReviewersByGroup(group);
+                console.log(`🔍 Opening master review for question ${id}, group: ${group}`);
+                
+                // Populate reviewers filtered by group
+                populateReviewerSelect(group);
             }
-            document.getElementById('masterReviewModal').classList.add('active');
             document.getElementById('masterReviewComment').value = '';
+            document.getElementById('masterReviewModal').classList.add('active');
         }
 
         async function submitMasterReview() {
@@ -1051,22 +1032,28 @@
             const reviewerName = sel.options[sel.selectedIndex]?.getAttribute('data-name') || '';
             const comment = document.getElementById('masterReviewComment').value;
             if (!reviewerId) { Swal.fire('Error', 'Select a reviewer', 'error'); return; }
+            
             try {
-                const r = await fetch(`/api/master-review-question/${currentModalId}`, {
+                const response = await fetch(`/api/master-review-question/${currentModalId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ comment, reviewer_id: reviewerId, reviewer_name: reviewerName })
+                    body: JSON.stringify({ 
+                        comment: comment, 
+                        reviewer_id: reviewerId, 
+                        reviewer_name: reviewerName 
+                    })
                 });
-                const d = await r.json();
-                if (d.success) { 
-                    Swal.fire('Assigned!', '', 'success'); 
+                const data = await response.json();
+                if (data.success) { 
+                    Swal.fire('Assigned!', data.message || 'Question assigned to reviewer', 'success'); 
                     closeModal('masterReviewModal'); 
                     fetchQuestions(true); 
                 } else {
-                    Swal.fire('Error', d.error || 'Failed', 'error');
+                    Swal.fire('Error', data.error || 'Failed to assign', 'error');
                 }
             } catch(e) { 
-                Swal.fire('Error', 'Failed', 'error'); 
+                console.error('Error in submitMasterReview:', e);
+                Swal.fire('Error', 'Failed to assign reviewer', 'error'); 
             }
         }
 
@@ -1077,15 +1064,17 @@
                 const questionText = q.question_text || q.question || '';
                 document.getElementById('reviewQuestionDisplay').textContent = questionText;
                 
-                // Show subject group
-                const group = q.subject_group || currentSubjectGroup || 'No group';
+                // Get the subject group - try multiple sources
+                let group = q.subject_group || q.user_group || currentSubjectGroup || 'No group';
                 document.getElementById('reviewGroupDisplay').textContent = group;
                 
-                // Filter approvers by subject group
-                filterApproversByGroup(group);
+                console.log(`🔍 Opening review for question ${id}, group: ${group}`);
+                
+                // Populate approvers filtered by group
+                populateApproverSelect(group);
             }
-            document.getElementById('reviewModal').classList.add('active');
             document.getElementById('reviewComment').value = '';
+            document.getElementById('reviewModal').classList.add('active');
         }
 
         async function submitReview() {
@@ -1094,22 +1083,28 @@
             const approverName = sel.options[sel.selectedIndex]?.getAttribute('data-name') || '';
             const comment = document.getElementById('reviewComment').value;
             if (!approverId) { Swal.fire('Error', 'Select an approver', 'error'); return; }
+            
             try {
-                const r = await fetch(`/api/review-question/${currentModalId}`, {
+                const response = await fetch(`/api/review-question/${currentModalId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ comment, approver_id: approverId, approver_name: approverName })
+                    body: JSON.stringify({ 
+                        comment: comment, 
+                        approver_id: approverId, 
+                        approver_name: approverName 
+                    })
                 });
-                const d = await r.json();
-                if (d.success) { 
-                    Swal.fire('Assigned!', '', 'success'); 
+                const data = await response.json();
+                if (data.success) { 
+                    Swal.fire('Assigned!', data.message || 'Question assigned to approver', 'success'); 
                     closeModal('reviewModal'); 
                     fetchQuestions(true); 
                 } else {
-                    Swal.fire('Error', d.error || 'Failed', 'error');
+                    Swal.fire('Error', data.error || 'Failed to assign', 'error');
                 }
             } catch(e) { 
-                Swal.fire('Error', 'Failed', 'error'); 
+                console.error('Error in submitReview:', e);
+                Swal.fire('Error', 'Failed to assign approver', 'error'); 
             }
         }
 
@@ -1129,21 +1124,22 @@
         async function submitApprove() {
             const comment = document.getElementById('approveComment').value;
             try {
-                const r = await fetch(`/api/approve-question/${currentModalId}`, {
+                const response = await fetch(`/api/approve-question/${currentModalId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ comment: comment || '' })
                 });
-                const d = await r.json();
-                if (d.success) { 
-                    Swal.fire('Approved!', '', 'success'); 
+                const data = await response.json();
+                if (data.success) { 
+                    Swal.fire('Approved!', data.message || 'Question approved successfully', 'success'); 
                     closeModal('approveModal'); 
                     fetchQuestions(true); 
                 } else {
-                    Swal.fire('Error', d.error || 'Failed', 'error');
+                    Swal.fire('Error', data.error || 'Failed to approve', 'error');
                 }
             } catch(e) { 
-                Swal.fire('Error', 'Failed', 'error'); 
+                console.error('Error in submitApprove:', e);
+                Swal.fire('Error', 'Failed to approve question', 'error'); 
             }
         }
 
@@ -1170,21 +1166,22 @@
             const comment = document.getElementById('reworkComment').value.trim();
             if (!comment) { Swal.fire('Error', 'Comment required', 'error'); return; }
             try {
-                const r = await fetch(`/api/rework-question/${currentModalId}`, {
+                const response = await fetch(`/api/rework-question/${currentModalId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ comment })
+                    body: JSON.stringify({ comment: comment })
                 });
-                const d = await r.json();
-                if (d.success) { 
-                    Swal.fire('Sent!', '', 'success'); 
+                const data = await response.json();
+                if (data.success) { 
+                    Swal.fire('Sent!', data.message || 'Question sent back for rework', 'success'); 
                     closeModal('reworkModal'); 
                     fetchQuestions(true); 
                 } else {
-                    Swal.fire('Error', d.error || 'Failed', 'error');
+                    Swal.fire('Error', data.error || 'Failed to send for rework', 'error');
                 }
             } catch(e) { 
-                Swal.fire('Error', 'Failed', 'error'); 
+                console.error('Error in submitRework:', e);
+                Swal.fire('Error', 'Failed to send for rework', 'error'); 
             }
         }
 
