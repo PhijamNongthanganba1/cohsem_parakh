@@ -1429,7 +1429,13 @@
                 });
                 const result = await response.json();
                 if(result.success) {
-                    Swal.fire('Success', 'Book saved successfully', 'success');
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: result.message || 'Book saved successfully',
+                        timer: 1200,
+                        showConfirmButton: false
+                    });
                     closeModal('textbookModal');
                     loadTextbooks(currentSelections.subject.id);
                     loadStats();
@@ -1644,12 +1650,18 @@
                         subject_id: subjectId, 
                         chapter_name: name, 
                         chapter_number: parseInt(number)||0, 
-                        textbook_id: parseInt(textbookId)
+                        textbook_id: textbookId.toString()
                     })
                 });
                 const result = await response.json();
                 if(result.success) {
-                    Swal.fire('Success', 'Chapter saved successfully', 'success');
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: result.message || 'Chapter saved successfully',
+                        timer: 1200,
+                        showConfirmButton: false
+                    });
                     closeModal('chapterModal');
                     if (currentSelections.textbook) {
                         loadChapters(currentSelections.textbook.id);
@@ -2104,7 +2116,13 @@
                 const result = await response.json();
                 console.log('📥 Save result:', result);
                 if(result.success) {
-                    Swal.fire('Success', 'Saved successfully', 'success');
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: result.message || 'Saved successfully',
+                        timer: 1200,
+                        showConfirmButton: false
+                    });
                     closeModal('addEditModal');
                     // Refresh the current view with a delay
                     setTimeout(() => {

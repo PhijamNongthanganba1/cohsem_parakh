@@ -1379,9 +1379,24 @@ def create_chapter():
         return jsonify({'error': 'Textbook selection is required'}), 400
     
     try:
-        # Get grade_id from subject
-        subject = db.subjects.find_one({'_id': ObjectId(subject_id)})
-        grade_id = subject.get('grade_id') if subject else None
+        # IDs arrive from the browser as strings. Keep relationship IDs
+        # consistently as strings in MongoDB.
+        subject_obj_id = ObjectId(subject_id) if ObjectId.is_valid(str(subject_id)) else None
+        if not subject_obj_id:
+            return jsonify({'error': 'Invalid subject_id'}), 400
+
+        textbook_id = str(textbook_id)
+        if not ObjectId.is_valid(textbook_id):
+            return jsonify({'error': 'Invalid textbook_id'}), 400
+
+        subject = db.subjects.find_one({'_id': subject_obj_id})
+        if not subject:
+            return jsonify({'error': 'Subject not found'}), 404
+
+        if not db.textbooks.find_one({'_id': ObjectId(textbook_id)}):
+            return jsonify({'error': 'Textbook not found'}), 404
+
+        grade_id = subject.get('grade_id')
         
         # Ensure grade_id is string
         if grade_id and isinstance(grade_id, ObjectId):
@@ -1426,10 +1441,14 @@ def update_chapter(chapter_id):
         return jsonify({'error': 'Textbook selection is required'}), 400
     
     try:
+        textbook_id = str(textbook_id)
+        if not ObjectId.is_valid(textbook_id):
+            return jsonify({'error': 'Invalid textbook_id'}), 400
+
         result = db.chapters.update_one(
             {'_id': ObjectId(chapter_id)},
             {'$set': {
-                'subject_id': subject_id,
+                'subject_id': str(subject_id),
                 'chapter_name': chapter_name,
                 'chapter_number': chapter_number,
                 'textbook_id': textbook_id,
