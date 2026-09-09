@@ -100,12 +100,11 @@ def convert_doc(doc):
         if 'id' not in result and 'id' in doc:
             result['id'] = doc['id']
         # Ensure numeric IDs are preserved as ints
-        for key in ['id', 'grade_id', 'subject_id', 'cg_id', 'chapter_id', 'comp_id', 'textbook_id', 'domain_id', 'difficulty_id', 'knowledge_level_id', 'question_type_id']:
-            if key in result and result[key] is not None:
-                try:
-                    result[key] = int(result[key])
-                except:
-                    pass
+        if 'cg_id' in result and result['cg_id'] is not None:
+            try:
+                result['cg_id'] = int(result['cg_id'])
+            except:
+                pass
         return result
     return doc
 
@@ -331,7 +330,6 @@ def fix_foreign_keys():
     for comp in comps:
         cg_id = comp.get('cg_id')
         if cg_id:
-            # If cg_id is an ObjectId, convert to numeric
             if isinstance(cg_id, ObjectId):
                 cg = db.curricular_goals.find_one({'_id': cg_id})
                 if cg and 'id' in cg:
@@ -340,7 +338,6 @@ def fix_foreign_keys():
                         {'$set': {'cg_id': cg['id']}}
                     )
                     print(f"  Fixed competency '{comp.get('comp_code')}' cg_id: {cg['id']}")
-            # If cg_id is a string ObjectId
             elif isinstance(cg_id, str) and len(cg_id) == 24:
                 cg = db.curricular_goals.find_one({'_id': ObjectId(cg_id)})
                 if cg and 'id' in cg:
@@ -884,7 +881,7 @@ def delete_subject(subject_id):
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# PAGE1 DATA - CRITICAL FIX FOR COMPETENCIES
+# PAGE1 DATA
 # ============================================
 
 @app.route('/api/page1-data')
@@ -929,7 +926,7 @@ def get_page1_data():
                     cgs_by_subject[subject_key] = []
                 cgs_by_subject[subject_key].append(cg)
         
-        # Build comps_by_cg - CRITICAL FIX: Use numeric cg_id
+        # Build comps_by_cg - CRITICAL FIX
         comps_by_cg = {}
         for comp in competencies:
             cg_id = comp.get('cg_id')
@@ -1421,7 +1418,13 @@ def get_competencies_api():
         return jsonify({'error': 'Not authenticated'}), 401
     
     try:
-        # Get competencies with proper numeric IDs
+        # Get ALL competencies first (including inactive ones for debugging)
+        all_comps = list(db.competencies.find({}))
+        print(f"📊 All competencies in DB: {len(all_comps)}")
+        for comp in all_comps:
+            print(f"  Competency: {comp.get('comp_code')} - cg_id: {comp.get('cg_id')} - status: {comp.get('status')}")
+        
+        # Get active competencies with proper numeric IDs
         pipeline = [
             {'$match': {'status': 1}},
             {'$lookup': {'from': 'curricular_goals', 'localField': 'cg_id', 'foreignField': 'id', 'as': 'cg_info'}},
@@ -1435,9 +1438,9 @@ def get_competencies_api():
         comps = list(db.competencies.aggregate(pipeline))
         comps = convert_doc(comps)
         
-        print(f"📊 Returning {len(comps)} competencies")
+        print(f"📊 Returning {len(comps)} active competencies")
         for comp in comps:
-            print(f"  Competency: {comp.get('comp_code')} - cg_id: {comp.get('cg_id')}")
+            print(f"  Competency: {comp.get('comp_code')} - cg_id: {comp.get('cg_id')} (type: {type(comp.get('cg_id'))})")
         
         return jsonify({'competencies': comps})
     except Exception as e:
@@ -1477,13 +1480,15 @@ def create_competency():
             return jsonify({'error': f'Competency "{code}" already exists for this CG'}), 400
         
         next_id = get_next_id('competencies')
-        db.competencies.insert_one({
+        result = db.competencies.insert_one({
             'id': next_id,
             'comp_code': code,
             'comp_description': description,
             'cg_id': cg_id_int,
             'status': status
         })
+        
+        print(f"✅ Created competency: {code} with cg_id: {cg_id_int}")
         
         return jsonify({'success': True, 'id': next_id})
     except Exception as e:
@@ -2435,58 +2440,37 @@ def debug_session():
         }
     })
 
-@app.route('/api/debug/subjects')
-def debug_subjects():
+@app.route('/api/debug/competencies')
+def debug_competencies():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
     try:
-        subjects = list(db.subjects.find({}))
-        grades = list(db.grades.find({}))
-        cgs = list(db.curricular_goals.find({}))
         comps = list(db.competencies.find({}))
+        cgs = list(db.curricular_goals.find({}))
         
-        subjects_data = []
-        for s in subjects:
-            subjects_data.append({
-                'id': s.get('id'),
-                'subject_name': s.get('subject_name'),
-                'grade_id': s.get('grade_id')
-            })
-        
-        grades_data = []
-        for g in grades:
-            grades_data.append({
-                'id': g.get('id'),
-                'grade_name': g.get('grade_name')
+        comps_data = []
+        for comp in comps:
+            comps_data.append({
+                'id': comp.get('id'),
+                'comp_code': comp.get('comp_code'),
+                'cg_id': comp.get('cg_id'),
+                'cg_id_type': type(comp.get('cg_id')).__name__,
+                'status': comp.get('status')
             })
         
         cgs_data = []
-        for c in cgs:
+        for cg in cgs:
             cgs_data.append({
-                'id': c.get('id'),
-                'cg_code': c.get('cg_code'),
-                'subject_id': c.get('subject_id')
-            })
-        
-        comps_data = []
-        for c in comps:
-            comps_data.append({
-                'id': c.get('id'),
-                'comp_code': c.get('comp_code'),
-                'cg_id': c.get('cg_id'),
-                'status': c.get('status')
+                'id': cg.get('id'),
+                'cg_code': cg.get('cg_code')
             })
         
         return jsonify({
-            'subjects': subjects_data,
-            'grades': grades_data,
-            'cgs': cgs_data,
             'competencies': comps_data,
-            'subject_count': len(subjects_data),
-            'grade_count': len(grades_data),
-            'cg_count': len(cgs_data),
-            'comp_count': len(comps_data)
+            'curricular_goals': cgs_data,
+            'comp_count': len(comps_data),
+            'cg_count': len(cgs_data)
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
