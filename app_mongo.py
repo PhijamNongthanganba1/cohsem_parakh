@@ -370,31 +370,10 @@ def init_db():
             })
             print("✓ Created default admin user")
         
-        # Fix existing subjects with invalid grade_id - convert to string
-        print("🔧 Fixing existing subjects with invalid grade_id...")
-        first_grade = db.grades.find_one({})
-        if first_grade:
-            grade_id = str(first_grade['_id'])
-            # Fix subjects with ObjectId or invalid values - store as string
-            db.subjects.update_many(
-                {'$or': [
-                    {'grade_id': {'$type': 'objectId'}},
-                    {'grade_id': {'$type': 'string'}},
-                    {'grade_id': 'undefined'},
-                    {'grade_id': 'null'},
-                    {'grade_id': ''},
-                    {'grade_id': {'$exists': False}}
-                ]},
-                {'$set': {'grade_id': grade_id}}
-            )
-            print(f"✓ Fixed subjects with invalid grade_id - now storing as strings")
-        
-        # Also fix any existing subjects that might have ObjectId grade_id
-        db.subjects.update_many(
-            {'grade_id': {'$type': 'objectId'}},
-            [{'$set': {'grade_id': {'$toString': '$grade_id'}}}]
-        )
-        
+        # Keep grade_id as a string representation of the referenced grade ObjectId.
+        # Do NOT assign every subject to the first grade.
+        # Existing valid grade_id values are preserved.
+
         print("✅ Database initialization complete")
     except Exception as e:
         print(f"⚠️ Database initialization error: {e}")
@@ -844,22 +823,6 @@ def get_subjects():
     subject_group = session.get('subject_group')
     
     try:
-        # Fix any subjects with invalid grade_id - convert to string
-        first_grade = db.grades.find_one({})
-        if first_grade:
-            grade_id_str = str(first_grade['_id'])
-            db.subjects.update_many(
-                {'$or': [
-                    {'grade_id': {'$type': 'objectId'}},
-                    {'grade_id': {'$type': 'string'}},
-                    {'grade_id': 'undefined'},
-                    {'grade_id': 'null'},
-                    {'grade_id': ''},
-                    {'grade_id': {'$exists': False}}
-                ]},
-                {'$set': {'grade_id': grade_id_str}}
-            )
-        
         if user_role == 'admin':
             subjects = list(db.subjects.find({}))
         else:
@@ -1034,22 +997,6 @@ def get_page1_data():
     subject_group = session.get('subject_group')
     
     try:
-        # Fix any subjects with invalid grade_id
-        first_grade = db.grades.find_one({})
-        if first_grade:
-            grade_id_str = str(first_grade['_id'])
-            db.subjects.update_many(
-                {'$or': [
-                    {'grade_id': {'$type': 'objectId'}},
-                    {'grade_id': {'$type': 'string'}},
-                    {'grade_id': 'undefined'},
-                    {'grade_id': 'null'},
-                    {'grade_id': ''},
-                    {'grade_id': {'$exists': False}}
-                ]},
-                {'$set': {'grade_id': grade_id_str}}
-            )
-        
         grades = list(db.grades.find())
         subjects = list(db.subjects.find())
         cgs = list(db.curricular_goals.find())
@@ -1375,9 +1322,24 @@ def get_chapters():
         # Use aggregation to join with subjects, grades, and textbooks
         pipeline = [
             {'$match': query},
-            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': '_id', 'as': 'subject_info'}},
-            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
-            {'$lookup': {'from': 'textbooks', 'localField': 'textbook_id', 'foreignField': '_id', 'as': 'textbook_info'}},
+            {'$lookup': {
+                'from': 'subjects',
+                'let': {'subjectId': '$subject_id'},
+                'pipeline': [{'$match': {'$expr': {'$eq': [{'$toString': '$_id'}, '$$subjectId']}}}],
+                'as': 'subject_info'
+            }},
+            {'$lookup': {
+                'from': 'grades',
+                'let': {'gradeId': '$grade_id'},
+                'pipeline': [{'$match': {'$expr': {'$eq': [{'$toString': '$_id'}, '$$gradeId']}}}],
+                'as': 'grade_info'
+            }},
+            {'$lookup': {
+                'from': 'textbooks',
+                'let': {'textbookId': '$textbook_id'},
+                'pipeline': [{'$match': {'$expr': {'$eq': [{'$toString': '$_id'}, '$$textbookId']}}}],
+                'as': 'textbook_info'
+            }},
             {'$addFields': {
                 'subject_name': {'$arrayElemAt': ['$subject_info.subject_name', 0]},
                 'grade_name': {'$arrayElemAt': ['$grade_info.grade_name', 0]},
@@ -1541,9 +1503,24 @@ def get_cgs():
         
         pipeline = [
             {'$match': query},
-            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': '_id', 'as': 'subject_info'}},
-            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
-            {'$lookup': {'from': 'chapters', 'localField': 'chapter_id', 'foreignField': '_id', 'as': 'chapter_info'}},
+            {'$lookup': {
+                'from': 'subjects',
+                'let': {'subjectId': '$subject_id'},
+                'pipeline': [{'$match': {'$expr': {'$eq': [{'$toString': '$_id'}, '$$subjectId']}}}],
+                'as': 'subject_info'
+            }},
+            {'$lookup': {
+                'from': 'grades',
+                'let': {'gradeId': '$grade_id'},
+                'pipeline': [{'$match': {'$expr': {'$eq': [{'$toString': '$_id'}, '$$gradeId']}}}],
+                'as': 'grade_info'
+            }},
+            {'$lookup': {
+                'from': 'chapters',
+                'let': {'chapterId': '$chapter_id'},
+                'pipeline': [{'$match': {'$expr': {'$eq': [{'$toString': '$_id'}, '$$chapterId']}}}],
+                'as': 'chapter_info'
+            }},
             {'$addFields': {
                 'subject_name': {'$arrayElemAt': ['$subject_info.subject_name', 0]},
                 'grade_name': {'$arrayElemAt': ['$grade_info.grade_name', 0]},
@@ -1810,8 +1787,18 @@ def get_subject_groups():
         
         pipeline = [
             {'$match': query},
-            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
-            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': '_id', 'as': 'subject_info'}},
+            {'$lookup': {
+                'from': 'grades',
+                'let': {'gradeId': '$grade_id'},
+                'pipeline': [{'$match': {'$expr': {'$eq': [{'$toString': '$_id'}, '$$gradeId']}}}],
+                'as': 'grade_info'
+            }},
+            {'$lookup': {
+                'from': 'subjects',
+                'let': {'subjectId': '$subject_id'},
+                'pipeline': [{'$match': {'$expr': {'$eq': [{'$toString': '$_id'}, '$$subjectId']}}}],
+                'as': 'subject_info'
+            }},
             {'$addFields': {
                 'grade_name': {'$arrayElemAt': ['$grade_info.grade_name', 0]},
                 'subject_name': {'$arrayElemAt': ['$subject_info.subject_name', 0]}
@@ -2387,9 +2374,24 @@ def get_review_questions():
         
         pipeline = [
             {'$match': match},
-            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
-            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': '_id', 'as': 'subject_info'}},
-            {'$lookup': {'from': 'chapters', 'localField': 'chapter_id', 'foreignField': '_id', 'as': 'chapter_info'}},
+            {'$lookup': {
+                'from': 'grades',
+                'let': {'gradeId': '$grade_id'},
+                'pipeline': [{'$match': {'$expr': {'$eq': [{'$toString': '$_id'}, '$$gradeId']}}}],
+                'as': 'grade_info'
+            }},
+            {'$lookup': {
+                'from': 'subjects',
+                'let': {'subjectId': '$subject_id'},
+                'pipeline': [{'$match': {'$expr': {'$eq': [{'$toString': '$_id'}, '$$subjectId']}}}],
+                'as': 'subject_info'
+            }},
+            {'$lookup': {
+                'from': 'chapters',
+                'let': {'chapterId': '$chapter_id'},
+                'pipeline': [{'$match': {'$expr': {'$eq': [{'$toString': '$_id'}, '$$chapterId']}}}],
+                'as': 'chapter_info'
+            }},
             {'$lookup': {'from': 'competencies', 'localField': 'comp_id', 'foreignField': '_id', 'as': 'comp_info'}},
             {'$lookup': {'from': 'cognitive_domains', 'localField': 'domain_id', 'foreignField': '_id', 'as': 'domain_info'}},
             {'$lookup': {'from': 'knowledge_levels', 'localField': 'knowledge_level_id', 'foreignField': '_id', 'as': 'knowledge_info'}},
@@ -2726,9 +2728,24 @@ def get_builder_questions():
         
         pipeline = [
             {'$match': match},
-            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
-            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': '_id', 'as': 'subject_info'}},
-            {'$lookup': {'from': 'chapters', 'localField': 'chapter_id', 'foreignField': '_id', 'as': 'chapter_info'}},
+            {'$lookup': {
+                'from': 'grades',
+                'let': {'gradeId': '$grade_id'},
+                'pipeline': [{'$match': {'$expr': {'$eq': [{'$toString': '$_id'}, '$$gradeId']}}}],
+                'as': 'grade_info'
+            }},
+            {'$lookup': {
+                'from': 'subjects',
+                'let': {'subjectId': '$subject_id'},
+                'pipeline': [{'$match': {'$expr': {'$eq': [{'$toString': '$_id'}, '$$subjectId']}}}],
+                'as': 'subject_info'
+            }},
+            {'$lookup': {
+                'from': 'chapters',
+                'let': {'chapterId': '$chapter_id'},
+                'pipeline': [{'$match': {'$expr': {'$eq': [{'$toString': '$_id'}, '$$chapterId']}}}],
+                'as': 'chapter_info'
+            }},
             {'$addFields': {
                 'grade_name': {'$arrayElemAt': ['$grade_info.grade_name', 0]},
                 'subject_name': {'$arrayElemAt': ['$subject_info.subject_name', 0]},
@@ -3150,8 +3167,18 @@ def get_paper_blueprints():
         
         pipeline = [
             {'$match': match},
-            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
-            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': '_id', 'as': 'subject_info'}},
+            {'$lookup': {
+                'from': 'grades',
+                'let': {'gradeId': '$grade_id'},
+                'pipeline': [{'$match': {'$expr': {'$eq': [{'$toString': '$_id'}, '$$gradeId']}}}],
+                'as': 'grade_info'
+            }},
+            {'$lookup': {
+                'from': 'subjects',
+                'let': {'subjectId': '$subject_id'},
+                'pipeline': [{'$match': {'$expr': {'$eq': [{'$toString': '$_id'}, '$$subjectId']}}}],
+                'as': 'subject_info'
+            }},
             {'$addFields': {
                 'grade_name': {'$arrayElemAt': ['$grade_info.grade_name', 0]},
                 'subject_name': {'$arrayElemAt': ['$subject_info.subject_name', 0]}
@@ -3258,8 +3285,18 @@ def get_paper_blueprint(blueprint_id):
     try:
         pipeline = [
             {'$match': {'_id': ObjectId(blueprint_id)}},
-            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
-            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': '_id', 'as': 'subject_info'}},
+            {'$lookup': {
+                'from': 'grades',
+                'let': {'gradeId': '$grade_id'},
+                'pipeline': [{'$match': {'$expr': {'$eq': [{'$toString': '$_id'}, '$$gradeId']}}}],
+                'as': 'grade_info'
+            }},
+            {'$lookup': {
+                'from': 'subjects',
+                'let': {'subjectId': '$subject_id'},
+                'pipeline': [{'$match': {'$expr': {'$eq': [{'$toString': '$_id'}, '$$subjectId']}}}],
+                'as': 'subject_info'
+            }},
             {'$addFields': {
                 'grade_name': {'$arrayElemAt': ['$grade_info.grade_name', 0]},
                 'subject_name': {'$arrayElemAt': ['$subject_info.subject_name', 0]}
@@ -3459,9 +3496,24 @@ def debug_cgs():
     
     try:
         pipeline = [
-            {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': '_id', 'as': 'subject_info'}},
-            {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': '_id', 'as': 'grade_info'}},
-            {'$lookup': {'from': 'chapters', 'localField': 'chapter_id', 'foreignField': '_id', 'as': 'chapter_info'}},
+            {'$lookup': {
+                'from': 'subjects',
+                'let': {'subjectId': '$subject_id'},
+                'pipeline': [{'$match': {'$expr': {'$eq': [{'$toString': '$_id'}, '$$subjectId']}}}],
+                'as': 'subject_info'
+            }},
+            {'$lookup': {
+                'from': 'grades',
+                'let': {'gradeId': '$grade_id'},
+                'pipeline': [{'$match': {'$expr': {'$eq': [{'$toString': '$_id'}, '$$gradeId']}}}],
+                'as': 'grade_info'
+            }},
+            {'$lookup': {
+                'from': 'chapters',
+                'let': {'chapterId': '$chapter_id'},
+                'pipeline': [{'$match': {'$expr': {'$eq': [{'$toString': '$_id'}, '$$chapterId']}}}],
+                'as': 'chapter_info'
+            }},
             {'$addFields': {
                 'subject_name': {'$arrayElemAt': ['$subject_info.subject_name', 0]},
                 'grade_name': {'$arrayElemAt': ['$grade_info.grade_name', 0]},
