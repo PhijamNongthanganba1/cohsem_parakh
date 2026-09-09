@@ -151,6 +151,16 @@ def init_db():
             db.counters.insert_many(counters)
             print("✓ Initialized counters")
         
+        # Create indexes with error handling
+        print("🔄 Creating indexes...")
+        
+        # Drop problematic indexes if they exist
+        try:
+            db.knowledge_levels.drop_index('id_1')
+            print("  Dropped existing id_1 index on knowledge_levels")
+        except:
+            pass
+        
         # Create indexes
         db.grades.create_index('grade_name', unique=True)
         db.grades.create_index('id', unique=True)
@@ -161,27 +171,41 @@ def init_db():
         db.curricular_goals.create_index('id', unique=True)
         db.competencies.create_index('id', unique=True)
         db.competencies.create_index([('cg_id', 1), ('comp_code', 1)], unique=True)
-        db.knowledge_levels.create_index('id', unique=True)
+        
+        # Handle knowledge_levels id index with care
+        try:
+            # Remove any documents with null id
+            db.knowledge_levels.delete_many({'id': None})
+            db.knowledge_levels.create_index('id', unique=True)
+            print("  ✓ Created id index on knowledge_levels")
+        except pymongo.errors.DuplicateKeyError as e:
+            print(f"  ⚠️ DuplicateKeyError on knowledge_levels: {e}")
+            # Fix by removing documents with null id and retry
+            db.knowledge_levels.delete_many({'id': None})
+            try:
+                db.knowledge_levels.drop_index('id_1')
+            except:
+                pass
+            db.knowledge_levels.create_index('id', unique=True)
+            print("  ✓ Fixed and created id index on knowledge_levels")
+        
         db.knowledge_levels.create_index([('domain_id', 1), ('level_name', 1)], unique=True)
         
-        # ============ FIX: Cognitive Domains with numeric IDs ============
+        # ============ Cognitive Domains with numeric IDs ============
         print("🔄 Setting up cognitive domains with numeric IDs...")
         
-        # Define domains with numeric IDs
         domains_data = [
             {'id': 1, 'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
             {'id': 2, 'domain_name': 'Sensitivity', 'description': 'Sensitivity to applications and real-world connections'},
             {'id': 3, 'domain_name': 'Creativity', 'description': 'Creative thinking and problem solving'}
         ]
         
-        # Insert or update domains with numeric IDs
         for domain in domains_data:
             existing = db.cognitive_domains.find_one({'id': domain['id']})
             if not existing:
                 db.cognitive_domains.insert_one(domain)
                 print(f"  ✓ Inserted cognitive domain: {domain['domain_name']} (id: {domain['id']})")
             else:
-                # Update if needed
                 if existing.get('domain_name') != domain['domain_name'] or existing.get('description') != domain['description']:
                     db.cognitive_domains.update_one(
                         {'id': domain['id']},
@@ -189,7 +213,7 @@ def init_db():
                     )
                     print(f"  ✓ Updated cognitive domain: {domain['domain_name']} (id: {domain['id']})")
         
-        # ============ FIX: Difficulty Levels with numeric IDs ============
+        # ============ Difficulty Levels with numeric IDs ============
         print("🔄 Setting up difficulty levels with numeric IDs...")
         difficulties_data = [
             {'id': 1, 'level_name': 'Easy'},
@@ -203,12 +227,8 @@ def init_db():
                 db.difficulty_levels.insert_one(diff)
                 print(f"  ✓ Inserted difficulty level: {diff['level_name']} (id: {diff['id']})")
         
-        # ============ FIX: Knowledge Levels with numeric domain_id ============
+        # ============ Knowledge Levels with numeric domain_id ============
         print("🔄 Setting up knowledge levels with numeric domain_id...")
-        
-        # First, clear existing knowledge levels to ensure clean data
-        # Uncomment the line below if you want to reset knowledge levels
-        # db.knowledge_levels.delete_many({})
         
         knowledge_data = [
             # Domain 1: Awareness (id: 1)
@@ -216,14 +236,12 @@ def init_db():
             {'id': 2, 'level_name': 'Remembering', 'description': 'Retrieving knowledge from memory', 'domain_id': 1, 'difficulty_id': 1, 'is_active': True},
             {'id': 3, 'level_name': 'Understanding', 'description': 'Constructing meaning from information', 'domain_id': 1, 'difficulty_id': 1, 'is_active': True},
             {'id': 4, 'level_name': 'Comprehension', 'description': 'Grasping the meaning of information', 'domain_id': 1, 'difficulty_id': 2, 'is_active': True},
-            
             # Domain 2: Sensitivity (id: 2)
             {'id': 5, 'level_name': 'Application', 'description': 'Apply knowledge to new situations', 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
             {'id': 6, 'level_name': 'Analysis', 'description': 'Break down information into parts', 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
             {'id': 7, 'level_name': 'Synthesis', 'description': 'Combine elements to form a new whole', 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
             {'id': 8, 'level_name': 'Empathy', 'description': "Understanding others' perspectives and feelings", 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
             {'id': 9, 'level_name': 'Interpretation', 'description': 'Explaining and interpreting information', 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
-            
             # Domain 3: Creativity (id: 3)
             {'id': 10, 'level_name': 'Evaluation', 'description': 'Make judgments based on criteria and standards', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True},
             {'id': 11, 'level_name': 'Creation', 'description': 'Generate new ideas and products', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True},
@@ -239,7 +257,6 @@ def init_db():
                 db.knowledge_levels.insert_one(level)
                 print(f"  ✓ Inserted knowledge level: {level['level_name']} (domain_id: {level['domain_id']})")
             else:
-                # Update to ensure correct domain_id
                 if existing.get('domain_id') != level['domain_id']:
                     db.knowledge_levels.update_one(
                         {'id': level['id']},
@@ -252,7 +269,7 @@ def init_db():
                     )
                     print(f"  ✓ Updated knowledge level: {level['level_name']} (domain_id: {level['domain_id']})")
         
-        # ============ FIX: Question Types with cognitive_id ============
+        # ============ Question Types with cognitive_id ============
         print("🔄 Setting up question types with cognitive_id...")
         question_types_data = [
             {'id': 1, 'type_name': 'Objective', 'cognitive_id': 1, 'description': 'Objective type questions'},
@@ -268,7 +285,7 @@ def init_db():
                 db.question_types.insert_one(qt)
                 print(f"  ✓ Inserted question type: {qt['type_name']} (cognitive_id: {qt['cognitive_id']})")
         
-        # ============ FIX: Admin user ============
+        # ============ Admin user ============
         if db.users.count_documents({}) == 0:
             hashed_password = generate_password_hash("admin123")
             db.users.insert_one({
@@ -427,30 +444,21 @@ def fix_knowledge_levels_domain_id():
             needs_update = False
             new_domain_id = None
             
-            # If domain_id is an ObjectId, convert to numeric
             if isinstance(domain_id, ObjectId):
                 domain_id_str = str(domain_id)
                 if domain_id_str in domain_map:
                     new_domain_id = domain_map[domain_id_str]
                     needs_update = True
-            
-            # If domain_id is a string ObjectId
             elif isinstance(domain_id, str) and len(domain_id) == 24:
                 if domain_id in domain_map:
                     new_domain_id = domain_map[domain_id]
                     needs_update = True
-            
-            # If domain_id is a string name
             elif isinstance(domain_id, str) and domain_id in domain_name_map:
                 new_domain_id = domain_name_map[domain_id]
                 needs_update = True
-            
-            # If domain_id is an integer but not matching the domain
             elif isinstance(domain_id, int):
-                # Check if this domain_id exists in cognitive_domains
                 domain_exists = db.cognitive_domains.find_one({'id': domain_id})
                 if not domain_exists:
-                    # Try to find the right domain by name
                     level_name = level.get('level_name', '').lower()
                     if 'knowledge' in level_name or 'remember' in level_name or 'understand' in level_name:
                         new_domain_id = 1
@@ -484,7 +492,6 @@ def verify_domain_data():
     levels = list(db.knowledge_levels.find({}))
     print(f"  Knowledge levels found: {len(levels)}")
     
-    # Check for levels without valid domain_id
     invalid_levels = []
     for level in levels:
         domain_id = level.get('domain_id')
@@ -714,11 +721,26 @@ def review():
         'MASTER': session.get('perm_master', False)
     }
     
+    page_title = "Questions List"
+    if user_role == 'admin':
+        page_title = "All Questions"
+    elif permissions.get('MASTER'):
+        page_title = "Master Dashboard - Assign Reviewers"
+    elif permissions.get('AP'):
+        page_title = "Approver Dashboard"
+    elif permissions.get('RC'):
+        page_title = "Reviewer Dashboard"
+    elif permissions.get('RA'):
+        page_title = "Approved Questions for Paper Building"
+    elif permissions.get('RE'):
+        page_title = "My Questions"
+    
     return render_template('review.html', 
                          user=username, 
                          user_id=user_id,
                          user_role=user_role,
-                         permissions=permissions)
+                         permissions=permissions,
+                         page_title=page_title)
 
 @app.route('/logout')
 def logout():
@@ -1122,27 +1144,22 @@ def get_page2_data():
                 comp_data = convert_doc(comp)
                 print(f"📊 Found competency: {comp_data.get('comp_code')} - cg_id: {comp_data.get('cg_id')}")
         
-        # Get all cognitive domains with numeric IDs
         domains = list(db.cognitive_domains.find({}).sort('id', 1))
         domains = convert_doc(domains)
         
         if not domains:
-            # Default domains with numeric IDs
             domains = [
                 {'id': 1, 'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
                 {'id': 2, 'domain_name': 'Sensitivity', 'description': 'Sensitivity to applications and real-world connections'},
                 {'id': 3, 'domain_name': 'Creativity', 'description': 'Creative thinking and problem solving'}
             ]
-            # Insert default domains if they don't exist
             for domain in domains:
                 if not db.cognitive_domains.find_one({'id': domain['id']}):
                     db.cognitive_domains.insert_one(domain)
         
-        # Get question types
         question_types = list(db.question_types.find({}).sort('cognitive_id', 1))
         question_types = convert_doc(question_types)
         
-        # Build question_types_by_domain
         question_types_by_domain = {}
         for qt in question_types:
             cognitive_id = qt.get('cognitive_id')
@@ -1152,7 +1169,6 @@ def get_page2_data():
                     question_types_by_domain[cognitive_key] = []
                 question_types_by_domain[cognitive_key].append(qt)
         
-        # Get difficulty levels
         difficulty_levels = list(db.difficulty_levels.find({}).sort('id', 1))
         difficulty_levels = convert_doc(difficulty_levels)
         
@@ -1182,7 +1198,7 @@ def get_page2_data():
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# KNOWLEDGE LEVELS (SUB-DOMAINS) - CRITICAL FIX
+# KNOWLEDGE LEVELS (SUB-DOMAINS)
 # ============================================
 
 @app.route('/api/knowledge-levels', methods=['GET'])
@@ -1196,11 +1212,9 @@ def get_knowledge_levels():
     print(f"📊 get_knowledge_levels called with domain_id: {domain_id}, difficulty_id: {difficulty_id}")
     
     try:
-        # Build query
         query = {'is_active': True}
         
         if domain_id:
-            # Convert domain_id to int for matching
             try:
                 domain_id_int = int(domain_id)
                 query['domain_id'] = domain_id_int
@@ -1215,31 +1229,25 @@ def get_knowledge_levels():
             except:
                 pass
         
-        # Get knowledge levels from database
         levels = list(db.knowledge_levels.find(query).sort('id', 1))
         
         print(f"📊 Found {len(levels)} knowledge levels from database")
         for level in levels:
             print(f"  Level: {level.get('level_name')} - domain_id: {level.get('domain_id')} (type: {type(level.get('domain_id'))})")
         
-        # If no levels found, use default mapping
         if not levels:
             print("📊 No levels found in database, using default mapping")
             
-            # Default mapping with numeric domain_id
             default_mapping = [
-                # Domain 1: Awareness
                 {'id': 1, 'level_name': 'Knowledge', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Basic recall of information and facts'},
                 {'id': 2, 'level_name': 'Remembering', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Retrieving knowledge from memory'},
                 {'id': 3, 'level_name': 'Understanding', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Constructing meaning from information'},
                 {'id': 4, 'level_name': 'Comprehension', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Grasping the meaning of information'},
-                # Domain 2: Sensitivity
                 {'id': 5, 'level_name': 'Application', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Apply knowledge to new situations'},
                 {'id': 6, 'level_name': 'Analysis', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Break down information into parts'},
                 {'id': 7, 'level_name': 'Synthesis', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Combine elements to form a new whole'},
                 {'id': 8, 'level_name': 'Empathy', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': "Understanding others' perspectives and feelings"},
                 {'id': 9, 'level_name': 'Interpretation', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Explaining and interpreting information'},
-                # Domain 3: Creativity
                 {'id': 10, 'level_name': 'Evaluation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Make judgments based on criteria and standards'},
                 {'id': 11, 'level_name': 'Creation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Generate new ideas and products'},
                 {'id': 12, 'level_name': 'Critical Thinking', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Deep analysis and evaluation of information'},
@@ -1248,7 +1256,6 @@ def get_knowledge_levels():
                 {'id': 15, 'level_name': 'Reflection', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Thoughtful consideration and self-assessment'}
             ]
             
-            # Filter by domain_id if provided
             if domain_id:
                 try:
                     domain_id_int = int(domain_id)
@@ -1259,17 +1266,14 @@ def get_knowledge_levels():
             else:
                 levels = default_mapping
             
-            # Insert default mapping into database for future use
             for level in levels:
                 existing = db.knowledge_levels.find_one({'id': level['id']})
                 if not existing:
-                    # Remove domain_name from the document as it's not in the schema
                     level_copy = level.copy()
                     level_copy.pop('domain_name', None)
                     db.knowledge_levels.insert_one(level_copy)
                     print(f"  ✓ Inserted default knowledge level: {level['level_name']}")
         
-        # Convert to frontend format
         levels = convert_doc(levels)
         
         print(f"📊 Returning {len(levels)} knowledge levels")
@@ -1292,7 +1296,6 @@ def get_cognitive_domains():
         domains = list(db.cognitive_domains.find({}).sort('id', 1))
         domains = convert_doc(domains)
         
-        # If no domains found, create default domains
         if not domains:
             default_domains = [
                 {'id': 1, 'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
@@ -2214,7 +2217,500 @@ def delete_user(user_id):
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# REVIEW ENDPOINTS
+# REVIEW WORKFLOW ENDPOINTS
+# ============================================
+
+@app.route('/api/reviewers', methods=['GET'])
+def get_reviewers():
+    """Get list of users with reviewer permissions"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user_role = session.get('user_role')
+    subject_group = session.get('subject_group')
+    current_user_id = session.get('user_id')
+    
+    # Only admin or master can access reviewers list
+    if user_role != 'admin' and not session.get('perm_master', False):
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        query = {
+            '$or': [
+                {'perm_rc': True},
+                {'role': 'admin'},
+                {'role': 'reviewer'}
+            ]
+        }
+        
+        # Exclude current user
+        if current_user_id:
+            query['id'] = {'$ne': current_user_id}
+        
+        # Filter by subject group if not admin
+        if user_role != 'admin' and subject_group:
+            query['subject_group'] = subject_group
+        
+        reviewers = list(db.users.find(query).sort('username', 1))
+        reviewers = convert_doc(reviewers)
+        
+        return jsonify({'reviewers': reviewers})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/approvers', methods=['GET'])
+def get_approvers():
+    """Get list of users with approver permissions"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user_role = session.get('user_role')
+    subject_group = session.get('subject_group')
+    current_user_id = session.get('user_id')
+    
+    # Only admin, master, or reviewer can access approvers list
+    if user_role != 'admin' and not session.get('perm_master', False) and not session.get('perm_rc', False):
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        query = {
+            '$or': [
+                {'perm_ap': True},
+                {'role': 'admin'},
+                {'role': 'approver'}
+            ]
+        }
+        
+        # Exclude current user
+        if current_user_id:
+            query['id'] = {'$ne': current_user_id}
+        
+        # Filter by subject group if not admin
+        if user_role != 'admin' and subject_group:
+            query['subject_group'] = subject_group
+        
+        approvers = list(db.users.find(query).sort('username', 1))
+        approvers = convert_doc(approvers)
+        
+        return jsonify({'approvers': approvers})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/master-review-question/<int:question_id>', methods=['POST'])
+def master_review_question(question_id):
+    """Master assigns question to a reviewer"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    username = session.get('user', '')
+    user_role = session.get('user_role', 'writer')
+    perm_master = session.get('perm_master', False)
+    subject_group = session.get('subject_group')
+    user_id = session.get('user_id')
+    
+    if user_role != 'admin' and not perm_master:
+        return jsonify({'error': 'Master permission required'}), 403
+    
+    data = request.json
+    comment = data.get('comment', '') if data else ''
+    reviewer_id = data.get('reviewer_id')
+    reviewer_name = data.get('reviewer_name')
+    
+    if not reviewer_id:
+        return jsonify({'error': 'Reviewer selection is required'}), 400
+    
+    try:
+        # Check if question exists and user has access
+        question = db.simple_questions.find_one({'id': question_id})
+        if not question:
+            return jsonify({'error': 'Question not found'}), 404
+        
+        # Check subject access if not admin
+        if user_role != 'admin' and subject_group:
+            # Verify the question's subject belongs to user's group
+            subject_check = db.subject_groups.find_one({
+                'group_code': subject_group,
+                'subject_id': question.get('subject_id')
+            })
+            if not subject_check:
+                return jsonify({'error': 'Access denied to this question'}), 403
+        
+        # Verify the reviewer exists and has reviewer permissions
+        reviewer = db.users.find_one({
+            'id': reviewer_id,
+            '$or': [
+                {'perm_rc': True},
+                {'role': 'admin'},
+                {'role': 'reviewer'}
+            ]
+        })
+        if not reviewer:
+            return jsonify({'error': 'Selected reviewer does not have reviewer permissions'}), 400
+        
+        # Verify reviewer is in same subject group (if not admin)
+        if user_role != 'admin' and subject_group:
+            if reviewer.get('subject_group') != subject_group:
+                return jsonify({'error': 'Reviewer must be in the same subject group'}), 400
+        
+        reviewer_name = reviewer.get('username', reviewer_name)
+        
+        # Update question status
+        master_comment = f"[ASSIGNED TO REVIEWER: {reviewer_name}] {comment}" if comment else f"[ASSIGNED TO REVIEWER: {reviewer_name}]"
+        
+        db.simple_questions.update_one(
+            {'id': question_id},
+            {'$set': {
+                'status': 'under_review',
+                'master_reviewed_by': username,
+                'master_reviewed_at': datetime.now(),
+                'master_reviewed_comment': master_comment,
+                'assigned_reviewer_id': reviewer_id,
+                'assigned_reviewer_name': reviewer_name,
+                'reviewed_by': None,
+                'reviewed_comment': None,
+                'reviewed_at': None,
+                'approved_by': None,
+                'approved_at': None,
+                'assigned_approver_id': None,
+                'assigned_approver_name': None
+            }}
+        )
+        
+        return jsonify({'success': True, 'message': f'Question assigned to {reviewer_name} for review'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/review-question/<int:question_id>', methods=['POST'])
+def review_question(question_id):
+    """Reviewer assigns question to an approver"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    username = session.get('user', '')
+    user_id = session.get('user_id')
+    user_role = session.get('user_role', 'writer')
+    perm_rc = session.get('perm_rc', False)
+    subject_group = session.get('subject_group')
+    
+    if user_role != 'admin' and not perm_rc:
+        return jsonify({'error': 'Reviewer (RC) permission required'}), 403
+    
+    data = request.json
+    comment = data.get('comment', '') if data else ''
+    approver_id = data.get('approver_id')
+    approver_name = data.get('approver_name')
+    
+    if not approver_id:
+        return jsonify({'error': 'Approver selection is required'}), 400
+    
+    try:
+        # Check if question exists and user has access
+        question = db.simple_questions.find_one({'id': question_id})
+        if not question:
+            return jsonify({'error': 'Question not found'}), 404
+        
+        # Verify this question is assigned to this reviewer
+        if user_role != 'admin' and question.get('assigned_reviewer_id') != user_id:
+            return jsonify({'error': 'This question is not assigned to you'}), 403
+        
+        # Verify the approver exists and has approver permissions
+        approver = db.users.find_one({
+            'id': approver_id,
+            '$or': [
+                {'perm_ap': True},
+                {'role': 'admin'},
+                {'role': 'approver'}
+            ]
+        })
+        if not approver:
+            return jsonify({'error': 'Selected approver does not have approver permissions'}), 400
+        
+        # Verify approver is in same subject group (if not admin)
+        if user_role != 'admin' and subject_group:
+            if approver.get('subject_group') != subject_group:
+                return jsonify({'error': 'Approver must be in the same subject group'}), 400
+        
+        approver_name = approver.get('username', approver_name)
+        
+        # Update question status
+        reviewer_comment = f"[ASSIGNED TO APPROVER: {approver_name}] {comment}" if comment else f"[ASSIGNED TO APPROVER: {approver_name}]"
+        
+        db.simple_questions.update_one(
+            {'id': question_id},
+            {'$set': {
+                'status': 'reviewed_completed',
+                'reviewed_by': username,
+                'reviewed_at': datetime.now(),
+                'reviewed_comment': reviewer_comment,
+                'assigned_approver_id': approver_id,
+                'assigned_approver_name': approver_name,
+                'approved_by': None,
+                'approved_at': None
+            }}
+        )
+        
+        return jsonify({'success': True, 'message': f'Question assigned to {approver_name} for approval'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/approve-question/<int:question_id>', methods=['POST'])
+def approve_question(question_id):
+    """Approver approves a question"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    username = session.get('user', '')
+    user_id = session.get('user_id')
+    user_role = session.get('user_role', 'writer')
+    perm_ap = session.get('perm_ap', False)
+    subject_group = session.get('subject_group')
+    
+    if user_role != 'admin' and not perm_ap:
+        return jsonify({'error': 'Approver (AP) permission required'}), 403
+    
+    data = request.json
+    comment = data.get('comment', '') if data else ''
+    
+    try:
+        # Check if question exists and user has access
+        question = db.simple_questions.find_one({'id': question_id})
+        if not question:
+            return jsonify({'error': 'Question not found'}), 404
+        
+        # Verify this question is assigned to this approver
+        if user_role != 'admin' and question.get('assigned_approver_id') != user_id:
+            return jsonify({'error': 'This question is not assigned to you'}), 403
+        
+        # Update question status
+        db.simple_questions.update_one(
+            {'id': question_id},
+            {'$set': {
+                'status': 'approved',
+                'approved_by': username,
+                'approved_at': datetime.now(),
+                'reviewed_comment': comment if comment else question.get('reviewed_comment', '')
+            }}
+        )
+        
+        return jsonify({'success': True, 'message': 'Question approved successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/rework-question/<int:question_id>', methods=['POST'])
+def rework_question(question_id):
+    """Send a question back for rework"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    username = session.get('user', '')
+    user_id = session.get('user_id')
+    user_role = session.get('user_role', 'writer')
+    subject_group = session.get('subject_group')
+    perm_re = session.get('perm_re', False)
+    perm_rc = session.get('perm_rc', False)
+    perm_ap = session.get('perm_ap', False)
+    perm_master = session.get('perm_master', False)
+    
+    data = request.json
+    rework_comment = data.get('comment', '') if data else ''
+    
+    if not rework_comment:
+        return jsonify({'error': 'Rework comment is required'}), 400
+    
+    try:
+        # Check if question exists
+        question = db.simple_questions.find_one({'id': question_id})
+        if not question:
+            return jsonify({'error': 'Question not found'}), 404
+        
+        # Determine if user can rework
+        can_rework = False
+        
+        if user_role == 'admin':
+            can_rework = True
+        elif perm_master:
+            can_rework = question.get('status') != 'approved'
+        elif perm_rc:
+            if question.get('assigned_reviewer_id') == user_id:
+                can_rework = question.get('status') != 'approved'
+        elif perm_ap:
+            if question.get('assigned_approver_id') == user_id:
+                can_rework = question.get('status') != 'approved'
+        elif perm_re and question.get('created_by') == username:
+            can_rework = question.get('status') in ['rejected', 'rework', 'unassigned']
+        
+        if not can_rework:
+            return jsonify({'error': 'Not authorized to rework this question'}), 403
+        
+        # Add comment with metadata
+        comment_with_meta = f"[REWORK by {username} on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {rework_comment}"
+        
+        # Update question status
+        db.simple_questions.update_one(
+            {'id': question_id},
+            {'$set': {
+                'status': 'unassigned',
+                'rejection_reason': comment_with_meta,
+                'reviewed_by': None,
+                'reviewed_at': None,
+                'reviewed_comment': None,
+                'master_reviewed_by': None,
+                'master_reviewed_at': None,
+                'master_reviewed_comment': None,
+                'rejected_by': username,
+                'rejected_at': datetime.now(),
+                'approved_by': None,
+                'approved_at': None,
+                'assigned_reviewer_id': None,
+                'assigned_reviewer_name': None,
+                'assigned_approver_id': None,
+                'assigned_approver_name': None
+            }}
+        )
+        
+        return jsonify({'success': True, 'message': 'Question sent back for rework'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/update-question/<int:question_id>', methods=['POST'])
+def update_question(question_id):
+    """Update question details (for writers to edit their own questions)"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    username = session.get('user', '')
+    user_role = session.get('user_role', 'writer')
+    perm_re = session.get('perm_re', False)
+    
+    data = request.json
+    question_text = data.get('question_text')
+    answer = data.get('answer')
+    marks = data.get('marks', 1)
+    duration_minutes = data.get('duration_minutes', 0)
+    
+    if not question_text:
+        return jsonify({'error': 'Question text is required'}), 400
+    if not answer:
+        return jsonify({'error': 'Answer is required'}), 400
+    
+    try:
+        # Check if question exists
+        question = db.simple_questions.find_one({'id': question_id})
+        if not question:
+            return jsonify({'error': 'Question not found'}), 404
+        
+        # Determine if user can edit
+        can_edit = False
+        if user_role == 'admin':
+            can_edit = True
+        elif perm_re and question.get('created_by') == username:
+            can_edit = question.get('status') in ['unassigned', 'rejected', 'rework']
+        
+        if not can_edit:
+            return jsonify({'error': 'Not authorized to edit this question'}), 403
+        
+        # Update question
+        db.simple_questions.update_one(
+            {'id': question_id},
+            {'$set': {
+                'question_text': question_text,
+                'answer': answer,
+                'marks': marks,
+                'duration_minutes': duration_minutes,
+                'updated_at': datetime.now()
+            }}
+        )
+        
+        return jsonify({'success': True, 'message': 'Question updated successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/builder-questions', methods=['GET'])
+def get_builder_questions():
+    """Get questions for paper builder (approved questions only)"""
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user_role = session.get('user_role', 'writer')
+    perm_ra = session.get('perm_ra', False)
+    subject_group = session.get('subject_group')
+    
+    if user_role != 'admin' and not perm_ra:
+        return jsonify({'error': 'Builder (RA) permission required'}), 403
+    
+    grade_id = request.args.get('grade_id')
+    subject_id = request.args.get('subject_id')
+    chapter_ids = request.args.get('chapter_ids')
+    cg_ids = request.args.get('cg_ids')
+    comp_ids = request.args.get('comp_ids')
+    question_ids = request.args.get('question_ids')
+    status = request.args.get('status', 'approved')
+    count_only = request.args.get('count_only') == 'true'
+    
+    try:
+        # Build query
+        query = {'status': status}
+        
+        if grade_id:
+            query['grade_id'] = int(grade_id)
+        
+        if subject_id:
+            query['subject_id'] = int(subject_id)
+        
+        if chapter_ids:
+            chapter_list = [int(x.strip()) for x in chapter_ids.split(',') if x.strip().isdigit()]
+            if chapter_list:
+                query['chapter_id'] = {'$in': chapter_list}
+        
+        if cg_ids:
+            cg_list = [int(x.strip()) for x in cg_ids.split(',') if x.strip().isdigit()]
+            if cg_list:
+                query['cg_id'] = {'$in': cg_list}
+        
+        if comp_ids:
+            comp_list = [int(x.strip()) for x in comp_ids.split(',') if x.strip().isdigit()]
+            if comp_list:
+                query['comp_id'] = {'$in': comp_list}
+        
+        if question_ids:
+            id_list = [int(x.strip()) for x in question_ids.split(',') if x.strip().isdigit()]
+            if id_list:
+                query['id'] = {'$in': id_list}
+        
+        # Apply subject group filter if not admin
+        if user_role != 'admin' and subject_group:
+            # Get subject IDs for this group
+            group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
+            subject_ids = [s['subject_id'] for s in group_subjects]
+            if subject_ids:
+                query['subject_id'] = {'$in': subject_ids}
+            else:
+                return jsonify({'questions': []})
+        
+        if count_only:
+            count = db.simple_questions.count_documents(query)
+            return jsonify({'count': count})
+        
+        # Get questions
+        questions = list(db.simple_questions.find(query).sort('question_type_name', 1).limit(500))
+        questions = convert_doc(questions)
+        
+        # Parse images for each question
+        for q in questions:
+            if q.get('images'):
+                try:
+                    q['images'] = json.loads(q['images']) if isinstance(q['images'], str) else q['images']
+                except:
+                    q['images'] = []
+            else:
+                q['images'] = []
+        
+        return jsonify({'questions': questions})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ============================================
+# REVIEW QUESTIONS (UPDATED)
 # ============================================
 
 @app.route('/api/review-questions')
@@ -2225,18 +2721,113 @@ def get_review_questions():
     username = session.get('user', '')
     user_role = session.get('user_role', 'writer')
     user_id = session.get('user_id', 0)
+    subject_group = session.get('subject_group')
+    
+    grade = request.args.get('grade', '')
+    subject = request.args.get('subject', '')
+    status = request.args.get('status', '')
+    search = request.args.get('search', '')
     
     try:
-        match = {}
-        if user_role != 'admin':
-            match['created_by'] = username
+        # Build the query
+        match_conditions = []
         
-        pipeline = [
-            {'$match': match},
+        # Apply role-based filters
+        if user_role == 'admin':
+            # Admin sees all questions
+            pass
+        else:
+            # Build permission-based filters
+            permission_filters = []
+            
+            # Writer (RE): sees own unassigned/rejected questions
+            if session.get('perm_re', False):
+                permission_filters.append({
+                    '$and': [
+                        {'created_by': username},
+                        {'status': {'$in': ['unassigned', 'rejected', None]}}
+                    ]
+                })
+            
+            # Master: sees unassigned questions
+            if session.get('perm_master', False):
+                permission_filters.append({'status': 'unassigned'})
+            
+            # Reviewer (RC): sees questions assigned to them
+            if session.get('perm_rc', False):
+                permission_filters.append({
+                    '$and': [
+                        {'status': 'under_review'},
+                        {'assigned_reviewer_id': user_id}
+                    ]
+                })
+            
+            # Approver (AP): sees questions assigned to them
+            if session.get('perm_ap', False):
+                permission_filters.append({
+                    '$and': [
+                        {'status': 'reviewed_completed'},
+                        {'assigned_approver_id': user_id}
+                    ]
+                })
+            
+            # Builder (RA): sees approved questions
+            if session.get('perm_ra', False):
+                permission_filters.append({'status': 'approved'})
+            
+            # Everyone can see their own questions
+            permission_filters.append({'created_by': username})
+            
+            if permission_filters:
+                match_conditions.append({'$or': permission_filters})
+            else:
+                match_conditions.append({'_id': None})  # No access
+        
+        # Apply subject group filter if not admin
+        if user_role != 'admin' and subject_group:
+            # Get subject IDs for this group
+            group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
+            subject_ids = [s['subject_id'] for s in group_subjects]
+            if subject_ids:
+                match_conditions.append({'subject_id': {'$in': subject_ids}})
+            else:
+                match_conditions.append({'_id': None})
+        
+        # Apply grade filter
+        if grade:
+            match_conditions.append({'grade_id': int(grade)})
+        
+        # Apply subject filter
+        if subject:
+            match_conditions.append({'subject_id': int(subject)})
+        
+        # Apply status filter
+        if status:
+            match_conditions.append({'status': status})
+        
+        # Apply search filter
+        if search:
+            match_conditions.append({
+                '$or': [
+                    {'question_text': {'$regex': search, '$options': 'i'}},
+                    {'answer': {'$regex': search, '$options': 'i'}}
+                ]
+            })
+        
+        # Build the pipeline
+        pipeline = []
+        
+        if match_conditions:
+            pipeline.append({'$match': {'$and': match_conditions}})
+        
+        pipeline.extend([
             {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': 'id', 'as': 'grade_info'}},
             {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': 'id', 'as': 'subject_info'}},
             {'$lookup': {'from': 'chapters', 'localField': 'chapter_id', 'foreignField': 'id', 'as': 'chapter_info'}},
             {'$lookup': {'from': 'competencies', 'localField': 'comp_id', 'foreignField': 'id', 'as': 'comp_info'}},
+            {'$lookup': {'from': 'cognitive_domains', 'localField': 'domain_id', 'foreignField': 'id', 'as': 'domain_info'}},
+            {'$lookup': {'from': 'knowledge_levels', 'localField': 'knowledge_level_id', 'foreignField': 'id', 'as': 'knowledge_info'}},
+            {'$lookup': {'from': 'difficulty_levels', 'localField': 'difficulty_id', 'foreignField': 'id', 'as': 'difficulty_info'}},
             {'$addFields': {
                 'grade': {'$arrayElemAt': ['$grade_info.grade_name', 0]},
                 'grade_id': {'$arrayElemAt': ['$grade_info.id', 0]},
@@ -2244,16 +2835,65 @@ def get_review_questions():
                 'subject_id': {'$arrayElemAt': ['$subject_info.id', 0]},
                 'chapter': {'$arrayElemAt': ['$chapter_info.chapter_name', 0]},
                 'chapter_id': {'$arrayElemAt': ['$chapter_info.id', 0]},
-                'competency': {'$arrayElemAt': ['$comp_info.comp_code', 0]}
+                'competency': {'$arrayElemAt': ['$comp_info.comp_code', 0]},
+                'domain_name': {'$arrayElemAt': ['$domain_info.domain_name', 0]},
+                'knowledge_level_name': {'$arrayElemAt': ['$knowledge_info.level_name', 0]},
+                'difficulty_name': {'$arrayElemAt': ['$difficulty_info.level_name', 0]}
             }},
-            {'$project': {'grade_info': 0, 'subject_info': 0, 'chapter_info': 0, 'comp_info': 0}},
+            {'$project': {
+                'grade_info': 0, 'subject_info': 0, 'chapter_info': 0, 'comp_info': 0,
+                'domain_info': 0, 'knowledge_info': 0, 'difficulty_info': 0
+            }},
             {'$sort': {'created_at': -1}}
-        ]
+        ])
         
         questions = list(db.simple_questions.aggregate(pipeline))
         questions = convert_doc(questions)
         
-        return jsonify({'questions': questions})
+        # Parse images and add permissions
+        for q in questions:
+            if q.get('images'):
+                try:
+                    q['images'] = json.loads(q['images']) if isinstance(q['images'], str) else q['images']
+                except:
+                    q['images'] = []
+            else:
+                q['images'] = []
+            
+            # Add permission flags
+            is_my = q.get('created_by') == username
+            is_assigned_reviewer = q.get('assigned_reviewer_id') == user_id
+            is_assigned_approver = q.get('assigned_approver_id') == user_id
+            q_status = q.get('status', 'unassigned')
+            
+            q['can_edit'] = (user_role == 'admin') or (session.get('perm_re', False) and is_my and q_status in ['unassigned', 'rejected', 'rework'])
+            q['can_master_review'] = (user_role == 'admin') or (session.get('perm_master', False) and q_status == 'unassigned')
+            q['can_review'] = (user_role == 'admin') or (session.get('perm_rc', False) and is_assigned_reviewer and q_status == 'under_review')
+            q['can_approve'] = (user_role == 'admin') or (session.get('perm_ap', False) and is_assigned_approver and q_status == 'reviewed_completed')
+            q['can_delete'] = (user_role == 'admin')
+            q['can_rework'] = (
+                user_role == 'admin' or
+                (session.get('perm_re', False) and is_my and q_status == 'rejected') or
+                (session.get('perm_master', False) and q_status != 'approved') or
+                (session.get('perm_rc', False) and is_assigned_reviewer and q_status != 'approved') or
+                (session.get('perm_ap', False) and is_assigned_approver and q_status != 'approved')
+            )
+            q['is_my_question'] = is_my
+            q['is_assigned_to_me'] = is_assigned_reviewer or is_assigned_approver
+        
+        return jsonify({
+            'questions': questions,
+            'permissions': {
+                'RE': session.get('perm_re', False),
+                'RA': session.get('perm_ra', False),
+                'RC': session.get('perm_rc', False),
+                'AP': session.get('perm_ap', False),
+                'MASTER': session.get('perm_master', False)
+            },
+            'subject_group': subject_group,
+            'user_role': user_role,
+            'user_id': user_id
+        })
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
