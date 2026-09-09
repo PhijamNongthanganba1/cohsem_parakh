@@ -81,11 +81,11 @@ def convert_objectid(doc):
             if key == '_id':
                 if isinstance(value, ObjectId):
                     result[key] = str(value)
-                    result['id'] = str(value)  # Add 'id' field for frontend
+                    result['id'] = str(value)
                 else:
                     result[key] = value
                     result['id'] = value
-            # CRITICAL: Convert grade_id to string
+            # CRITICAL: Convert grade_id to string - THIS IS THE FIX
             elif key == 'grade_id':
                 if isinstance(value, ObjectId):
                     result[key] = str(value)
@@ -156,7 +156,7 @@ def convert_objectid(doc):
             # Recursively process lists
             elif isinstance(value, list):
                 result[key] = [convert_objectid(item) for item in value]
-            # Recursively process dicts - THIS IS THE CRITICAL FIX
+            # Recursively process dicts
             elif isinstance(value, dict):
                 result[key] = convert_objectid(value)
             # Keep other values as is
@@ -183,10 +183,8 @@ def safe_object_id(value):
                 return None
         # Try to find by ID using regex on string
         try:
-            # Try to convert to ObjectId
             return ObjectId(value)
         except:
-            # If it's a numeric ID from frontend, try to find by string ID
             pass
     return None
 
@@ -218,7 +216,7 @@ def get_grade_id_from_value(value):
         except:
             pass
         
-        # Try to find by grade_name (for numeric IDs from frontend)
+        # Try to find by grade_name
         grade = db.grades.find_one({'grade_name': value})
         if grade:
             return grade['_id']
@@ -372,14 +370,15 @@ def init_db():
             })
             print("✓ Created default admin user")
         
-        # Fix any existing subjects with invalid grade_id
+        # Fix existing subjects with invalid grade_id - convert to string
         print("🔧 Fixing existing subjects with invalid grade_id...")
         first_grade = db.grades.find_one({})
         if first_grade:
-            grade_id = first_grade['_id']
-            # Fix subjects with string IDs or invalid values
+            grade_id = str(first_grade['_id'])
+            # Fix subjects with ObjectId or invalid values - store as string
             db.subjects.update_many(
                 {'$or': [
+                    {'grade_id': {'$type': 'objectId'}},
                     {'grade_id': {'$type': 'string'}},
                     {'grade_id': 'undefined'},
                     {'grade_id': 'null'},
@@ -388,7 +387,13 @@ def init_db():
                 ]},
                 {'$set': {'grade_id': grade_id}}
             )
-            print(f"✓ Fixed subjects with invalid grade_id")
+            print(f"✓ Fixed subjects with invalid grade_id - now storing as strings")
+        
+        # Also fix any existing subjects that might have ObjectId grade_id
+        db.subjects.update_many(
+            {'grade_id': {'$type': 'objectId'}},
+            [{'$set': {'grade_id': {'$toString': '$grade_id'}}}]
+        )
         
         print("✅ Database initialization complete")
     except Exception as e:
@@ -653,13 +658,12 @@ def dashboard_stats():
         stats = {}
         
         for grade in all_grades:
-            grade_id = grade['_id']
-            grade_id_str = str(grade_id)
+            grade_id = str(grade['_id'])
             grade_name = grade['grade_name']
             
             # Get stats for this grade
             pipeline = [
-                {'$match': {'grade_id': grade_id_str}},
+                {'$match': {'grade_id': grade_id}},
                 {'$group': {
                     '_id': None,
                     'total': {'$sum': 1},
@@ -676,7 +680,7 @@ def dashboard_stats():
             
             # Get subject stats for this grade
             pipeline_subject = [
-                {'$match': {'grade_id': grade_id_str}},
+                {'$match': {'grade_id': grade_id}},
                 {'$group': {
                     '_id': '$subject_id',
                     'total': {'$sum': 1},
@@ -705,7 +709,7 @@ def dashboard_stats():
                         'subject_name': subjects_dict[subject_id]['subject_name']
                     }
             
-            stats[f'grade_{grade_id_str}'] = {
+            stats[f'grade_{grade_id}'] = {
                 'total': grade_stats.get('total', 0),
                 'approved': grade_stats.get('approved', 0),
                 'unassigned': grade_stats.get('unassigned', 0),
@@ -715,7 +719,7 @@ def dashboard_stats():
                 'master_reviewed': grade_stats.get('master_reviewed', 0),
                 'subjects': subjects_dict_for_grade,
                 'grade_name': grade_name,
-                'grade_id': grade_id_str
+                'grade_id': grade_id
             }
         
         # Get recent activity
@@ -752,17 +756,7 @@ def get_grades():
             subject_groups = list(db.subject_groups.find({'group_code': subject_group}))
             grade_ids = list(set([str(g['grade_id']) for g in subject_groups if g.get('grade_id')]))
             if grade_ids:
-                # Convert to ObjectId for query
-                grade_obj_ids = []
-                for gid in grade_ids:
-                    try:
-                        grade_obj_ids.append(ObjectId(gid))
-                    except:
-                        pass
-                if grade_obj_ids:
-                    grades = list(db.grades.find({'_id': {'$in': grade_obj_ids}}))
-                else:
-                    grades = []
+                grades = list(db.grades.find({'_id': {'$in': [ObjectId(gid) for gid in grade_ids]}}))
             else:
                 grades = []
         
@@ -838,7 +832,7 @@ def delete_grade(grade_id):
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# SUBJECT ENDPOINTS - CRITICAL FIX FOR grade_id
+# SUBJECT ENDPOINTS - CRITICAL FIX
 # ============================================
 
 @app.route('/api/subjects', methods=['GET'])
@@ -850,19 +844,20 @@ def get_subjects():
     subject_group = session.get('subject_group')
     
     try:
-        # Fix any subjects with invalid grade_id
+        # Fix any subjects with invalid grade_id - convert to string
         first_grade = db.grades.find_one({})
         if first_grade:
-            grade_id = first_grade['_id']
+            grade_id_str = str(first_grade['_id'])
             db.subjects.update_many(
                 {'$or': [
+                    {'grade_id': {'$type': 'objectId'}},
                     {'grade_id': {'$type': 'string'}},
                     {'grade_id': 'undefined'},
                     {'grade_id': 'null'},
                     {'grade_id': ''},
                     {'grade_id': {'$exists': False}}
                 ]},
-                {'$set': {'grade_id': str(grade_id)}}
+                {'$set': {'grade_id': grade_id_str}}
             )
         
         if user_role == 'admin':
@@ -874,30 +869,20 @@ def get_subjects():
                 subject_ids = [str(g['subject_id']) for g in groups]
             
             if subject_ids:
-                # Convert to ObjectId for query
-                subject_obj_ids = []
-                for sid in subject_ids:
-                    try:
-                        subject_obj_ids.append(ObjectId(sid))
-                    except:
-                        pass
-                if subject_obj_ids:
-                    subjects = list(db.subjects.find({'_id': {'$in': subject_obj_ids}}))
-                else:
-                    subjects = []
+                subjects = list(db.subjects.find({'_id': {'$in': [ObjectId(sid) for sid in subject_ids]}}))
             else:
                 subjects = []
         
-        # CRITICAL: Convert ObjectId fields to string
+        # CRITICAL: Convert all ObjectId fields to string
         for s in subjects:
             if '_id' in s:
                 s['id'] = str(s['_id'])
-                # Keep _id as string for compatibility
                 s['_id'] = str(s['_id'])
-            if 'grade_id' in s and isinstance(s['grade_id'], ObjectId):
-                s['grade_id'] = str(s['grade_id'])
-            elif 'grade_id' in s:
-                s['grade_id'] = str(s['grade_id'])
+            if 'grade_id' in s:
+                if isinstance(s['grade_id'], ObjectId):
+                    s['grade_id'] = str(s['grade_id'])
+                else:
+                    s['grade_id'] = str(s['grade_id'])
         
         return jsonify({'subjects': subjects})
     except Exception as e:
@@ -921,13 +906,31 @@ def create_subject():
         return jsonify({'error': 'Subject name is required'}), 400
     
     try:
-        # Get grade_id from value - handles undefined gracefully
-        grade_id_obj = get_grade_id_from_value(grade_id)
+        # Get grade_id as string
+        grade_id_str = None
         
-        if grade_id_obj is None:
-            return jsonify({'error': 'No grades available. Please create a grade first.'}), 400
+        if grade_id:
+            # If grade_id is a string, use it directly
+            if isinstance(grade_id, str) and len(grade_id) == 24:
+                grade_id_str = grade_id
+            else:
+                # Try to find the grade
+                grade_obj = get_grade_id_from_value(grade_id)
+                if grade_obj:
+                    grade_id_str = str(grade_obj)
+                else:
+                    # Try to find by grade_name
+                    grade = db.grades.find_one({'grade_name': grade_id})
+                    if grade:
+                        grade_id_str = str(grade['_id'])
         
-        grade_id_str = str(grade_id_obj)
+        # If still no grade_id, get first grade
+        if not grade_id_str:
+            first_grade = db.grades.find_one({})
+            if first_grade:
+                grade_id_str = str(first_grade['_id'])
+            else:
+                return jsonify({'error': 'No grades available. Please create a grade first.'}), 400
         
         # Check if subject already exists for this grade
         existing = db.subjects.find_one({
@@ -938,12 +941,12 @@ def create_subject():
         if existing:
             return jsonify({'error': f'Subject "{name}" already exists for this grade'}), 400
         
+        # Store grade_id as string (not ObjectId)
         result = db.subjects.insert_one({
             'subject_name': name, 
-            'grade_id': grade_id_str
+            'grade_id': grade_id_str  # Store as string!
         })
         
-        # Return with ID as string
         return jsonify({
             'success': True, 
             'id': str(result.inserted_id), 
@@ -971,12 +974,22 @@ def update_subject(subject_id):
         return jsonify({'error': 'Subject name is required'}), 400
     
     try:
-        grade_id_obj = get_grade_id_from_value(grade_id)
+        # Convert grade_id to string
+        grade_id_str = None
+        if grade_id:
+            if isinstance(grade_id, str) and len(grade_id) == 24:
+                grade_id_str = grade_id
+            else:
+                grade_obj = get_grade_id_from_value(grade_id)
+                if grade_obj:
+                    grade_id_str = str(grade_obj)
         
-        if grade_id_obj is None:
-            return jsonify({'error': 'No grades available'}), 400
-        
-        grade_id_str = str(grade_id_obj)
+        if not grade_id_str:
+            first_grade = db.grades.find_one({})
+            if first_grade:
+                grade_id_str = str(first_grade['_id'])
+            else:
+                return jsonify({'error': 'No grades available'}), 400
         
         result = db.subjects.update_one(
             {'_id': ObjectId(subject_id)},
@@ -1009,7 +1022,7 @@ def delete_subject(subject_id):
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# PAGE1 DATA - CRITICAL FIX FOR grade_id
+# PAGE1 DATA - CRITICAL FIX
 # ============================================
 
 @app.route('/api/page1-data')
@@ -1024,10 +1037,10 @@ def get_page1_data():
         # Fix any subjects with invalid grade_id
         first_grade = db.grades.find_one({})
         if first_grade:
-            grade_id = first_grade['_id']
-            grade_id_str = str(grade_id)
+            grade_id_str = str(first_grade['_id'])
             db.subjects.update_many(
                 {'$or': [
+                    {'grade_id': {'$type': 'objectId'}},
                     {'grade_id': {'$type': 'string'}},
                     {'grade_id': 'undefined'},
                     {'grade_id': 'null'},
@@ -1056,11 +1069,11 @@ def get_page1_data():
             'cognitive_domains': []
         }
         
-        # Process grades - ensure 'id' field exists
+        # Process grades
         for g in grades:
             grade_id_str = str(g['_id'])
             g['id'] = grade_id_str
-            g['_id'] = grade_id_str  # Keep _id as string for compatibility
+            g['_id'] = grade_id_str
             data['grades'].append(g)
         
         # Process subjects - CRITICAL: Convert grade_id to string
@@ -1069,7 +1082,7 @@ def get_page1_data():
             s['id'] = subject_id_str
             s['_id'] = subject_id_str
             
-            # CRITICAL FIX: Convert grade_id to string
+            # CRITICAL: Ensure grade_id is a string
             if 'grade_id' in s:
                 if isinstance(s['grade_id'], ObjectId):
                     s['grade_id'] = str(s['grade_id'])
@@ -1080,6 +1093,9 @@ def get_page1_data():
                         s['grade_id'] = None
                 else:
                     s['grade_id'] = str(s['grade_id'])
+            else:
+                if first_grade:
+                    s['grade_id'] = str(first_grade['_id'])
             
             # Group subjects by grade_id for frontend
             grade_id_str = str(s['grade_id']) if s['grade_id'] else None
@@ -1137,7 +1153,7 @@ def get_page1_data():
             cd['_id'] = str(cd['_id'])
             data['cognitive_domains'].append(cd)
         
-        # DEBUG: Log the subjects_by_grade to see what's being sent
+        # DEBUG: Log the subjects_by_grade
         print("📊 subjects_by_grade keys:", list(data['subjects_by_grade'].keys()))
         for key, value in data['subjects_by_grade'].items():
             print(f"  Grade {key}: {len(value)} subjects")
@@ -1207,11 +1223,22 @@ def create_textbook():
         return jsonify({'error': 'Textbook name, subject, and grade are required'}), 400
     
     try:
-        grade_id_obj = get_grade_id_from_value(grade_id)
-        if grade_id_obj is None:
-            return jsonify({'error': 'No grades available'}), 400
+        # Get grade_id as string
+        grade_id_str = None
+        if grade_id:
+            if isinstance(grade_id, str) and len(grade_id) == 24:
+                grade_id_str = grade_id
+            else:
+                grade_obj = get_grade_id_from_value(grade_id)
+                if grade_obj:
+                    grade_id_str = str(grade_obj)
         
-        grade_id_str = str(grade_id_obj)
+        if not grade_id_str:
+            first_grade = db.grades.find_one({})
+            if first_grade:
+                grade_id_str = str(first_grade['_id'])
+            else:
+                return jsonify({'error': 'No grades available'}), 400
         
         existing = db.textbooks.find_one({'textbook_name': textbook_name, 'subject_id': subject_id})
         if existing:
@@ -1249,11 +1276,21 @@ def update_textbook(textbook_id):
         return jsonify({'error': 'Textbook name, subject, and grade are required'}), 400
     
     try:
-        grade_id_obj = get_grade_id_from_value(grade_id)
-        if grade_id_obj is None:
-            return jsonify({'error': 'No grades available'}), 400
+        grade_id_str = None
+        if grade_id:
+            if isinstance(grade_id, str) and len(grade_id) == 24:
+                grade_id_str = grade_id
+            else:
+                grade_obj = get_grade_id_from_value(grade_id)
+                if grade_obj:
+                    grade_id_str = str(grade_obj)
         
-        grade_id_str = str(grade_id_obj)
+        if not grade_id_str:
+            first_grade = db.grades.find_one({})
+            if first_grade:
+                grade_id_str = str(first_grade['_id'])
+            else:
+                return jsonify({'error': 'No grades available'}), 400
         
         result = db.textbooks.update_one(
             {'_id': ObjectId(textbook_id)},
@@ -1383,6 +1420,10 @@ def create_chapter():
         # Get grade_id from subject
         subject = db.subjects.find_one({'_id': ObjectId(subject_id)})
         grade_id = subject.get('grade_id') if subject else None
+        
+        # Ensure grade_id is string
+        if grade_id and isinstance(grade_id, ObjectId):
+            grade_id = str(grade_id)
         
         existing = db.chapters.find_one({'subject_id': subject_id, 'chapter_name': chapter_name})
         if existing:
@@ -1803,11 +1844,22 @@ def create_subject_group():
         return jsonify({'error': 'All fields are required'}), 400
     
     try:
-        grade_id_obj = get_grade_id_from_value(grade_id)
-        if grade_id_obj is None:
-            return jsonify({'error': 'No grades available'}), 400
+        # Get grade_id as string
+        grade_id_str = None
+        if grade_id:
+            if isinstance(grade_id, str) and len(grade_id) == 24:
+                grade_id_str = grade_id
+            else:
+                grade_obj = get_grade_id_from_value(grade_id)
+                if grade_obj:
+                    grade_id_str = str(grade_obj)
         
-        grade_id_str = str(grade_id_obj)
+        if not grade_id_str:
+            first_grade = db.grades.find_one({})
+            if first_grade:
+                grade_id_str = str(first_grade['_id'])
+            else:
+                return jsonify({'error': 'No grades available'}), 400
         
         existing = db.subject_groups.find_one({'group_code': group_code})
         if existing:
@@ -1840,11 +1892,21 @@ def update_subject_group(group_id):
     subject_id = data.get('subject_id')
     
     try:
-        grade_id_obj = get_grade_id_from_value(grade_id)
-        if grade_id_obj is None:
-            return jsonify({'error': 'No grades available'}), 400
+        grade_id_str = None
+        if grade_id:
+            if isinstance(grade_id, str) and len(grade_id) == 24:
+                grade_id_str = grade_id
+            else:
+                grade_obj = get_grade_id_from_value(grade_id)
+                if grade_obj:
+                    grade_id_str = str(grade_obj)
         
-        grade_id_str = str(grade_id_obj)
+        if not grade_id_str:
+            first_grade = db.grades.find_one({})
+            if first_grade:
+                grade_id_str = str(first_grade['_id'])
+            else:
+                return jsonify({'error': 'No grades available'}), 400
         
         result = db.subject_groups.update_one(
             {'_id': ObjectId(group_id)},
