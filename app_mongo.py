@@ -99,6 +99,13 @@ def convert_doc(doc):
         # Ensure 'id' field exists for frontend
         if 'id' not in result and 'id' in doc:
             result['id'] = doc['id']
+        # Ensure numeric IDs are preserved as ints
+        for key in ['id', 'grade_id', 'subject_id', 'cg_id', 'chapter_id', 'comp_id', 'textbook_id', 'domain_id', 'difficulty_id', 'knowledge_level_id', 'question_type_id']:
+            if key in result and result[key] is not None:
+                try:
+                    result[key] = int(result[key])
+                except:
+                    pass
         return result
     return doc
 
@@ -153,6 +160,7 @@ def init_db():
         db.subject_groups.create_index('group_code', unique=True)
         db.curricular_goals.create_index('id', unique=True)
         db.competencies.create_index('id', unique=True)
+        db.competencies.create_index([('cg_id', 1), ('comp_code', 1)], unique=True)
         
         # Cognitive Domains
         if db.cognitive_domains.count_documents({}) == 0:
@@ -286,6 +294,7 @@ def fix_foreign_keys():
                         {'_id': subject['_id']},
                         {'$set': {'grade_id': grade['id']}}
                     )
+                    print(f"  Fixed subject '{subject.get('subject_name')}' grade_id: {grade['id']}")
             elif isinstance(grade_id, str) and len(grade_id) == 24:
                 grade = db.grades.find_one({'_id': ObjectId(grade_id)})
                 if grade and 'id' in grade:
@@ -293,6 +302,7 @@ def fix_foreign_keys():
                         {'_id': subject['_id']},
                         {'$set': {'grade_id': grade['id']}}
                     )
+                    print(f"  Fixed subject '{subject.get('subject_name')}' grade_id: {grade['id']}")
     
     # Fix CG subject_id and chapter_id
     cgs = db.curricular_goals.find({})
@@ -305,6 +315,7 @@ def fix_foreign_keys():
                     {'_id': cg['_id']},
                     {'$set': {'subject_id': subject['id']}}
                 )
+                print(f"  Fixed CG '{cg.get('cg_code')}' subject_id: {subject['id']}")
         
         chapter_id = cg.get('chapter_id')
         if chapter_id and isinstance(chapter_id, ObjectId):
@@ -315,17 +326,40 @@ def fix_foreign_keys():
                     {'$set': {'chapter_id': chapter['id']}}
                 )
     
-    # Fix Competency cg_id
+    # Fix Competency cg_id - CRITICAL FIX
     comps = db.competencies.find({})
     for comp in comps:
         cg_id = comp.get('cg_id')
-        if cg_id and isinstance(cg_id, ObjectId):
-            cg = db.curricular_goals.find_one({'_id': cg_id})
-            if cg and 'id' in cg:
-                db.competencies.update_one(
-                    {'_id': comp['_id']},
-                    {'$set': {'cg_id': cg['id']}}
-                )
+        if cg_id:
+            # If cg_id is an ObjectId, convert to numeric
+            if isinstance(cg_id, ObjectId):
+                cg = db.curricular_goals.find_one({'_id': cg_id})
+                if cg and 'id' in cg:
+                    db.competencies.update_one(
+                        {'_id': comp['_id']},
+                        {'$set': {'cg_id': cg['id']}}
+                    )
+                    print(f"  Fixed competency '{comp.get('comp_code')}' cg_id: {cg['id']}")
+            # If cg_id is a string ObjectId
+            elif isinstance(cg_id, str) and len(cg_id) == 24:
+                cg = db.curricular_goals.find_one({'_id': ObjectId(cg_id)})
+                if cg and 'id' in cg:
+                    db.competencies.update_one(
+                        {'_id': comp['_id']},
+                        {'$set': {'cg_id': cg['id']}}
+                    )
+                    print(f"  Fixed competency '{comp.get('comp_code')}' cg_id: {cg['id']}")
+            # If cg_id is already numeric, ensure it's an int
+            elif isinstance(cg_id, (int, float)):
+                try:
+                    cg_id_int = int(cg_id)
+                    if cg_id != cg_id_int:
+                        db.competencies.update_one(
+                            {'_id': comp['_id']},
+                            {'$set': {'cg_id': cg_id_int}}
+                        )
+                except:
+                    pass
 
 with app.app_context():
     init_db()
@@ -765,7 +799,6 @@ def create_subject():
         return jsonify({'error': 'Subject name is required'}), 400
     
     try:
-        # Convert grade_id to int
         grade_id_int = None
         if isinstance(grade_id, int):
             grade_id_int = grade_id
@@ -783,12 +816,10 @@ def create_subject():
         else:
             return jsonify({'error': 'Invalid grade ID'}), 400
         
-        # Verify grade exists
         grade = db.grades.find_one({'id': grade_id_int})
         if not grade:
             return jsonify({'error': 'Grade not found'}), 400
         
-        # Check if subject already exists
         existing = db.subjects.find_one({
             'subject_name': name,
             'grade_id': grade_id_int
@@ -877,7 +908,7 @@ def get_page1_data():
         grades = list(db.grades.find({}))
         subjects = list(db.subjects.find({}))
         cgs = list(db.curricular_goals.find({}))
-        competencies = list(db.competencies.find({'status': 1}))
+        competencies = list(db.competencies.find({}))
         question_types = list(db.question_types.find({}))
         cognitive_domains = list(db.cognitive_domains.find({}))
         
@@ -893,7 +924,7 @@ def get_page1_data():
         subjects_by_grade = {}
         for s in subjects:
             grade_id = s.get('grade_id')
-            if grade_id:
+            if grade_id is not None:
                 grade_key = str(grade_id)
                 if grade_key not in subjects_by_grade:
                     subjects_by_grade[grade_key] = []
@@ -903,7 +934,7 @@ def get_page1_data():
         cgs_by_subject = {}
         for cg in cgs:
             subject_id = cg.get('subject_id')
-            if subject_id:
+            if subject_id is not None:
                 subject_key = str(subject_id)
                 if subject_key not in cgs_by_subject:
                     cgs_by_subject[subject_key] = []
@@ -913,7 +944,7 @@ def get_page1_data():
         comps_by_cg = {}
         for comp in competencies:
             cg_id = comp.get('cg_id')
-            if cg_id:
+            if cg_id is not None:
                 cg_key = str(cg_id)
                 if cg_key not in comps_by_cg:
                     comps_by_cg[cg_key] = []
@@ -1334,7 +1365,7 @@ def create_cg():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/cgs/<int:cg_id>', methods=['PUT'])
+@app.route('/api/cgs/<int:cg_id>', methods(['PUT'])
 def update_cg(cg_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -1443,21 +1474,12 @@ def create_competency():
         return jsonify({'error': 'Code and CG required'}), 400
     
     try:
-        # Convert cg_id to int
-        if isinstance(cg_id, str):
-            if cg_id.isdigit():
-                cg_id_int = int(cg_id)
-            else:
-                return jsonify({'error': 'Invalid CG ID format'}), 400
-        else:
-            cg_id_int = int(cg_id)
+        cg_id_int = int(cg_id)
         
-        # Verify CG exists
         cg = db.curricular_goals.find_one({'id': cg_id_int})
         if not cg:
             return jsonify({'error': 'Curricular Goal not found'}), 400
         
-        # Check if competency already exists for this CG
         existing = db.competencies.find_one({
             'comp_code': code,
             'cg_id': cg_id_int
