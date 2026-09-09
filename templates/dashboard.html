@@ -145,16 +145,19 @@
        
         .perm-badge {
             display: inline-block;
-            padding: 2px 5px;
-            border-radius: 10px;
+            padding: 2px 8px;
+            border-radius: 12px;
             font-size: 9px;
-            font-weight: 600;
+            font-weight: 700;
+            letter-spacing: 0.5px;
         }
-        .perm-re { background: #3498db; color: white; }
-        .perm-ra { background: #e67e22; color: white; }
-        .perm-rc { background: #f1c40f; color: #2c3e50; }
-        .perm-ap { background: #2ecc71; color: white; }
-        .perm-master { background: #9b59b6; color: white; }
+        .perm-re { background: rgba(52,152,219,0.25); color: #85c1e9; border: 1px solid rgba(52,152,219,0.3); }
+        .perm-ra { background: rgba(243,156,18,0.25); color: #f5b041; border: 1px solid rgba(243,156,18,0.3); }
+        .perm-rc { background: rgba(241,196,15,0.25); color: #f7dc6f; border: 1px solid rgba(241,196,15,0.3); }
+        .perm-ap { background: rgba(46,204,113,0.25); color: #82e0aa; border: 1px solid rgba(46,204,113,0.3); }
+        .perm-master { background: rgba(155,89,182,0.25); color: #c39bd3; border: 1px solid rgba(155,89,182,0.3); }
+        .perm-admin { background: rgba(231,76,60,0.25); color: #f1948a; border: 1px solid rgba(231,76,60,0.3); }
+        
         .logout-btn {
             color: white;
             background: rgba(231,76,60,0.8);
@@ -480,6 +483,7 @@
         .action-card.disabled {
             cursor: not-allowed;
             transform: none !important;
+            opacity: 0.75;
         }
         .action-card.disabled:hover {
             transform: none !important;
@@ -487,18 +491,18 @@
         }
         .action-card .lock-icon {
             position: absolute;
-            top: 8px;
-            right: 10px;
+            top: 10px;
+            right: 12px;
             color: #ff6b6b;
-            font-size: 16px;
+            font-size: 18px;
             opacity: 0.9;
             text-shadow: 0 0 10px rgba(255,0,0,0.3);
         }
         .action-card.disabled .action-title {
-            opacity: 0.7;
+            opacity: 0.6;
         }
         .action-card.disabled .action-desc {
-            opacity: 0.5;
+            opacity: 0.4;
         }
         .action-title {
             color: white;
@@ -510,18 +514,6 @@
         .action-desc {
             color: rgba(255,255,255,0.7);
             font-size: 11px;
-        }
-        .required-permission {
-            font-size: 9px;
-            color: #ff6b6b;
-            margin-top: 4px;
-            background: rgba(255,0,0,0.15);
-            padding: 2px 8px;
-            border-radius: 12px;
-            display: inline-block;
-            border: 1px solid rgba(255,0,0,0.15);
-            font-weight: 600;
-            letter-spacing: 0.5px;
         }
         
         .card-config {
@@ -570,20 +562,20 @@
 
         
         .action-card.disabled.card-config {
-            background: rgba(155, 89, 182, 0.25);
-            border-color: #9b59b6;
+            background: rgba(155, 89, 182, 0.15);
+            border-color: rgba(155, 89, 182, 0.3);
         }
         .action-card.disabled.card-upload {
-            background: rgba(52, 152, 219, 0.25);
-            border-color: #3498db;
+            background: rgba(52, 152, 219, 0.15);
+            border-color: rgba(52, 152, 219, 0.3);
         }
         .action-card.disabled.card-items {
-            background: rgba(243, 156, 18, 0.25);
-            border-color: #f39c12;
+            background: rgba(243, 156, 18, 0.15);
+            border-color: rgba(243, 156, 18, 0.3);
         }
         .action-card.disabled.card-list {
-            background: rgba(46, 204, 113, 0.25);
-            border-color: #2ecc71;
+            background: rgba(46, 204, 113, 0.15);
+            border-color: rgba(46, 204, 113, 0.3);
         }
 
         .activity-card {
@@ -893,7 +885,7 @@
             }
             .perm-badge {
                 font-size: 8px;
-                padding: 1px 4px;
+                padding: 1px 5px;
             }
             .logout-btn {
                 padding: 3px 8px;
@@ -1000,10 +992,10 @@
                     {% endif %}
                     {% if permissions %}
                     <div style="display: inline-flex; gap: 3px;">
-                        {% if permissions.RE %}<span class="perm-badge perm-re" title="Question Author">RE</span>{% endif %}
-                        {% if permissions.RA %}<span class="perm-badge perm-ra" title="Paper Builder">RA</span>{% endif %}
-                        {% if permissions.RC %}<span class="perm-badge perm-rc" title="Reviewer">RC</span>{% endif %}
-                        {% if permissions.AP %}<span class="perm-badge perm-ap" title="Approver">AP</span>{% endif %}
+                        {% if permissions.RE %}<span class="perm-badge perm-re" title="Question Author (RE)">RE</span>{% endif %}
+                        {% if permissions.RA %}<span class="perm-badge perm-ra" title="Paper Builder (RA)">RA</span>{% endif %}
+                        {% if permissions.RC %}<span class="perm-badge perm-rc" title="Reviewer (RC)">RC</span>{% endif %}
+                        {% if permissions.AP %}<span class="perm-badge perm-ap" title="Approver (AP)">AP</span>{% endif %}
                         {% if permissions.MASTER %}<span class="perm-badge perm-master" title="Master">MASTER</span>{% endif %}
                     </div>
                     {% endif %}
@@ -1054,9 +1046,6 @@
         const ITEMS_PER_PAGE = 2;
         const AUTO_SLIDE_INTERVAL = 5000;
 
-        
-        
-        
         const ALL_ACTION_CARDS = [
             { 
                 name: 'Q-CONFIG', 
@@ -1092,9 +1081,6 @@
             }
         ];
 
-        
-        
-        
         const roleDescriptions = {
             'writer': 'You are a <strong>Writer (RE)</strong>. You can create and edit your own questions. Click <strong>Q-UPLOAD</strong> to create new questions or <strong>Q-LIST</strong> to view your pending/rejected questions.',
             'master': 'You are a <strong>Master</strong>. You can review pending questions and configure the system. Click <strong>Q-CONFIG</strong> for system settings or <strong>Q-LIST</strong> to review questions.',
@@ -1104,13 +1090,9 @@
             'admin': 'You are an <strong>Administrator</strong>. You have full access to all features.!'
         };
 
-        
-        
-        
         function hasPermission(requiredPermission) {
             if (!requiredPermission) return true;
             if (currentUserRole === 'admin') return true;
-            
             
             if (requiredPermission === 'RE') {
                 return permissions.RE === true || permissions.RC === true || permissions.AP === true;
@@ -1119,9 +1101,6 @@
             return permissions[requiredPermission] === true;
         }
 
-        
-        
-        
         function updateDateTime() {
             const now = new Date();
             const dateString = now.toLocaleDateString('en-IN', { 
@@ -1163,35 +1142,13 @@
                 const isEnabled = hasPermission(card.requiredPermission);
                 const disabledClass = isEnabled ? '' : 'disabled';
                 
-                let permissionLabel = '';
-                let tooltipText = '';
-                
-                if (card.requiredPermission === 'MASTER') {
-                    permissionLabel = '🔒 MASTER';
-                    tooltipText = 'Requires MASTER permission';
-                } else if (card.requiredPermission === 'RE') {
-                    permissionLabel = '🔒 RE/RC/AP';
-                    tooltipText = 'Requires RE, RC, or AP permission';
-                } else if (card.requiredPermission === 'RA') {
-                    permissionLabel = '🔒 RA';
-                    tooltipText = 'Requires RA (Builder) permission';
-                } else if (card.requiredPermission === 'RC') {
-                    permissionLabel = '🔒 RC';
-                    tooltipText = 'Requires RC (Reviewer) permission';
-                } else if (card.requiredPermission === 'AP') {
-                    permissionLabel = '🔒 AP';
-                    tooltipText = 'Requires AP (Approver) permission';
-                }
-                
                 return `
                     <div class="action-card ${disabledClass} ${card.colorClass}" 
                          onclick="navigateTo('${card.href}', ${!isEnabled})"
-                         data-tooltip="${tooltipText}"
                          style="position: relative;">
                         ${!isEnabled ? '<i class="fas fa-lock lock-icon"></i>' : ''}
                         <div class="action-title">${card.name}</div>
                         <div class="action-desc">${card.description}</div>
-                        ${!isEnabled ? `<div class="required-permission">${permissionLabel}</div>` : ''}
                     </div>
                 `;
             }).join('');

@@ -692,7 +692,6 @@
         </div>
     </div>
 
-    <!-- Master Review Modal -->
     <div class="modal" id="masterReviewModal">
         <div class="modal-content">
             <div class="modal-header master"><h3><i class="fas fa-user-check"></i> Assign to Reviewer</h3><button class="close-btn" onclick="closeModal('masterReviewModal')">&times;</button></div>
@@ -717,7 +716,6 @@
         </div>
     </div>
 
-    <!-- Review Modal (Assign to Approver) -->
     <div class="modal" id="reviewModal">
         <div class="modal-content">
             <div class="modal-header review"><h3><i class="fas fa-user-check"></i> Assign to Approver</h3><button class="close-btn" onclick="closeModal('reviewModal')">&times;</button></div>
@@ -821,7 +819,6 @@
         </div>
     </div>
 
-    <!-- Image Modal -->
     <div class="image-modal" id="imageModal" onclick="closeImageModal()">
         <button class="image-modal-close" onclick="closeImageModal()">&times;</button>
         <img id="modalImage" alt="Full size image">
@@ -1375,7 +1372,6 @@
             }
         }
 
-        // Master Review - Assign to Reviewer
         function openMasterReview(id) {
             currentModalId = id;
             const q = allQuestions.find(x => x.id === id);
@@ -1423,7 +1419,6 @@
             }
         }
 
-        // Review - Assign to Approver
         function openReview(id) {
             currentModalId = id;
             const q = allQuestions.find(x => x.id === id);
@@ -1471,7 +1466,6 @@
             }
         }
 
-        // Approve
         function openApprove(id) {
             currentModalId = id;
             const q = allQuestions.find(x => x.id === id);
@@ -1507,7 +1501,6 @@
             }
         }
 
-        // Rework
         function openRework(id) {
             currentModalId = id;
             const q = allQuestions.find(x => x.id === id);
@@ -1550,7 +1543,6 @@
             }
         }
 
-        // Event Listeners
         document.getElementById('gradeFilter').addEventListener('change', function() {
             updateSubjectFilter();
             applyFilters();
@@ -1575,7 +1567,6 @@
             }
         });
 
-        // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('Review Dashboard initializing...');
             console.log('User Role:', currentUserRole);
