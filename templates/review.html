@@ -265,7 +265,6 @@
         .badge-rework { background: rgba(243,156,18,0.2); color: #f7dc6f; }
         .badge-source { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5); }
 
-        
         .question-content-html {
             max-width: 250px;
             max-height: 80px;
@@ -379,6 +378,101 @@
             color: rgba(255,255,255,0.7);
         }
 
+        /* Enhanced question/answer preview in modals */
+        .question-preview-full {
+            max-height: 200px;
+            overflow: auto;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #e8edf5;
+            padding: 4px 0;
+        }
+        .question-preview-full::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        .question-preview-full::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+        }
+        .question-preview-full::-webkit-scrollbar-thumb {
+            background: #3498db;
+            border-radius: 10px;
+        }
+        .question-preview-full p {
+            margin: 0 0 6px 0;
+            color: #e8edf5;
+        }
+        .question-preview-full strong {
+            color: #f39c12;
+        }
+        .question-preview-full em {
+            color: #2ecc71;
+        }
+        .question-preview-full ul, .question-preview-full ol {
+            padding-left: 20px;
+            margin: 4px 0;
+        }
+        .question-preview-full li {
+            color: #e8edf5;
+            margin-bottom: 2px;
+        }
+        .question-preview-full blockquote {
+            border-left: 3px solid #3498db;
+            padding-left: 12px;
+            margin: 4px 0;
+            color: rgba(255,255,255,0.7);
+        }
+        .question-preview-full code {
+            background: rgba(0,0,0,0.3);
+            padding: 1px 6px;
+            border-radius: 3px;
+            color: #e74c3c;
+            font-size: 12px;
+        }
+        .question-preview-full img {
+            max-width: 80px;
+            max-height: 80px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+        }
+        .question-preview-full h1, .question-preview-full h2, .question-preview-full h3 {
+            color: white;
+            font-size: 14px;
+            margin: 4px 0;
+        }
+        .question-preview-full table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 4px 0;
+        }
+        .question-preview-full th, .question-preview-full td {
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 4px 8px;
+            color: #e8edf5;
+        }
+        .readonly-box {
+            background: rgba(0,0,0,0.2);
+            padding: 10px 14px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            border-left: 3px solid #3498db;
+        }
+        .readonly-box .label {
+            font-weight: 600;
+            color: rgba(255,255,255,0.3);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .readonly-box .value {
+            color: #e8edf5;
+            font-size: 13px;
+            margin-top: 2px;
+        }
+
         .no-data {
             text-align: center;
             padding: 30px;
@@ -401,7 +495,7 @@
             background: #1a2a4a;
             border-radius: 10px;
             width: 92%;
-            max-width: 500px;
+            max-width: 550px;
             max-height: 90vh;
             overflow-y: auto;
             border: 1px solid rgba(255,255,255,0.08);
@@ -449,35 +543,7 @@
             gap: 8px;
             border-top: 1px solid rgba(255,255,255,0.06);
         }
-        .readonly-box {
-            background: rgba(0,0,0,0.2);
-            padding: 8px 12px;
-            border-radius: 6px;
-            margin-bottom: 10px;
-            border-left: 3px solid #3498db;
-        }
-        .readonly-box .label { font-weight: 600; color: rgba(255,255,255,0.3); font-size: 10px; text-transform: uppercase; }
-        .readonly-box .value { color: #e8edf5; font-size: 13px; margin-top: 2px; }
 
-        .question-preview-small {
-            max-height: 80px;
-            overflow: auto;
-            font-size: 12px;
-            line-height: 1.4;
-        }
-        .question-preview-small::-webkit-scrollbar {
-            width: 3px;
-        }
-        .question-preview-small::-webkit-scrollbar-track {
-            background: rgba(255,255,255,0.05);
-            border-radius: 10px;
-        }
-        .question-preview-small::-webkit-scrollbar-thumb {
-            background: #3498db;
-            border-radius: 10px;
-        }
-
-        
         .edit-modal-content {
             max-width: 600px;
         }
@@ -560,6 +626,7 @@
             th, td { padding: 4px 6px; font-size: 11px; }
             .question-content-html { max-width: 120px; max-height: 60px; }
             .answer-content-html { max-width: 100px; max-height: 50px; }
+            .modal-content { max-width: 95%; }
         }
         @media (max-width: 480px) {
             .stats-grid { grid-template-columns: 1fr 1fr; }
@@ -625,13 +692,19 @@
         </div>
     </div>
 
-    
+    <!-- Master Review Modal -->
     <div class="modal" id="masterReviewModal">
         <div class="modal-content">
             <div class="modal-header master"><h3><i class="fas fa-user-check"></i> Assign to Reviewer</h3><button class="close-btn" onclick="closeModal('masterReviewModal')">&times;</button></div>
             <div class="modal-body">
-                <div class="readonly-box"><div class="label">Question</div><div class="value question-preview-small" id="masterReviewQuestionDisplay"></div></div>
-                <div class="readonly-box" style="border-left-color:#8e44ad;"><div class="label">Subject Group</div><div class="value" id="masterReviewGroupDisplay">Loading...</div></div>
+                <div class="readonly-box">
+                    <div class="label">Question</div>
+                    <div class="value question-preview-full" id="masterReviewQuestionDisplay"></div>
+                </div>
+                <div class="readonly-box" style="border-left-color:#2ecc71;">
+                    <div class="label">Answer</div>
+                    <div class="value question-preview-full" id="masterReviewAnswerDisplay"></div>
+                </div>
                 <label>Reviewer *</label>
                 <select id="reviewerSelect" class="form-control"><option value="">-- Select Reviewer --</option></select>
                 <label>Comment</label>
@@ -644,13 +717,19 @@
         </div>
     </div>
 
-    
+    <!-- Review Modal (Assign to Approver) -->
     <div class="modal" id="reviewModal">
         <div class="modal-content">
             <div class="modal-header review"><h3><i class="fas fa-user-check"></i> Assign to Approver</h3><button class="close-btn" onclick="closeModal('reviewModal')">&times;</button></div>
             <div class="modal-body">
-                <div class="readonly-box"><div class="label">Question</div><div class="value question-preview-small" id="reviewQuestionDisplay"></div></div>
-                <div class="readonly-box" style="border-left-color:#00bcd4;"><div class="label">Subject Group</div><div class="value" id="reviewGroupDisplay">Loading...</div></div>
+                <div class="readonly-box">
+                    <div class="label">Question</div>
+                    <div class="value question-preview-full" id="reviewQuestionDisplay"></div>
+                </div>
+                <div class="readonly-box" style="border-left-color:#2ecc71;">
+                    <div class="label">Answer</div>
+                    <div class="value question-preview-full" id="reviewAnswerDisplay"></div>
+                </div>
                 <label>Approver *</label>
                 <select id="approverSelect" class="form-control"><option value="">-- Select Approver --</option></select>
                 <label>Comment</label>
@@ -663,13 +742,19 @@
         </div>
     </div>
 
-    
+    <!-- Approve Modal -->
     <div class="modal" id="approveModal">
         <div class="modal-content">
             <div class="modal-header approve"><h3><i class="fas fa-check-circle"></i> Approve</h3><button class="close-btn" onclick="closeModal('approveModal')">&times;</button></div>
             <div class="modal-body">
-                <div class="readonly-box"><div class="label">Question</div><div class="value question-preview-small" id="approveQuestionDisplay"></div></div>
-                <div class="readonly-box" style="border-left-color:#00bcd4;"><div class="label">Answer</div><div class="value question-preview-small" id="approveAnswerDisplay"></div></div>
+                <div class="readonly-box">
+                    <div class="label">Question</div>
+                    <div class="value question-preview-full" id="approveQuestionDisplay"></div>
+                </div>
+                <div class="readonly-box" style="border-left-color:#2ecc71;">
+                    <div class="label">Answer</div>
+                    <div class="value question-preview-full" id="approveAnswerDisplay"></div>
+                </div>
                 <label>Comment</label>
                 <textarea id="approveComment" rows="2" placeholder="Optional..."></textarea>
             </div>
@@ -680,14 +765,20 @@
         </div>
     </div>
 
-    
+    <!-- Rework Modal -->
     <div class="modal" id="reworkModal">
         <div class="modal-content">
             <div class="modal-header rework"><h3><i class="fas fa-redo"></i> Rework</h3><button class="close-btn" onclick="closeModal('reworkModal')">&times;</button></div>
             <div class="modal-body">
                 <div id="reworkReasonDisplay" style="background:rgba(243,156,18,0.1);padding:8px 12px;border-radius:6px;margin-bottom:10px;border-left:3px solid #f39c12;font-size:12px;display:none;"></div>
-                <div class="readonly-box"><div class="label">Question</div><div class="value question-preview-small" id="reworkQuestionDisplay"></div></div>
-                <div class="readonly-box" style="border-left-color:#00bcd4;"><div class="label">Answer</div><div class="value question-preview-small" id="reworkAnswerDisplay"></div></div>
+                <div class="readonly-box">
+                    <div class="label">Question</div>
+                    <div class="value question-preview-full" id="reworkQuestionDisplay"></div>
+                </div>
+                <div class="readonly-box" style="border-left-color:#2ecc71;">
+                    <div class="label">Answer</div>
+                    <div class="value question-preview-full" id="reworkAnswerDisplay"></div>
+                </div>
                 <label>Rework Comment *</label>
                 <textarea id="reworkComment" rows="2" placeholder="Explain why..."></textarea>
             </div>
@@ -698,7 +789,7 @@
         </div>
     </div>
 
-    
+    <!-- Edit Modal -->
     <div class="modal" id="editModal">
         <div class="modal-content edit-modal-content">
             <div class="modal-header" style="background: linear-gradient(135deg, #b9770e, #f39c12);">
@@ -730,15 +821,13 @@
         </div>
     </div>
 
-    
+    <!-- Image Modal -->
     <div class="image-modal" id="imageModal" onclick="closeImageModal()">
         <button class="image-modal-close" onclick="closeImageModal()">&times;</button>
         <img id="modalImage" alt="Full size image">
     </div>
 
     <script>
-        
-        
         
         const currentUserId = {{ user_id|default(0) }};
         const currentUserRole = '{{ session.get("user_role", "writer") }}';
@@ -753,9 +842,6 @@
             MASTER: {{ permissions.MASTER|default('false')|lower }}
         };
 
-        
-        
-        
         let allQuestions = [];
         let filteredQuestions = [];
         let allGrades = [];
@@ -766,9 +852,6 @@
         let activeTab = 0;
         let isFetching = false;
 
-        
-        
-        
         function escapeHtml(text) { 
             if (!text) return ''; 
             const d = document.createElement('div'); 
@@ -827,15 +910,12 @@
             document.getElementById('imageModal').style.display = 'none';
         }
 
-        
-        
-        
         async function loadReviewers() {
             try { 
                 const r = await fetch('/api/reviewers'); 
                 const d = await r.json(); 
                 reviewers = d.reviewers || []; 
-                console.log(' Loaded reviewers:', reviewers.length);
+                console.log('Loaded reviewers:', reviewers.length);
             } catch(e) { console.error('Error loading reviewers:', e); }
         }
         
@@ -844,7 +924,7 @@
                 const r = await fetch('/api/approvers'); 
                 const d = await r.json(); 
                 approvers = d.approvers || []; 
-                console.log(' Loaded approvers:', approvers.length);
+                console.log('Loaded approvers:', approvers.length);
             } catch(e) { console.error('Error loading approvers:', e); }
         }
         
@@ -930,15 +1010,12 @@
             sel.innerHTML = opts;
         }
 
-        
-        
-        
         async function fetchQuestions() {
             if (isFetching) return;
             isFetching = true;
             
             try {
-                console.log(' Fetching review questions...');
+                console.log('Fetching review questions...');
                 const r = await fetch('/api/review-questions');
                 const d = await r.json();
                 
@@ -951,7 +1028,7 @@
                 }
                 
                 allQuestions = d.questions || [];
-                console.log(` Loaded ${allQuestions.length} questions`);
+                console.log(`Loaded ${allQuestions.length} questions`);
                 
                 updatePermissionNote(d);
                 updateStats();
@@ -976,12 +1053,12 @@
             document.getElementById('userRoleDisplay').textContent = role.toUpperCase();
             
             let msg = 'Welcome to Review Dashboard. ';
-            if (role === 'admin') msg = ' Admin – Full access. You can see and manage all questions.';
-            else if (role === 'master' || permissions.MASTER) msg = ' Master – Assign questions to reviewers.';
-            else if (role === 'reviewer' || permissions.RC) msg = ' Reviewer – Review assigned questions.';
-            else if (role === 'approver' || permissions.AP) msg = ' Approver – Approve reviewed questions.';
-            else if (role === 'builder' || permissions.RA) msg = ' Builder – View approved questions.';
-            else if (role === 'writer' || permissions.RE) msg = ' Writer – Create & edit own questions.';
+            if (role === 'admin') msg = 'Admin – Full access. You can see and manage all questions.';
+            else if (role === 'master' || permissions.MASTER) msg = 'Master – Assign questions to reviewers.';
+            else if (role === 'reviewer' || permissions.RC) msg = 'Reviewer – Review assigned questions.';
+            else if (role === 'approver' || permissions.AP) msg = 'Approver – Approve reviewed questions.';
+            else if (role === 'builder' || permissions.RA) msg = 'Builder – View approved questions.';
+            else if (role === 'writer' || permissions.RE) msg = 'Writer – Create & edit own questions.';
             note.innerHTML = msg;
         }
 
@@ -999,9 +1076,6 @@
             document.getElementById('approvedCount').textContent = approved;
         }
 
-        
-        
-        
         function applyFilters() {
             const gradeVal = document.getElementById('gradeFilter').value;
             const subjectVal = document.getElementById('subjectFilter').value;
@@ -1009,15 +1083,9 @@
             const search = document.getElementById('searchInput').value.toLowerCase().trim();
 
             filteredQuestions = allQuestions.filter(q => {
-                
                 if (gradeVal && q.grade_id != parseInt(gradeVal)) return false;
-                
-                
                 if (subjectVal && q.subject_id != parseInt(subjectVal)) return false;
-                
-                
                 if (statusVal && (q.status||'unassigned') !== statusVal) return false;
-                
                 
                 if (search) {
                     const qText = (q.question_text || q.question || '').toLowerCase();
@@ -1039,7 +1107,7 @@
                 return true;
             });
 
-            console.log(` Filtered: ${filteredQuestions.length} questions (from ${allQuestions.length} total)`);
+            console.log(`Filtered: ${filteredQuestions.length} questions (from ${allQuestions.length} total)`);
             renderTabs();
         }
 
@@ -1053,9 +1121,6 @@
             applyFilters();
         }
 
-        
-        
-        
         function renderTabs() {
             const isAdmin = currentUserRole === 'admin';
             const isMaster = permissions.MASTER || currentUserRole === 'master' || isAdmin;
@@ -1096,7 +1161,6 @@
                 ];
             }
 
-            
             const header = document.getElementById('tabHeader');
             let headerHtml = '';
             tabs.forEach((tab, index) => {
@@ -1111,7 +1175,6 @@
             });
             header.innerHTML = headerHtml;
 
-            
             const content = document.getElementById('tabContent');
             let contentHtml = '';
             tabs.forEach((tab, index) => {
@@ -1150,9 +1213,6 @@
             content.innerHTML = contentHtml;
         }
 
-        
-        
-        
         function renderTableRow(q) {
             const status = q.status || 'unassigned';
             const subject = allSubjects.find(s => s.id == q.subject_id);
@@ -1179,17 +1239,14 @@
             let actions = '';
             if (canEdit) actions += `<button class="action-icon icon-edit" onclick="openEdit(${q.id})" title="Edit"><i class="fas fa-edit"></i></button>`;
             if (canMasterReview) actions += `<button class="action-icon icon-assign" onclick="openMasterReview(${q.id})" title="Assign to Reviewer"><i class="fas fa-check"></i></button>`;
-            if (canReview) actions += `<button class="action-icon icon-assign" onclick="openReview(${q.id})" title="Assign toApprover"><i class="fas fa-check"></i></button>`;
-            if (canApprove) actions += `<button class="action-icon icon-approve" onclick="openApprove(${q.id})" title="Approved"><i class="fas fa-check"></i></button>`;
+            if (canReview) actions += `<button class="action-icon icon-assign" onclick="openReview(${q.id})" title="Assign to Approver"><i class="fas fa-check"></i></button>`;
+            if (canApprove) actions += `<button class="action-icon icon-approve" onclick="openApprove(${q.id})" title="Approve"><i class="fas fa-check"></i></button>`;
             if (canRework) actions += `<button class="action-icon icon-rework" onclick="openRework(${q.id})" title="Rework"><i class="fas fa-redo"></i></button>`;
             if (canDelete) actions += `<button class="action-icon icon-delete" onclick="deleteQuestion(${q.id})" title="Delete"><i class="fas fa-trash"></i></button>`;
             if (!actions) actions = `<span style="color:rgba(255,255,255,0.2);font-size:10px;">No actions</span>`;
 
             const questionText = q.question_text || q.question || '';
             const answerText = q.answer || '';
-            
-            const questionPlain = getPlainText(questionText);
-            const answerPlain = getPlainText(answerText);
             
             const questionDisplay = questionText ? 
                 `<div class="question-content-html">${renderHtmlContent(questionText)}</div>` : 
@@ -1202,8 +1259,8 @@
             return `
                 <tr>
                     <td style="color:rgba(255,255,255,0.2);font-size:10px;">${q.id}</td>
-                    <td title="${escapeHtml(questionPlain)}">${questionDisplay}</td>
-                    <td title="${escapeHtml(answerPlain)}">${answerDisplay}</td>
+                    <td title="${escapeHtml(getPlainText(questionText))}">${questionDisplay}</td>
+                    <td title="${escapeHtml(getPlainText(answerText))}">${answerDisplay}</td>
                     <td><span class="badge badge-grade">${escapeHtml(gradeName)}</span></td>
                     <td><span class="badge badge-subject">${escapeHtml(subjectName)}</span></td>
                     <td><span class="badge ${getStatusClass(status)}">${getStatusText(status)}</span></td>
@@ -1218,9 +1275,6 @@
             renderTabs();
         }
 
-        
-        
-        
         async function deleteQuestion(id) {
             const result = await Swal.fire({
                 title: 'Delete Question?',
@@ -1246,14 +1300,10 @@
             }
         }
 
-        
-        
-        
         async function openEdit(id) {
             currentModalId = id;
             
             try {
-                
                 const r = await fetch(`/api/question/${id}`);
                 const d = await r.json();
                 
@@ -1263,7 +1313,6 @@
                 }
                 
                 const q = d.question;
-                
                 
                 document.getElementById('editQuestionText').value = getPlainText(q.question_text || '');
                 document.getElementById('editAnswerText').value = getPlainText(q.answer || '');
@@ -1326,19 +1375,17 @@
             }
         }
 
-        
-        
-        
+        // Master Review - Assign to Reviewer
         function openMasterReview(id) {
             currentModalId = id;
             const q = allQuestions.find(x => x.id === id);
             if (q) {
                 const questionText = q.question_text || q.question || '';
+                const answerText = q.answer || '';
                 document.getElementById('masterReviewQuestionDisplay').innerHTML = renderHtmlContent(questionText);
+                document.getElementById('masterReviewAnswerDisplay').innerHTML = renderHtmlContent(answerText);
                 
                 let group = q.subject_group || q.user_group || currentSubjectGroup || 'No group';
-                document.getElementById('masterReviewGroupDisplay').textContent = group;
-                
                 populateReviewerSelect(group);
             }
             document.getElementById('masterReviewComment').value = '';
@@ -1376,19 +1423,17 @@
             }
         }
 
-        
-        
-        
+        // Review - Assign to Approver
         function openReview(id) {
             currentModalId = id;
             const q = allQuestions.find(x => x.id === id);
             if (q) {
                 const questionText = q.question_text || q.question || '';
+                const answerText = q.answer || '';
                 document.getElementById('reviewQuestionDisplay').innerHTML = renderHtmlContent(questionText);
+                document.getElementById('reviewAnswerDisplay').innerHTML = renderHtmlContent(answerText);
                 
                 let group = q.subject_group || q.user_group || currentSubjectGroup || 'No group';
-                document.getElementById('reviewGroupDisplay').textContent = group;
-                
                 populateApproverSelect(group);
             }
             document.getElementById('reviewComment').value = '';
@@ -1426,9 +1471,7 @@
             }
         }
 
-        
-        
-        
+        // Approve
         function openApprove(id) {
             currentModalId = id;
             const q = allQuestions.find(x => x.id === id);
@@ -1464,9 +1507,7 @@
             }
         }
 
-        
-        
-        
+        // Rework
         function openRework(id) {
             currentModalId = id;
             const q = allQuestions.find(x => x.id === id);
@@ -1509,9 +1550,7 @@
             }
         }
 
-        
-        
-        
+        // Event Listeners
         document.getElementById('gradeFilter').addEventListener('change', function() {
             updateSubjectFilter();
             applyFilters();
@@ -1524,25 +1563,21 @@
             }
         });
 
-        
         document.querySelectorAll('.modal').forEach(m => {
             m.addEventListener('click', function(e) {
                 if (e.target === this) this.classList.remove('active');
             });
         });
 
-        
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeImageModal();
             }
         });
 
-        
-        
-        
+        // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log(' Review Dashboard initializing...');
+            console.log('Review Dashboard initializing...');
             console.log('User Role:', currentUserRole);
             console.log('Permissions:', permissions);
             console.log('Subject Group:', currentSubjectGroup);
@@ -1552,7 +1587,6 @@
             await loadReviewers();
             await loadApprovers();
             await fetchQuestions();
-            
             
             setInterval(fetchQuestions, 60000);
         });
