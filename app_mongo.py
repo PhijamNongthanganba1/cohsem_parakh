@@ -1387,7 +1387,7 @@ def delete_chapter(chapter_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/subjects/<int:subject_id>/chapters', methods(['GET'])
+@app.route('/api/subjects/<int:subject_id>/chapters', methods=['GET'])
 def get_subject_chapters(subject_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
