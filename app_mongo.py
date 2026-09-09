@@ -349,17 +349,6 @@ def fix_foreign_keys():
                         {'$set': {'cg_id': cg['id']}}
                     )
                     print(f"  Fixed competency '{comp.get('comp_code')}' cg_id: {cg['id']}")
-            # If cg_id is already numeric, ensure it's an int
-            elif isinstance(cg_id, (int, float)):
-                try:
-                    cg_id_int = int(cg_id)
-                    if cg_id != cg_id_int:
-                        db.competencies.update_one(
-                            {'_id': comp['_id']},
-                            {'$set': {'cg_id': cg_id_int}}
-                        )
-                except:
-                    pass
 
 with app.app_context():
     init_db()
