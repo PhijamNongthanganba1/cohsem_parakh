@@ -783,8 +783,8 @@
             <div class="modal-body">
                 <form id="chapterForm">
                     <input type="hidden" id="chapterId"><input type="hidden" id="chapterSubjectId">
-                    <div class="form-group"><label>Chapter Name *</label><input type="text" id="chapterName" class="form-control" placeholder="" required></div>
-                    <div class="form-group"><label>Chapter Number (Optional)</label><input type="number" id="chapterNumber" class="form-control" placeholder="" min="0"></div>
+                    <div class="form-group"><label>Chapter Name *</label><input type="text" id="chapterName" class="form-control" required></div>
+                    <div class="form-group"><label>Chapter Number (Optional)</label><input type="number" id="chapterNumber" class="form-control" min="0"></div>
                     <div class="form-group"><label>Textbook *</label>
                         <select id="chapterTextbook" class="form-control" required>
                             <option value="">Select Textbook</option>
@@ -813,29 +813,29 @@
                         <div class="radio-group" id="bookTypeGroup">
                             <label class="active-textbook" id="textbookLabel">
                                 <input type="radio" name="bookType" value="textbook" checked onchange="toggleBookType()">
-                                <i class="" style="color: #27ae60;"></i> Textbook
+                                Textbook
                             </label>
                             <label id="referenceLabel">
                                 <input type="radio" name="bookType" value="reference" onchange="toggleBookType()">
-                                <i class="" style="color: #8e44ad;"></i> Reference Book
+                                Reference Book
                             </label>
                         </div>
                     </div>
                     
                     <div class="form-group">
                         <label>Book Name *</label>
-                        <input type="text" id="textbookName" class="form-control" placeholder="" required>
+                        <input type="text" id="textbookName" class="form-control" required>
                     </div>
                     
                     <div class="form-group">
                         <label>Author / Publisher</label>
-                        <input type="text" id="textbookPublisher" class="form-control" placeholder="">
+                        <input type="text" id="textbookPublisher" class="form-control">
                     </div>
                     
                     <div id="bookTypeInfo" style="background: rgba(52,152,219,0.1); padding: 12px; border-radius: 8px; margin-top: 10px;">
                         <small style="color: #3498db;">
                             <i class="fas fa-info-circle"></i> 
-                            <span id="bookTypeDescription">Related information about the selected book type will appear here.</span>
+                            <span id="bookTypeDescription">Textbook is the main curriculum book.</span>
                         </small>
                     </div>
                 </form>
@@ -911,8 +911,1673 @@
     </div>
 
     <script>
-        // ... (JavaScript content from your file)
-        // The JavaScript is already in your file, I'm showing the structure
+        let grades = [], subjects = [], textbooks = [], chapters = [], cgs = [], competencies = [];
+        let currentStage = 1;
+        let currentSelections = { 
+            grade: null, 
+            subject: null, 
+            textbook: null,
+            chapter: null, 
+            cg: null, 
+            competency: null 
+        };
+        let userRole = '{{ session.get("user_role", "writer") }}';
+        let isAdmin = userRole === 'admin';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded');
+            loadStats();
+            loadGrades();
+            loadUsers();
+            loadGroups();
+            loadSubjectGroupsForSelect();
+            setupPermissions();
+        });
+
+        function setupPermissions() {
+            document.getElementById('readOnlyNotice').style.display = isAdmin ? 'none' : 'flex';
+            if (!isAdmin) {
+                ['addGradeBtn', 'addSubjectBtn', 'addChapterBtn', 'addCGBtn', 'addCompetencyBtn', 'createGroupBtn', 'addUserBtn']
+                    .forEach(id => { const btn = document.getElementById(id); if(btn) btn.disabled = true; });
+                ['saveItemBtn', 'saveGroupBtn', 'saveUserBtn', 'changePasswordBtn']
+                    .forEach(id => { const btn = document.getElementById(id); if(btn) btn.disabled = true; });
+            }
+        }
+
+        function updateRoleDescription() {
+            const role = document.getElementById('role').value;
+            const desc = {
+                'writer': 'Writers (RE) can create and edit their own questions Under Review. They can also rework rejected questions.',
+                'master': 'Masters can review questions under review and mark them as "Master Reviewed" before sending to Reviewers.',
+                'reviewer': 'Reviewers (RC) can review master-reviewed questions and mark them as "Reviewed Completed".',
+                'approver': 'Approvers (AP) can approve or reject Reviewed Completed questions. They cannot edit questions.',
+                'builder': 'Builders (RA) can build question papers from approved questions. They cannot edit or review.',
+                'admin': 'Admins have full access to all features including user management, configuration, and all question operations.'
+            };
+            document.getElementById('permissionDescription').textContent = desc[role] || 'Select a role to see permission details.';
+        }
+
+        function updateSelectionSummary() {
+            document.getElementById('selGrade').textContent = currentSelections.grade ? currentSelections.grade.name : 'None';
+            document.getElementById('selSubject').textContent = currentSelections.subject ? currentSelections.subject.name : 'None';
+            document.getElementById('selTextbook').textContent = currentSelections.textbook ? currentSelections.textbook.name : 'None';
+            document.getElementById('selChapter').textContent = currentSelections.chapter ? currentSelections.chapter.name : 'None';
+            document.getElementById('selCG').textContent = currentSelections.cg ? currentSelections.cg.code : 'None';
+            document.getElementById('selCompetency').textContent = currentSelections.competency ? currentSelections.competency.code : 'None';
+        }
+
+        async function loadStats() {
+            try {
+                const [users, groups, questions] = await Promise.all([
+                    fetch('/api/users').then(r => r.json()),
+                    fetch('/api/subject-groups').then(r => r.json()),
+                    fetch('/api/review-questions').then(r => r.json())
+                ]);
+                document.getElementById('totalUsers').textContent = users.users?.length || 0;
+                document.getElementById('totalGroups').textContent = groups.groups?.length || 0;
+                document.getElementById('totalQuestions').textContent = questions.questions?.length || 0;
+                document.getElementById('underReviewQuestions').textContent = questions.questions?.filter(q => q.status === 'under_review').length || 0;
+            } catch(e) { console.error('Error loading stats:', e); }
+        }
+
+        function switchTab(tabName, event) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            if(event) event.target.classList.add('active');
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            if(tabName === 'metadata') { loadGrades(); }
+            else if(tabName === 'groups') { loadGroups(); }
+            else if(tabName === 'users') { loadUsers(); loadSubjectGroupsForSelect(); }
+        }
+
+        function navigateToStage(stage) {
+            if(stage === 1) { goToStage(1); return; }
+            if(stage === 2 && currentSelections.grade) { goToStage(2); loadSubjects(currentSelections.grade.id); return; }
+            if(stage === 3 && currentSelections.subject) { goToStage(3); loadTextbooks(currentSelections.subject.id); return; }
+            if(stage === 4 && currentSelections.textbook) { goToStage(4); loadChapters(currentSelections.textbook.id); return; }
+            if(stage === 5 && currentSelections.subject) { goToStage(5); loadCGs(currentSelections.subject.id); return; }
+            if(stage === 6 && currentSelections.cg) { goToStage(6); loadCompetencies(currentSelections.cg.id); return; }
+            Swal.fire({ icon: 'info', title: 'Cannot Navigate', text: 'Please complete previous steps first', timer: 2000, showConfirmButton: false });
+        }
+
+        function goToStage(stage) {
+            currentStage = stage;
+            for(let i=1; i<=6; i++) document.getElementById(`stage${i}`).style.display = 'none';
+            document.getElementById(`stage${stage}`).style.display = 'block';
+            updateTracker();
+            updateProgress();
+            updateSelectionSummary();
+        }
+
+        function updateTracker() {
+            document.getElementById('tracker-grade-value').textContent = currentSelections.grade ? currentSelections.grade.name : 'Select Grade';
+            document.getElementById('tracker-subject-value').textContent = currentSelections.subject ? currentSelections.subject.name : 'Select Subject';
+            document.getElementById('tracker-textbook-value').textContent = currentSelections.textbook ? currentSelections.textbook.name : 'Select Textbook';
+            document.getElementById('tracker-chapter-value').textContent = currentSelections.chapter ? currentSelections.chapter.name : 'Select Chapter';
+            document.getElementById('tracker-cg-value').textContent = currentSelections.cg ? currentSelections.cg.code : 'Select CG';
+            document.getElementById('tracker-competency-value').textContent = currentSelections.competency ? currentSelections.competency.code : 'Select Competencies';
+            
+            ['grade', 'subject', 'textbook', 'chapter', 'cg', 'competency'].forEach((step, idx) => {
+                const el = document.getElementById(`tracker-${step}`);
+                if(el) {
+                    el.classList.remove('active', 'completed');
+                    if(idx + 1 < currentStage) el.classList.add('completed');
+                    else if(idx + 1 === currentStage) el.classList.add('active');
+                }
+            });
+        }
+
+        function updateProgress() {
+            document.getElementById('progressFill').style.width = ((currentStage - 1) / 5 * 100) + '%';
+            document.getElementById('progressText').textContent = `Step ${currentStage} of 6`;
+        }
+
+        function completeSelection() {
+            Swal.fire({
+                icon: 'success',
+                title: 'Selection Complete!',
+                html: `
+                    <div style="text-align: left; padding: 10px;">
+                        <p><strong>Grade:</strong> ${currentSelections.grade?.name || 'None'}</p>
+                        <p><strong>Subject:</strong> ${currentSelections.subject?.name || 'None'}</p>
+                        <p><strong>Textbook:</strong> ${currentSelections.textbook?.name || 'None'}</p>
+                        <p><strong>Chapter:</strong> ${currentSelections.chapter?.name || 'None'}</p>
+                        <p><strong>Curricular Goal:</strong> ${currentSelections.cg?.code || 'None'}</p>
+                        <p><strong>Competencies:</strong> ${currentSelections.competency?.code || 'None'}</p>
+                    </div>
+                `,
+                confirmButtonText: 'OK'
+            });
+        }
+
+        async function loadGrades() {
+            try {
+                const response = await fetch('/api/grades');
+                const data = await response.json();
+                grades = data.grades || [];
+                const container = document.getElementById('gradeGrid');
+                if(grades.length === 0) {
+                    container.innerHTML = '<div class="no-data">No grades found. Click "Add New Grade" to create one.</div>';
+                    return;
+                }
+                container.innerHTML = grades.map(g => `
+                    <div class="card" onclick="selectGrade('${g.id}', '${g.grade_name}')">
+                        <div class="card-icon"><i class="fas fa-layer-group"></i></div>
+                        <h3>${g.grade_name}</h3>
+                        <div class="metadata-actions">
+                            ${isAdmin ? `
+                                <button class="action-btn action-edit" onclick="event.stopPropagation(); openEditModal('grade', '${g.id}', '${g.grade_name}')"><i class="fas fa-edit"></i></button>
+                                <button class="action-btn action-delete" onclick="event.stopPropagation(); deleteGrade('${g.id}')"><i class="fas fa-trash"></i></button>
+                            ` : `<button class="action-btn action-view" onclick="event.stopPropagation(); showViewOnly('grade', '${g.grade_name}')"><i class="fas fa-eye"></i></button>`}
+                        </div>
+                    </div>
+                `).join('');
+            } catch(e) { console.error('Error loading grades:', e); }
+        }
+
+        function selectGrade(id, name) {
+            currentSelections.grade = { id: id.toString(), name: name };
+            currentSelections.subject = null;
+            currentSelections.textbook = null;
+            currentSelections.chapter = null;
+            currentSelections.cg = null;
+            currentSelections.competency = null;
+            document.getElementById('selectedGradeName').textContent = name;
+            loadSubjects(id.toString());
+            goToStage(2);
+            updateSelectionSummary();
+        }
+
+        async function deleteGrade(id) {
+            if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can delete grades', 'error');
+            const result = await Swal.fire({ 
+                title: 'Delete Grade?', 
+                text: 'This will delete the grade..!', 
+                icon: 'warning', 
+                showCancelButton: true, 
+                confirmButtonColor: '#e74c3c', 
+                confirmButtonText: 'Delete' 
+            });
+            if(result.isConfirmed) {
+                try {
+                    const response = await fetch(`/api/grades/${id}`, { method: 'DELETE' });
+                    const data = await response.json();
+                    if(data.success) {
+                        Swal.fire('Deleted', 'Grade deleted successfully', 'success');
+                        loadGrades();
+                        loadStats();
+                        if(currentSelections.grade?.id === id) {
+                            currentSelections.grade = null;
+                            currentSelections.subject = null;
+                            currentSelections.textbook = null;
+                            currentSelections.chapter = null;
+                            currentSelections.cg = null;
+                            currentSelections.competency = null;
+                            goToStage(1);
+                            updateSelectionSummary();
+                        }
+                    } else {
+                        Swal.fire('Error', data.error || 'Failed to delete', 'error');
+                    }
+                } catch(e) { 
+                    console.error('Error:', e); 
+                    Swal.fire('Error', 'Failed to delete', 'error'); 
+                }
+            }
+        }
+
+        async function loadSubjects(gradeId) {
+            try {
+                const gradeIdStr = gradeId.toString();
+                console.log('🔍 Loading subjects for grade ID:', gradeIdStr);
+                
+                const response = await fetch('/api/page1-data');
+                const data = await response.json();
+                console.log('📦 API response received');
+                console.log('📚 Total subjects in response:', data.subjects?.length || 0);
+                
+                if (data.subjects && data.subjects.length > 0) {
+                    console.log('📋 All subjects:', data.subjects.map(s => ({
+                        id: s.id,
+                        name: s.subject_name,
+                        grade_id: s.grade_id,
+                        grade_id_type: typeof s.grade_id
+                    })));
+                }
+                
+                subjects = data.subjects?.filter(s => {
+                    const sGradeId = s.grade_id ? s.grade_id.toString() : '';
+                    const match = sGradeId === gradeIdStr;
+                    if (match) {
+                        console.log('✅ Matched subject:', s.subject_name, 'grade_id:', sGradeId);
+                    }
+                    return match;
+                }) || [];
+                
+                console.log(`🎯 Filtered ${subjects.length} subjects for grade ${gradeIdStr}`);
+                
+                const container = document.getElementById('subjectGrid');
+                if(subjects.length === 0) {
+                    container.innerHTML = `
+                        <div class="no-data" style="grid-column: span 3; padding: 40px;">
+                            <i class="fas fa-book" style="font-size: 40px; display: block; margin-bottom: 10px; opacity: 0.3;"></i>
+                            <h3 style="color: white; margin-bottom: 10px;">No Subjects Found</h3>
+                            <p style="color: rgba(255,255,255,0.5);">No subjects found for this grade.</p>
+                            <p style="color: rgba(255,255,255,0.3); font-size: 12px;">Grade ID: ${gradeIdStr}</p>
+                            ${isAdmin ? `<br><button class="btn btn-success" onclick="openAddModal('subject')"><i class="fas fa-plus"></i> Add New Subject</button>` : ''}
+                            <div style="margin-top: 10px;">
+                                <button class="btn btn-primary" onclick="loadSubjects('${gradeIdStr}')"><i class="fas fa-redo"></i> Refresh</button>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+                container.innerHTML = subjects.map(s => `
+                    <div class="card" onclick="selectSubject('${s.id}', '${s.subject_name}')">
+                        <div class="card-icon"><i class="fas fa-book"></i></div>
+                        <h3>${s.subject_name}</h3>
+                        <p style="font-size: 10px; color: rgba(255,255,255,0.3);">ID: ${s.id}</p>
+                        <div class="metadata-actions">
+                            ${isAdmin ? `
+                                <button class="action-btn action-edit" onclick="event.stopPropagation(); openEditModal('subject', '${s.id}', '${s.subject_name}', '${s.grade_id}')"><i class="fas fa-edit"></i></button>
+                                <button class="action-btn action-delete" onclick="event.stopPropagation(); deleteSubject('${s.id}')"><i class="fas fa-trash"></i></button>
+                            ` : `<button class="action-btn action-view" onclick="event.stopPropagation(); showViewOnly('subject', '${s.subject_name}')"><i class="fas fa-eye"></i></button>`}
+                        </div>
+                    </div>
+                `).join('');
+            } catch(e) { 
+                console.error('❌ Error loading subjects:', e); 
+                document.getElementById('subjectGrid').innerHTML = `
+                    <div class="error-message" style="grid-column: span 3;">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <strong>Error:</strong> ${e.message}
+                        <div style="margin-top: 10px;">
+                            <button class="btn btn-primary" onclick="loadSubjects('${gradeId}')"><i class="fas fa-redo"></i> Retry</button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function selectSubject(id, name) {
+            currentSelections.subject = { id: id.toString(), name: name };
+            currentSelections.textbook = null;
+            currentSelections.chapter = null;
+            currentSelections.cg = null;
+            currentSelections.competency = null;
+            document.getElementById('selectedTextbookSubjectName').textContent = name;
+            document.getElementById('selectedSubjectNameCG').textContent = name;
+            document.getElementById('selectedChapterSubjectName').textContent = name;
+            loadTextbooks(id);
+            goToStage(3);
+            updateSelectionSummary();
+        }
+
+        async function deleteSubject(id) {
+            if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can delete subjects', 'error');
+            const result = await Swal.fire({ 
+                title: 'Delete Subject?', 
+                text: 'This will delete the subject and all associated data. This cannot be undone!', 
+                icon: 'warning', 
+                showCancelButton: true, 
+                confirmButtonColor: '#e74c3c', 
+                confirmButtonText: 'Delete' 
+            });
+            if(result.isConfirmed) {
+                try {
+                    const response = await fetch(`/api/subjects/${id}`, { method: 'DELETE' });
+                    const data = await response.json();
+                    if(data.success) {
+                        Swal.fire('Deleted', 'Subject deleted successfully', 'success');
+                        if (currentSelections.grade) {
+                            loadSubjects(currentSelections.grade.id);
+                        }
+                        loadStats();
+                        if(currentSelections.subject?.id === id) {
+                            currentSelections.subject = null;
+                            currentSelections.textbook = null;
+                            currentSelections.chapter = null;
+                            currentSelections.cg = null;
+                            currentSelections.competency = null;
+                            updateSelectionSummary();
+                        }
+                    } else {
+                        Swal.fire('Error', data.error || 'Failed to delete', 'error');
+                    }
+                } catch(e) { 
+                    console.error('Error:', e); 
+                    Swal.fire('Error', 'Failed to delete', 'error'); 
+                }
+            }
+        }
+
+        async function loadTextbooks(subjectId) {
+            const container = document.getElementById('textbookGrid');
+            container.innerHTML = `<div class="loading" style="grid-column: span 3;"><i class="fas fa-spinner fa-pulse"></i><br>Loading books...<br><small style="color: rgba(255,255,255,0.3);">Subject ID: ${subjectId}</small></div>`;
+            
+            try {
+                const response = await fetch(`/api/subjects/${subjectId}/textbooks`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                textbooks = data.textbooks || [];
+                
+                if(textbooks.length === 0) {
+                    container.innerHTML = `
+                        <div class="no-data" style="grid-column: span 3; padding: 40px;">
+                            <i class="fas fa-book" style="font-size: 40px; display: block; margin-bottom: 10px; opacity: 0.3;"></i>
+                            <h3 style="color: white; margin-bottom: 10px;">No Books Found</h3>
+                            <p style="color: rgba(255,255,255,0.5);">No books found for this subject.</p>
+                            ${isAdmin ? `<br><button class="btn btn-success" onclick="openTextbookModal()"><i class="fas fa-plus"></i> Add New Book</button>` : ''}
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = textbooks.map(t => {
+                    const isReference = t.is_reference === 1 || t.is_reference === true;
+                    const bookTypeIcon = isReference ? 'fa-book-open' : 'fa-book';
+                    const bookTypeColor = isReference ? '#8e44ad' : '#27ae60';
+                    
+                    return `
+                        <div class="card" onclick="selectTextbook('${t.id}', '${t.textbook_name.replace(/'/g, "\\'")}')">
+                            <div class="card-icon" style="background: linear-gradient(45deg, ${bookTypeColor}, ${bookTypeColor}dd);">
+                                <i class="fas ${bookTypeIcon}"></i>
+                            </div>
+                            <h3>${t.textbook_name}</h3>
+                            <p>${t.publisher || 'No publisher specified'}</p>
+                            ${isReference ? '<span class="reference-badge">📖 Reference</span>' : ''}
+                            <div class="metadata-actions">
+                                ${isAdmin ? `
+                                    <button class="action-btn action-edit" onclick="event.stopPropagation(); editTextbook('${t.id}', '${t.textbook_name.replace(/'/g, "\\'")}', '${(t.publisher||'').replace(/'/g, "\\'")}', ${isReference ? 1 : 0})"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn action-delete" onclick="event.stopPropagation(); deleteTextbook('${t.id}')"><i class="fas fa-trash"></i></button>
+                                ` : `<button class="action-btn action-view" onclick="event.stopPropagation(); showViewOnly('textbook', '${t.textbook_name.replace(/'/g, "\\'")}')"><i class="fas fa-eye"></i></button>`}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading books:', error);
+                container.innerHTML = `
+                    <div class="error-message" style="grid-column: span 3;">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <strong>Error:</strong> ${error.message}
+                        <div style="margin-top: 10px;">
+                            <button class="btn btn-primary" onclick="loadTextbooks(${subjectId})"><i class="fas fa-redo"></i> Retry</button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function toggleBookType() {
+            const isReference = document.querySelector('input[name="bookType"]:checked').value === 'reference';
+            const description = document.getElementById('bookTypeDescription');
+            const modalTitle = document.getElementById('textbookModalTitle');
+            const textbookLabel = document.getElementById('textbookLabel');
+            const referenceLabel = document.getElementById('referenceLabel');
+            
+            textbookLabel.classList.remove('active-textbook');
+            referenceLabel.classList.remove('active-reference');
+            
+            if (isReference) {
+                description.textContent = 'Reference Book is an additional resource book';
+                modalTitle.textContent = 'Add Reference Book';
+                referenceLabel.classList.add('active-reference');
+            } else {
+                description.textContent = 'Textbook is the main curriculum book.';
+                modalTitle.textContent = 'Add Textbook';
+                textbookLabel.classList.add('active-textbook');
+            }
+        }
+
+        function selectTextbook(id, name) {
+            const textbook = textbooks.find(t => t.id === id);
+            const displayName = textbook && textbook.is_reference ? `${name} (Reference)` : name;
+            
+            currentSelections.textbook = { id: id.toString(), name: displayName };
+            currentSelections.chapter = null;
+            currentSelections.cg = null;
+            currentSelections.competency = null;
+            document.getElementById('selectedChapterSubjectName').textContent = displayName;
+            loadChapters(id);
+            goToStage(4);
+            updateSelectionSummary();
+        }
+
+        function openTextbookModal(id=null) {
+            if(!isAdmin) return showViewOnly('textbook', '');
+            if(!currentSelections.subject) return Swal.fire('Error', 'Please select a subject first', 'error');
+            
+            document.getElementById('textbookModalTitle').textContent = id ? 'Edit Book' : 'Add Book';
+            document.getElementById('textbookId').value = id || '';
+            document.getElementById('textbookSubjectId').value = currentSelections.subject.id;
+            document.getElementById('textbookGradeId').value = currentSelections.grade.id;
+            
+            document.getElementById('textbookName').value = '';
+            document.getElementById('textbookPublisher').value = '';
+            
+            document.querySelector('input[name="bookType"][value="textbook"]').checked = true;
+            document.getElementById('bookTypeDescription').textContent = 'Textbook is the main curriculum book.';
+            document.getElementById('textbookLabel').classList.add('active-textbook');
+            document.getElementById('referenceLabel').classList.remove('active-reference');
+            
+            document.getElementById('textbookModal').classList.add('active');
+        }
+
+        function editTextbook(id, name, publisher, isReference) {
+            document.getElementById('textbookModalTitle').textContent = 'Edit Book';
+            document.getElementById('textbookId').value = id;
+            document.getElementById('textbookName').value = name;
+            document.getElementById('textbookPublisher').value = publisher || '';
+            
+            if (isReference) {
+                document.querySelector('input[name="bookType"][value="reference"]').checked = true;
+                document.getElementById('bookTypeDescription').textContent = 'Reference Book is an additional resource book.';
+                document.getElementById('textbookLabel').classList.remove('active-textbook');
+                document.getElementById('referenceLabel').classList.add('active-reference');
+                document.getElementById('textbookModalTitle').textContent = 'Edit Reference Book';
+            } else {
+                document.querySelector('input[name="bookType"][value="textbook"]').checked = true;
+                document.getElementById('bookTypeDescription').textContent = 'Textbook is the main curriculum book.';
+                document.getElementById('textbookLabel').classList.add('active-textbook');
+                document.getElementById('referenceLabel').classList.remove('active-reference');
+                document.getElementById('textbookModalTitle').textContent = 'Edit Textbook';
+            }
+            
+            document.getElementById('textbookModal').classList.add('active');
+        }
+
+        async function saveTextbook() {
+            if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can save books', 'error');
+            
+            const id = document.getElementById('textbookId').value;
+            const subjectId = document.getElementById('textbookSubjectId').value;
+            const gradeId = document.getElementById('textbookGradeId').value;
+            const name = document.getElementById('textbookName').value.trim();
+            const publisher = document.getElementById('textbookPublisher').value.trim();
+            const bookType = document.querySelector('input[name="bookType"]:checked').value;
+            const isReference = bookType === 'reference' ? 1 : 0;
+            
+            if(!name) return Swal.fire('Error', 'Book name is required', 'error');
+            
+            try {
+                const url = id ? `/api/textbooks/${id}` : '/api/textbooks';
+                const method = id ? 'PUT' : 'POST';
+                const response = await fetch(url, { 
+                    method, 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ 
+                        textbook_name: name, 
+                        subject_id: subjectId, 
+                        grade_id: gradeId, 
+                        publisher: publisher,
+                        is_reference: isReference
+                    }) 
+                });
+                const result = await response.json();
+                if(result.success) {
+                    Swal.fire('Success', 'Book saved successfully', 'success');
+                    closeModal('textbookModal');
+                    loadTextbooks(currentSelections.subject.id);
+                    loadStats();
+                } else {
+                    Swal.fire('Error', result.error || 'Failed to save book', 'error');
+                }
+            } catch(e) { 
+                console.error('Error:', e); 
+                Swal.fire('Error', 'Failed to save book', 'error'); 
+            }
+        }
+
+        async function deleteTextbook(id) {
+            if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can delete books', 'error');
+            const result = await Swal.fire({ 
+                title: 'Delete Book?', 
+                text: 'This will delete the book and all associated chapters. This cannot be undone!', 
+                icon: 'warning', 
+                showCancelButton: true, 
+                confirmButtonColor: '#e74c3c', 
+                confirmButtonText: 'Delete' 
+            });
+            if(result.isConfirmed) {
+                try {
+                    const response = await fetch(`/api/textbooks/${id}`, { method: 'DELETE' });
+                    const data = await response.json();
+                    if(data.success) {
+                        Swal.fire('Deleted', 'Book deleted successfully', 'success');
+                        loadTextbooks(currentSelections.subject.id);
+                        loadStats();
+                        if(currentSelections.textbook?.id === id) {
+                            currentSelections.textbook = null;
+                            currentSelections.chapter = null;
+                            currentSelections.cg = null;
+                            currentSelections.competency = null;
+                            updateSelectionSummary();
+                        }
+                    } else {
+                        Swal.fire('Error', data.error || 'Failed to delete', 'error');
+                    }
+                } catch(e) { 
+                    console.error('Error:', e); 
+                    Swal.fire('Error', 'Failed to delete', 'error'); 
+                }
+            }
+        }
+
+        async function loadChapters(textbookId) {
+            const container = document.getElementById('chapterGrid');
+            
+            container.innerHTML = `
+                <div class="loading" style="grid-column: span 3;">
+                    <i class="fas fa-spinner fa-pulse"></i><br>
+                    Loading chapters...<br>
+                    <small style="color: rgba(255,255,255,0.3);">Textbook ID: ${textbookId}</small>
+                </div>
+            `;
+            
+            try {
+                let subjectId = currentSelections.subject ? currentSelections.subject.id : null;
+                
+                if (!subjectId) {
+                    const textbook = textbooks.find(t => t.id === textbookId);
+                    if (textbook && textbook.subject_id) {
+                        subjectId = textbook.subject_id;
+                    }
+                }
+                
+                if (!subjectId) {
+                    throw new Error('Could not find subject ID for this textbook.');
+                }
+                
+                const response = await fetch(`/api/subjects/${subjectId}/chapters`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                chapters = data.chapters || [];
+                
+                if (chapters.length === 0) {
+                    container.innerHTML = `
+                        <div class="no-data" style="grid-column: span 3; padding: 40px;">
+                            <i class="fas fa-book" style="font-size: 40px; display: block; margin-bottom: 10px; opacity: 0.3;"></i>
+                            <h3 style="color: white; margin-bottom: 10px;">No Chapters Found</h3>
+                            <p style="color: rgba(255,255,255,0.5);">No chapters found for this textbook.</p>
+                            ${isAdmin ? `<br><button class="btn btn-success" onclick="openChapterModal()"><i class="fas fa-plus"></i> Add New Chapter</button>` : ''}
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = chapters.map(ch => `
+                    <div class="card" onclick="selectChapter('${ch.id}', '${ch.chapter_name.replace(/'/g, "\\'")}')">
+                        <div class="card-icon"><i class="fas fa-book"></i></div>
+                        <h3>${ch.chapter_name}</h3>
+                        ${ch.chapter_number ? `<p>Chapter ${ch.chapter_number}</p>` : ''}
+                        <div class="metadata-actions">
+                            ${isAdmin ? `
+                                <button class="action-btn action-edit" onclick="event.stopPropagation(); editChapter('${ch.id}', '${ch.chapter_name.replace(/'/g, "\\'")}', ${ch.chapter_number||0}, '${ch.textbook_id||''}')"><i class="fas fa-edit"></i></button>
+                                <button class="action-btn action-delete" onclick="event.stopPropagation(); deleteChapter('${ch.id}')"><i class="fas fa-trash"></i></button>
+                            ` : `<button class="action-btn action-view" onclick="event.stopPropagation(); showViewOnly('chapter', '${ch.chapter_name.replace(/'/g, "\\'")}')"><i class="fas fa-eye"></i></button>`}
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('❌ Error loading chapters:', error);
+                container.innerHTML = `
+                    <div class="error-message" style="grid-column: span 3;">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <strong>Error:</strong> ${error.message}
+                        <div style="margin-top: 10px;">
+                            <button class="btn btn-primary" onclick="loadChapters(${textbookId})"><i class="fas fa-redo"></i> Retry</button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function selectChapter(id, name) {
+            currentSelections.chapter = { id: id.toString(), name: name };
+            currentSelections.cg = null;
+            currentSelections.competency = null;
+            if (currentSelections.subject) {
+                loadCGs(currentSelections.subject.id);
+            }
+            goToStage(5);
+            updateSelectionSummary();
+        }
+
+        function openChapterModal(id=null) {
+            if(!isAdmin) return showViewOnly('chapter', '');
+            if(!currentSelections.subject) return Swal.fire('Error', 'Please select a subject first', 'error');
+            if(!currentSelections.textbook) return Swal.fire('Error', 'Please select a textbook first', 'error');
+            
+            document.getElementById('chapterModalTitle').textContent = id ? 'Edit Chapter' : 'Add Chapter';
+            document.getElementById('chapterId').value = id || '';
+            document.getElementById('chapterSubjectId').value = currentSelections.subject.id;
+            
+            loadTextbooksForSelect(currentSelections.subject.id);
+            
+            if(!id) { 
+                document.getElementById('chapterNumber').value = ''; 
+                document.getElementById('chapterName').value = ''; 
+                document.getElementById('chapterTextbook').value = currentSelections.textbook.id;
+            }
+            if(id) {
+                const ch = chapters.find(c => c.id === id);
+                if(ch) {
+                    document.getElementById('chapterNumber').value = ch.chapter_number || '';
+                    document.getElementById('chapterName').value = ch.chapter_name || '';
+                    loadTextbooksForSelect(currentSelections.subject.id, ch.textbook_id);
+                }
+            }
+            document.getElementById('chapterModal').classList.add('active');
+        }
+
+        function editChapter(id, name, number, textbookId) {
+            document.getElementById('chapterModalTitle').textContent = 'Edit Chapter';
+            document.getElementById('chapterId').value = id;
+            document.getElementById('chapterNumber').value = number || '';
+            document.getElementById('chapterName').value = name;
+            loadTextbooksForSelect(currentSelections.subject.id, textbookId);
+            document.getElementById('chapterModal').classList.add('active');
+        }
+
+        async function loadTextbooksForSelect(subjectId, selected=null) {
+            try {
+                const response = await fetch(`/api/subjects/${subjectId}/textbooks`);
+                const data = await response.json();
+                const select = document.getElementById('chapterTextbook');
+                select.innerHTML = '<option value="">Select Textbook</option>';
+                if(data.textbooks?.length > 0) {
+                    data.textbooks.forEach(t => {
+                        const opt = document.createElement('option');
+                        opt.value = t.id;
+                        const label = t.textbook_name + (t.publisher ? ` (${t.publisher})` : '');
+                        opt.textContent = t.is_reference ? `${label} 📖` : label;
+                        if(selected && selected == t.id) opt.selected = true;
+                        select.appendChild(opt);
+                    });
+                } else {
+                    select.innerHTML = '<option value="" disabled>No textbooks found. Add one first.</option>';
+                }
+            } catch(e) { console.error('Error loading textbooks:', e); }
+        }
+
+        async function saveChapter() {
+            if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can save chapters', 'error');
+            const id = document.getElementById('chapterId').value;
+            const subjectId = document.getElementById('chapterSubjectId').value;
+            const name = document.getElementById('chapterName').value.trim();
+            const number = document.getElementById('chapterNumber').value;
+            const textbookId = document.getElementById('chapterTextbook').value;
+            
+            if(!name) return Swal.fire('Error', 'Chapter name is required', 'error');
+            if(!textbookId) return Swal.fire('Error', 'Please select a textbook', 'error');
+            try {
+                const url = id ? `/api/chapters/${id}` : '/api/chapters';
+                const method = id ? 'PUT' : 'POST';
+                const response = await fetch(url, { 
+                    method, 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ 
+                        subject_id: subjectId, 
+                        chapter_name: name, 
+                        chapter_number: parseInt(number)||0, 
+                        textbook_id: textbookId.toString()
+                    })
+                });
+                const result = await response.json();
+                if(result.success) {
+                    Swal.fire('Success', 'Chapter saved successfully', 'success');
+                    closeModal('chapterModal');
+                    if (currentSelections.textbook) {
+                        loadChapters(currentSelections.textbook.id);
+                    }
+                    loadStats();
+                } else {
+                    Swal.fire('Error', result.error || 'Failed to save chapter', 'error');
+                }
+            } catch(e) { 
+                console.error('Error:', e); 
+                Swal.fire('Error', 'Failed to save chapter', 'error'); 
+            }
+        }
+
+        async function deleteChapter(id) {
+            if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can delete chapters', 'error');
+            const result = await Swal.fire({ 
+                title: 'Delete Chapter?', 
+                text: 'This will delete the chapter and all associated questions. This cannot be undone!', 
+                icon: 'warning', 
+                showCancelButton: true, 
+                confirmButtonColor: '#e74c3c', 
+                confirmButtonText: 'Delete' 
+            });
+            if(result.isConfirmed) {
+                try {
+                    const response = await fetch(`/api/chapters/${id}`, { method: 'DELETE' });
+                    const data = await response.json();
+                    if(data.success) {
+                        Swal.fire('Deleted', 'Chapter deleted successfully', 'success');
+                        if (currentSelections.textbook) {
+                            loadChapters(currentSelections.textbook.id);
+                        }
+                        loadStats();
+                        if(currentSelections.chapter?.id === id) {
+                            currentSelections.chapter = null;
+                            currentSelections.cg = null;
+                            currentSelections.competency = null;
+                            updateSelectionSummary();
+                        }
+                    } else {
+                        Swal.fire('Error', data.error || 'Failed to delete', 'error');
+                    }
+                } catch(e) { 
+                    console.error('Error:', e); 
+                    Swal.fire('Error', 'Failed to delete', 'error'); 
+                }
+            }
+        }
+
+        async function loadCGs(subjectId) {
+            const container = document.getElementById('cgGrid');
+            container.innerHTML = `
+                <div class="loading" style="grid-column: span 3;">
+                    <i class="fas fa-spinner fa-pulse"></i><br>
+                    Loading curricular goals...<br>
+                    <small style="color: rgba(255,255,255,0.3);">Subject ID: ${subjectId}</small>
+                </div>
+            `;
+            
+            try {
+                const response = await fetch(`/api/cgs?subject_id=${subjectId}`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                let cgsData = data.cgs || [];
+                if (!Array.isArray(cgsData)) {
+                    cgsData = Object.values(cgsData).filter(item => typeof item === 'object' && item !== null);
+                }
+                cgs = cgsData;
+                
+                if (cgsData.length === 0) {
+                    container.innerHTML = `
+                        <div class="no-data" style="grid-column: span 3; padding: 40px;">
+                            <i class="fas fa-bullseye" style="font-size: 40px; display: block; margin-bottom: 10px; opacity: 0.3;"></i>
+                            <h3 style="color: white; margin-bottom: 10px;">No Curricular Goals Found</h3>
+                            <p style="color: rgba(255,255,255,0.5);">No Curricular goals found for this subject.</p>
+                            ${isAdmin ? `<br><button class="btn btn-success" onclick="openAddModal('cg')"><i class="fas fa-plus"></i> Add New Curricular Goal</button>` : ''}
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                cgsData.forEach((c) => {
+                    const id = c.id || 0;
+                    const code = c.cg_code || `CG-${String(id).padStart(3, '0')}`;
+                    const description = c.cg_description || 'No description provided';
+                    
+                    html += `
+                        <div class="card" onclick="selectCG('${id}', '${code.replace(/'/g, "\\'")}')">
+                            <div class="card-icon"><i class="fas fa-bullseye"></i></div>
+                            <h3>${code}</h3>
+                            <p class="cg-description">${description}</p>
+                            <div class="metadata-actions">
+                                ${isAdmin ? `
+                                    <button class="action-btn action-edit" onclick="event.stopPropagation(); openEditModal('cg', '${id}', '${code.replace(/'/g, "\\'")}', '${description.replace(/'/g, "\\'")}', '${c.subject_id||0}')"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn action-delete" onclick="event.stopPropagation(); deleteCG('${id}')"><i class="fas fa-trash"></i></button>
+                                ` : `<button class="action-btn action-view" onclick="event.stopPropagation(); showViewOnly('cg', '${code.replace(/'/g, "\\'")}')"><i class="fas fa-eye"></i></button>`}
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading CGs:', error);
+                container.innerHTML = `
+                    <div class="error-message" style="grid-column: span 3;">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <strong>Error:</strong> ${error.message}
+                        <div style="margin-top: 10px;">
+                            <button class="btn btn-primary" onclick="loadCGs(${subjectId})"><i class="fas fa-redo"></i> Retry</button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function selectCG(id, code) {
+            currentSelections.cg = { id: id.toString(), code: code };
+            currentSelections.competency = null;
+            document.getElementById('selectedCGName').textContent = code;
+            loadCompetencies(id);
+            goToStage(6);
+            updateSelectionSummary();
+        }
+
+        async function deleteCG(id) {
+            if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can delete curricular goals', 'error');
+            const result = await Swal.fire({ 
+                title: 'Delete Curricular Goal?', 
+                text: 'This will delete the CG and all associated competencies and questions. This cannot be undone!', 
+                icon: 'warning', 
+                showCancelButton: true, 
+                confirmButtonColor: '#e74c3c', 
+                confirmButtonText: 'Delete' 
+            });
+            if(result.isConfirmed) {
+                try {
+                    const response = await fetch(`/api/cgs/${id}`, { method: 'DELETE' });
+                    const data = await response.json();
+                    if(data.success) {
+                        Swal.fire('Deleted', 'Curricular Goal deleted successfully', 'success');
+                        if (currentSelections.subject) {
+                            loadCGs(currentSelections.subject.id);
+                        }
+                        loadStats();
+                        if(currentSelections.cg?.id === id) {
+                            currentSelections.cg = null;
+                            currentSelections.competency = null;
+                            updateSelectionSummary();
+                        }
+                    } else {
+                        Swal.fire('Error', data.error || 'Failed to delete', 'error');
+                    }
+                } catch(e) { 
+                    console.error('Error:', e); 
+                    Swal.fire('Error', 'Failed to delete', 'error'); 
+                }
+            }
+        }
+
+        async function loadCompetencies(cgId) {
+            const container = document.getElementById('competencyGrid');
+            container.innerHTML = `
+                <div class="loading" style="grid-column: span 3;">
+                    <i class="fas fa-spinner fa-pulse"></i><br>
+                    Loading Competencies...<br>
+                    <small style="color: rgba(255,255,255,0.3);">CG ID: ${cgId}</small>
+                </div>
+            `;
+            
+            try {
+                const response = await fetch('/api/competencies');
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                const allComps = data.competencies || [];
+                competencies = allComps.filter(c => {
+                    const cCgId = c.cg_id ? c.cg_id.toString() : '';
+                    return cCgId === cgId.toString();
+                });
+                
+                if (competencies.length === 0) {
+                    container.innerHTML = `
+                        <div class="no-data" style="grid-column: span 3; padding: 40px;">
+                            <i class="fas fa-tasks" style="font-size: 40px; display: block; margin-bottom: 10px; opacity: 0.3;"></i>
+                            <h3 style="color: white; margin-bottom: 10px;">No Competencies Found</h3>
+                            <p style="color: rgba(255,255,255,0.5);">No Competencies found for this Curricular Goal.</p>
+                            ${isAdmin ? `<br><button class="btn btn-success" onclick="openAddModal('competency')"><i class="fas fa-plus"></i> Add New Competencies</button>` : ''}
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                competencies.forEach(c => {
+                    const id = c.id || 0;
+                    const code = c.comp_code || `COMP-${String(id).padStart(3, '0')}`;
+                    const description = c.comp_description || 'No description';
+                    const status = c.status || 1;
+                    
+                    html += `
+                        <div class="card" onclick="selectCompetency('${id}', '${code.replace(/'/g, "\\'")}')">
+                            <div class="card-icon"><i class="fas fa-tasks"></i></div>
+                            <h3>${code}</h3>
+                            <p class="cg-description">${description}</p>
+                            <div class="badge-container">
+                                <span class="comp-status ${status == 1 ? 'active' : 'inactive'}">
+                                    ${status == 1 ? 'Active' : 'Inactive'}
+                                </span>
+                            </div>
+                            <div class="metadata-actions">
+                                ${isAdmin ? `
+                                    <button class="action-btn action-edit" onclick="event.stopPropagation(); openEditModal('competency', '${id}', '${code.replace(/'/g, "\\'")}', '${description.replace(/'/g, "\\'")}', '${c.cg_id||0}', ${status})"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn action-delete" onclick="event.stopPropagation(); deleteCompetency('${id}')"><i class="fas fa-trash"></i></button>
+                                    <button class="action-btn icon-toggle" onclick="event.stopPropagation(); toggleCompetencyStatus('${id}', ${status})" title="${status == 1 ? 'Deactivate' : 'Activate'}"><i class="fas ${status == 1 ? 'fa-eye-slash' : 'fa-eye'}"></i></button>
+                                ` : `<button class="action-btn action-view" onclick="event.stopPropagation(); showViewOnly('competency', '${code.replace(/'/g, "\\'")}')"><i class="fas fa-eye"></i></button>`}
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading Competencies:', error);
+                container.innerHTML = `
+                    <div class="error-message" style="grid-column: span 3;">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <strong>Error:</strong> ${error.message}
+                        <div style="margin-top: 10px;">
+                            <button class="btn btn-primary" onclick="loadCompetencies(${cgId})"><i class="fas fa-redo"></i> Retry</button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function selectCompetency(id, code) {
+            currentSelections.competency = { id: id.toString(), code: code };
+            updateSelectionSummary();
+            Swal.fire({
+                icon: 'success',
+                title: 'Competencies Selected!',
+                text: `Selected: ${code}`,
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+
+        async function deleteCompetency(id) {
+            if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can delete Competencies', 'error');
+            const result = await Swal.fire({ 
+                title: 'Delete Competencies?', 
+                text: 'This will delete the competency and all associated questions. This cannot be undone!', 
+                icon: 'warning', 
+                showCancelButton: true, 
+                confirmButtonColor: '#e74c3c', 
+                confirmButtonText: 'Delete' 
+            });
+            if(result.isConfirmed) {
+                try {
+                    const response = await fetch(`/api/competencies/${id}`, { method: 'DELETE' });
+                    const data = await response.json();
+                    if(data.success) {
+                        Swal.fire('Deleted', 'Competencies deleted successfully', 'success');
+                        if (currentSelections.cg) {
+                            loadCompetencies(currentSelections.cg.id);
+                        }
+                        loadStats();
+                        if(currentSelections.competency?.id === id) {
+                            currentSelections.competency = null;
+                            updateSelectionSummary();
+                        }
+                    } else {
+                        Swal.fire('Error', data.error || 'Failed to delete', 'error');
+                    }
+                } catch(e) { 
+                    console.error('Error:', e); 
+                    Swal.fire('Error', 'Failed to delete', 'error'); 
+                }
+            }
+        }
+
+        async function toggleCompetencyStatus(id, currentStatus) {
+            if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can change status', 'error');
+            const newStatus = currentStatus == 1 ? 0 : 1;
+            const result = await Swal.fire({ 
+                title: `Set to ${newStatus == 1 ? 'Active' : 'Inactive'}?`, 
+                icon: 'question', 
+                showCancelButton: true, 
+                confirmButtonText: 'Yes' 
+            });
+            if(result.isConfirmed) {
+                try {
+                    const response = await fetch(`/api/competencies/${id}/toggle`, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify({ status: newStatus }) 
+                    });
+                    const data = await response.json();
+                    if(data.success) {
+                        Swal.fire('Success', `Status updated`, 'success');
+                        if (currentSelections.cg) {
+                            loadCompetencies(currentSelections.cg.id);
+                        }
+                    } else {
+                        Swal.fire('Error', data.error || 'Failed to update', 'error');
+                    }
+                } catch(e) { 
+                    console.error('Error:', e); 
+                    Swal.fire('Error', 'Failed to update', 'error'); 
+                }
+            }
+        }
+
+        function openAddModal(type) {
+            if(!isAdmin) return showViewOnly(type, '');
+            document.getElementById('editItemId').value = '';
+            document.getElementById('editItemType').value = type;
+            document.getElementById('modalTitle').textContent = `Add ${getTypeName(type)}`;
+            let fields = '';
+            switch(type) {
+                case 'grade':
+                    fields = `<div class="form-group"><label>Grade Name *</label><input type="text" id="editName" class="form-control" placeholder="e.g., Class X, Class XI" required></div>`;
+                    break;
+                case 'subject':
+                    let selectedGradeId = currentSelections.grade ? currentSelections.grade.id : (grades.length > 0 ? grades[0].id : '');
+                    if (!selectedGradeId && grades.length > 0) {
+                        selectedGradeId = grades[0].id;
+                    }
+                    console.log('📝 Selected grade for new subject:', selectedGradeId);
+                    fields = `
+                        <div class="form-group"><label>Subject Name *</label><input type="text" id="editName" class="form-control" placeholder="e.g., Physics, Chemistry" required></div>
+                        <div class="form-group"><label>Grade *</label>
+                            <select id="editGradeId" class="form-control" required>
+                                ${grades.map(g => `<option value="${g.id}" ${g.id == selectedGradeId ? 'selected' : ''}>${g.grade_name}</option>`).join('')}
+                            </select>
+                        </div>
+                    `;
+                    break;
+                case 'cg':
+                    fields = `
+                        <div class="form-group"><label>Curricular Goal Code *</label><input type="text" id="editCode" class="form-control" placeholder="e.g., CG-001" required></div>
+                        <div class="form-group"><label>Description</label><textarea id="editDescription" class="form-control" rows="3" placeholder="Describe the curricular goal..."></textarea></div>
+                        <div class="form-group"><label>Subject *</label><select id="editSubjectId" class="form-control" required>${subjects.map(s => `<option value="${s.id}">${s.subject_name}</option>`).join('')}</select></div>
+                    `;
+                    break;
+                case 'competency':
+                    fields = `
+                        <div class="form-group"><label>Competencies Code *</label><input type="text" id="editCode" class="form-control" placeholder="e.g., COMP-001" required></div>
+                        <div class="form-group"><label>Description</label><textarea id="editDescription" class="form-control" rows="3" placeholder="Describe the Competencies..."></textarea></div>
+                        <div class="form-group"><label>Curricular Goal *</label><select id="editCGId" class="form-control" required>${cgs.map(c => `<option value="${c.id}">${c.cg_code || 'CG ' + c.id}</option>`).join('')}</select></div>
+                        <div class="form-group"><label>Status</label><select id="editStatus" class="form-control"><option value="1">Active</option><option value="0">Inactive</option></select></div>
+                    `;
+                    break;
+            }
+            document.getElementById('modalFormFields').innerHTML = fields;
+            document.getElementById('addEditModal').classList.add('active');
+        }
+
+        function openEditModal(type, id, ...args) {
+            if(!isAdmin) return showViewOnly(type, args[0]);
+            document.getElementById('editItemId').value = id;
+            document.getElementById('editItemType').value = type;
+            document.getElementById('modalTitle').textContent = `Edit ${getTypeName(type)}`;
+            let fields = '';
+            switch(type) {
+                case 'grade':
+                    fields = `<div class="form-group"><label>Grade Name *</label><input type="text" id="editName" class="form-control" value="${args[0]}" required></div>`;
+                    break;
+                case 'subject':
+                    fields = `
+                        <div class="form-group"><label>Subject Name *</label><input type="text" id="editName" class="form-control" value="${args[0]}" required></div>
+                        <div class="form-group"><label>Grade *</label><select id="editGradeId" class="form-control" required>${grades.map(g => `<option value="${g.id}" ${g.id == args[1] ? 'selected' : ''}>${g.grade_name}</option>`).join('')}</select></div>
+                    `;
+                    break;
+                case 'cg':
+                    fields = `
+                        <div class="form-group"><label>Curricular Goal Code *</label><input type="text" id="editCode" class="form-control" value="${args[0]}" required></div>
+                        <div class="form-group"><label>Description</label><textarea id="editDescription" class="form-control" rows="3">${args[1]}</textarea></div>
+                        <div class="form-group"><label>Subject *</label><select id="editSubjectId" class="form-control" required>${subjects.map(s => `<option value="${s.id}" ${s.id == args[2] ? 'selected' : ''}>${s.subject_name}</option>`).join('')}</select></div>
+                    `;
+                    break;
+                case 'competency':
+                    fields = `
+                        <div class="form-group"><label>Competencies Code *</label><input type="text" id="editCode" class="form-control" value="${args[0]}" required></div>
+                        <div class="form-group"><label>Description</label><textarea id="editDescription" class="form-control" rows="3">${args[1]}</textarea></div>
+                        <div class="form-group"><label>Curricular Goal *</label><select id="editCGId" class="form-control" required>${cgs.map(c => `<option value="${c.id}" ${c.id == args[2] ? 'selected' : ''}>${c.cg_code || 'CG ' + c.id}</option>`).join('')}</select></div>
+                        <div class="form-group"><label>Status</label><select id="editStatus" class="form-control"><option value="1" ${args[3] == 1 ? 'selected' : ''}>Active</option><option value="0" ${args[3] == 0 ? 'selected' : ''}>Inactive</option></select></div>
+                    `;
+                    break;
+            }
+            document.getElementById('modalFormFields').innerHTML = fields;
+            document.getElementById('addEditModal').classList.add('active');
+        }
+
+        function showViewOnly(type, name) {
+            document.getElementById('viewModalTitle').textContent = `View ${getTypeName(type)}`;
+            document.getElementById('viewModalBody').innerHTML = `<p><strong>${getTypeName(type)}:</strong> ${name || 'N/A'}</p><p style="color:#666;margin-top:20px;">Read-only mode. Only administrators can make changes.</p>`;
+            document.getElementById('viewModal').classList.add('active');
+        }
+
+        function getTypeName(type) {
+            const names = { 'grade': 'Grade', 'subject': 'Subject', 'textbook': 'Textbook', 'chapter': 'Chapter', 'cg': 'Curricular Goal', 'competency': 'Competency', 'group': 'Subject Group', 'user': 'User', 'password': 'Password' };
+            return names[type] || 'Item';
+        }
+
+        async function saveItem() {
+            if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can save', 'error');
+            const type = document.getElementById('editItemType').value;
+            const id = document.getElementById('editItemId').value;
+            let data = {}, url = '', method = id ? 'PUT' : 'POST';
+            switch(type) {
+                case 'grade': 
+                    data = { name: document.getElementById('editName').value }; 
+                    url = id ? `/api/grades/${id}` : '/api/grades'; 
+                    break;
+                case 'subject': 
+                    const gradeId = document.getElementById('editGradeId').value;
+                    if (!gradeId) {
+                        Swal.fire('Error', 'Please select a grade', 'error');
+                        return;
+                    }
+                    console.log('📝 Saving subject with grade_id:', gradeId);
+                    data = { 
+                        name: document.getElementById('editName').value, 
+                        grade_id: gradeId 
+                    }; 
+                    url = id ? `/api/subjects/${id}` : '/api/subjects'; 
+                    break;
+                case 'cg': 
+                    data = { code: document.getElementById('editCode').value, description: document.getElementById('editDescription').value, subject_id: document.getElementById('editSubjectId').value }; 
+                    url = id ? `/api/cgs/${id}` : '/api/cgs'; 
+                    break;
+                case 'competency': 
+                    data = { code: document.getElementById('editCode').value, description: document.getElementById('editDescription').value, cg_id: document.getElementById('editCGId').value, status: document.getElementById('editStatus').value }; 
+                    url = id ? `/api/competencies/${id}` : '/api/competencies'; 
+                    break;
+            }
+            try {
+                console.log('📤 Saving item:', type, data);
+                const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                const result = await response.json();
+                console.log('📥 Save result:', result);
+                if(result.success) {
+                    Swal.fire('Success', 'Saved successfully', 'success');
+                    closeModal('addEditModal');
+                    setTimeout(() => {
+                        if(currentStage === 1) loadGrades();
+                        else if(currentStage === 2 && currentSelections.grade) {
+                            loadSubjects(currentSelections.grade.id);
+                        }
+                        else if(currentStage === 3 && currentSelections.subject) loadTextbooks(currentSelections.subject.id);
+                        else if(currentStage === 4 && currentSelections.textbook) loadChapters(currentSelections.textbook.id);
+                        else if(currentStage === 5 && currentSelections.subject) loadCGs(currentSelections.subject.id);
+                        else if(currentStage === 6 && currentSelections.cg) loadCompetencies(currentSelections.cg.id);
+                    }, 300);
+                    loadStats();
+                } else {
+                    Swal.fire('Error', result.error || 'Failed to save', 'error');
+                }
+            } catch(e) { 
+                console.error('❌ Error saving:', e); 
+                Swal.fire('Error', 'Failed to save', 'error'); 
+            }
+        }
+
+        // ============================================
+        // GROUP FUNCTIONS
+        // ============================================
+
+        async function loadGroups() {
+            try {
+                const response = await fetch('/api/subject-groups');
+                const data = await response.json();
+                const tbody = document.getElementById('groupsTableBody');
+                if(data.groups?.length > 0) {
+                    tbody.innerHTML = data.groups.map(g => `
+                        <tr>
+                            <td>${g.id}</td>
+                            <td><strong>${g.group_code}</strong></td>
+                            <td>${g.group_name || 'N/A'}</td>
+                            <td>${g.grade_name || 'N/A'}</td>
+                            <td>${g.subject_name || 'N/A'}</td>
+                            <td>${g.member_count || 0}</td>
+                            <td>
+                                <div class="action-group">
+                                    ${isAdmin ? `
+                                        <button class="icon-btn icon-edit" onclick="editGroup('${g.id}', '${g.group_code}', '${g.group_name||''}', '${g.grade_id}', '${g.subject_id}')"><i class="fas fa-edit"></i></button>
+                                        <button class="icon-btn icon-delete" onclick="deleteGroup('${g.id}')"><i class="fas fa-trash"></i></button>
+                                    ` : `<button class="icon-btn icon-view" onclick="showViewOnly('group', '${g.group_code}')"><i class="fas fa-eye"></i></button>`}
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: rgba(255,255,255,0.5);">No subject groups</td></tr>';
+                }
+            } catch(e) { console.error('Error loading groups:', e); }
+        }
+
+        function openGroupModal() {
+            if(!isAdmin) return showViewOnly('group', '');
+            document.getElementById('groupId').value = '';
+            document.getElementById('groupSuffix').value = '';
+            document.getElementById('groupPrefix').value = '';
+            document.getElementById('generatedGroupName').textContent = '---';
+            document.getElementById('groupDisplayName').value = '';
+            document.getElementById('saveGroupBtn').disabled = true;
+            const gradeSelect = document.getElementById('groupGrade');
+            gradeSelect.innerHTML = '<option value="">Select Grade</option>';
+            grades.forEach(g => { 
+                const opt = document.createElement('option'); 
+                opt.value = g.id; 
+                opt.textContent = g.grade_name; 
+                gradeSelect.appendChild(opt); 
+            });
+            document.getElementById('groupSubject').innerHTML = '<option value="">First select a grade</option>';
+            document.getElementById('groupSubject').disabled = true;
+            document.getElementById('groupModal').classList.add('active');
+        }
+
+        function editGroup(id, code, name, gradeId, subjectId) {
+            if(!isAdmin) return showViewOnly('group', code);
+            document.getElementById('groupId').value = id;
+            
+            const match = code.match(/^([a-zA-Z0-9_]+)(_(.+))?$/);
+            const prefix = match ? match[1] : code;
+            const suffix = match ? (match[3] || '') : '';
+            const gradeSelect = document.getElementById('groupGrade');
+            gradeSelect.innerHTML = '<option value="">Select Grade</option>';
+            grades.forEach(g => { 
+                const opt = document.createElement('option'); 
+                opt.value = g.id; 
+                opt.textContent = g.grade_name; 
+                if(g.id == gradeId) opt.selected = true; 
+                gradeSelect.appendChild(opt); 
+            });
+            document.getElementById('groupSubject').disabled = false;
+            loadSubjectsForGroup(gradeId, subjectId, prefix);
+            document.getElementById('groupSuffix').value = suffix;
+            document.getElementById('generatedGroupName').textContent = code;
+            document.getElementById('groupPrefix').value = prefix;
+            updateDisplayName();
+            document.getElementById('saveGroupBtn').disabled = false;
+            document.getElementById('groupModal').classList.add('active');
+        }
+
+        async function loadSubjectsForGroup(gradeId, selectedSubjectId = null, existingPrefix = null) {
+            try {
+                const response = await fetch('/api/page1-data');
+                const data = await response.json();
+                const gradeIdStr = gradeId.toString();
+                console.log('🔍 Loading subjects for group, grade:', gradeIdStr);
+                
+                const subjectList = data.subjects?.filter(s => {
+                    const sGradeId = s.grade_id ? s.grade_id.toString() : '';
+                    return sGradeId === gradeIdStr;
+                }) || [];
+                
+                console.log('📚 Filtered subjects for group:', subjectList.length);
+                
+                const subjectSelect = document.getElementById('groupSubject');
+                subjectSelect.innerHTML = '<option value="">Select Subject</option>';
+                subjectSelect.disabled = false;
+                subjectList.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = s.subject_name;
+                    if(s.id == selectedSubjectId) opt.selected = true;
+                    subjectSelect.appendChild(opt);
+                });
+                if(selectedSubjectId) generateGroupName(existingPrefix);
+            } catch(e) { console.error('Error loading subjects:', e); }
+        }
+
+        document.getElementById('groupGrade')?.addEventListener('change', function() {
+            if(this.value) loadSubjectsForGroup(this.value);
+            else {
+                document.getElementById('groupSubject').innerHTML = '<option value="">First select a grade</option>';
+                document.getElementById('groupSubject').disabled = true;
+                document.getElementById('groupPrefix').value = '';
+                document.getElementById('generatedGroupName').textContent = '---';
+                document.getElementById('groupDisplayName').value = '';
+                document.getElementById('saveGroupBtn').disabled = true;
+            }
+        });
+
+        function generateGroupName(existingPrefix = null) {
+            const gradeSelect = document.getElementById('groupGrade');
+            const subjectSelect = document.getElementById('groupSubject');
+            if(gradeSelect.value && subjectSelect.value) {
+                const gradeName = gradeSelect.options[gradeSelect.selectedIndex].textContent;
+                
+                const gradeCode = getGradeCode(gradeName);
+                const subjectName = subjectSelect.options[subjectSelect.selectedIndex].textContent;
+                const subjectPrefix = getSubjectPrefix(subjectName);
+                
+                const basePrefix = `${subjectPrefix}_${gradeCode}`;
+                document.getElementById('groupPrefix').value = basePrefix;
+                if(existingPrefix && existingPrefix.startsWith(basePrefix)) {
+                    const suffix = existingPrefix.substring(basePrefix.length + 1);
+                    if(suffix) document.getElementById('groupSuffix').value = suffix;
+                }
+                updateFullGroupName();
+            } else {
+                document.getElementById('groupPrefix').value = '';
+                document.getElementById('generatedGroupName').textContent = '---';
+                document.getElementById('groupDisplayName').value = '';
+                document.getElementById('saveGroupBtn').disabled = true;
+            }
+        }
+
+        function getGradeCode(gradeName) {
+            const romanMap = {
+                'X': 'X', 'XI': 'XI', 'XII': 'XII', 'XIII': 'XIII',
+                'IX': 'IX', 'VIII': 'VIII', 'VII': 'VII', 'VI': 'VI',
+                'V': 'V', 'IV': 'IV', 'III': 'III', 'II': 'II', 'I': 'I'
+            };
+            
+            const romanMatch = gradeName.match(/\b(X{1,3}|I[VX]|V?I{0,2})\b/);
+            if (romanMatch && romanMap[romanMatch[1]]) {
+                return romanMap[romanMatch[1]];
+            }
+            
+            const numMatch = gradeName.match(/\b(\d+)\b/);
+            if (numMatch) {
+                const num = parseInt(numMatch[1]);
+                if (num <= 10) return num.toString();
+                
+                const romanNumerals = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV'];
+                if (num <= 15) return romanNumerals[num];
+                return num.toString();
+            }
+            
+            return gradeName.replace(/^(Class|Grade)\s+/i, '').trim();
+        }
+
+        function getSubjectPrefix(name) {
+            const n = name.toLowerCase();
+            if(n.includes('physics')) return 'phy';
+            if(n.includes('chemistry')) return 'chm';
+            if(n.includes('biology')) return 'bio';
+            if(n.includes('mathematics') || n.includes('maths')) return 'mth';
+            if(n.includes('computer')) return 'cse';
+            if(n.includes('english')) return 'eng';
+            if(n.includes('history')) return 'his';
+            if(n.includes('geography')) return 'geo';
+            if(n.includes('economics')) return 'eco';
+            if(n.includes('psychology')) return 'psy';
+            if(n.includes('sociology')) return 'soc';
+            if(n.includes('political')) return 'pol';
+            if(n.includes('science')) return 'sci';
+            if(n.includes('arts')) return 'art';
+            if(n.includes('commerce')) return 'com';
+            if(n.includes('business')) return 'bus';
+            if(n.includes('accounting')) return 'acc';
+            if(n.includes('statistics')) return 'sta';
+            if(n.includes('environment')) return 'env';
+            return n.substring(0, 3);
+        }
+
+        function updateFullGroupName() {
+            const prefix = document.getElementById('groupPrefix').value;
+            const suffix = document.getElementById('groupSuffix').value.trim();
+            const full = suffix ? `${prefix}_${suffix}` : prefix;
+            document.getElementById('generatedGroupName').textContent = full || '---';
+            if(full && full !== '---' && full.length >= 3) {
+                document.getElementById('saveGroupBtn').disabled = false;
+                updateDisplayName();
+            } else {
+                document.getElementById('saveGroupBtn').disabled = true;
+            }
+        }
+
+        function updateDisplayName() {
+            const gradeSelect = document.getElementById('groupGrade');
+            const subjectSelect = document.getElementById('groupSubject');
+            const suffix = document.getElementById('groupSuffix').value.trim();
+            const fullCode = document.getElementById('generatedGroupName').textContent;
+            if(gradeSelect.value && subjectSelect.value && fullCode && fullCode !== '---') {
+                const gradeName = gradeSelect.options[gradeSelect.selectedIndex].textContent;
+                const subjectName = subjectSelect.options[subjectSelect.selectedIndex].textContent;
+                let displayName = `${subjectName} Group ${gradeName}`;
+                if(suffix) displayName += ` (${suffix.toUpperCase()})`;
+                document.getElementById('groupDisplayName').value = displayName;
+                document.getElementById('saveGroupBtn').disabled = false;
+            }
+        }
+
+        document.getElementById('groupSuffix')?.addEventListener('input', updateFullGroupName);
+
+        async function saveGroup() {
+            if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can save groups', 'error');
+            const id = document.getElementById('groupId').value;
+            const gradeId = document.getElementById('groupGrade').value;
+            const subjectId = document.getElementById('groupSubject').value;
+            const fullCode = document.getElementById('generatedGroupName').textContent;
+            const displayName = document.getElementById('groupDisplayName').value;
+            
+            if(!gradeId || !subjectId) return Swal.fire('Error', 'Please select both grade and subject', 'error');
+            if(!fullCode || fullCode === '---') return Swal.fire('Error', 'Invalid group code', 'error');
+            
+            if(!/^[a-zA-Z0-9_\-]+$/.test(fullCode)) {
+                return Swal.fire('Error', 'Group code can only contain letters, numbers, underscores, and hyphens', 'error');
+            }
+            if(fullCode.length < 3) {
+                return Swal.fire('Error', 'Group code must be at least 3 characters', 'error');
+            }
+            
+            try {
+                const url = id ? `/api/subject-groups/${id}` : '/api/subject-groups';
+                const method = id ? 'PUT' : 'POST';
+                const response = await fetch(url, { 
+                    method, 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ 
+                        group_code: fullCode, 
+                        group_name: displayName, 
+                        grade_id: gradeId, 
+                        subject_id: subjectId 
+                    }) 
+                });
+                const result = await response.json();
+                if(result.success) {
+                    Swal.fire('Success', `Group "${fullCode}" saved`, 'success');
+                    closeModal('groupModal');
+                    loadGroups();
+                    loadStats();
+                    loadSubjectGroupsForSelect();
+                } else {
+                    Swal.fire('Error', result.error || 'Failed to save group', 'error');
+                }
+            } catch(e) { 
+                console.error('Error:', e); 
+                Swal.fire('Error', 'Failed to save group', 'error'); 
+            }
+        }
+
+        async function deleteGroup(id) {
+            if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can delete groups', 'error');
+            const result = await Swal.fire({ 
+                title: 'Delete Group?', 
+                text: 'This will delete the group and remove all user associations. This cannot be undone!', 
+                icon: 'warning', 
+                showCancelButton: true, 
+                confirmButtonColor: '#e74c3c', 
+                confirmButtonText: 'Delete' 
+            });
+            if(result.isConfirmed) {
+                try {
+                    const response = await fetch(`/api/subject-groups/${id}`, { method: 'DELETE' });
+                    const data = await response.json();
+                    if(data.success) {
+                        Swal.fire('Deleted', 'Group deleted successfully', 'success');
+                        loadGroups();
+                        loadStats();
+                        loadSubjectGroupsForSelect();
+                    } else {
+                        Swal.fire('Error', data.error || 'Failed to delete', 'error');
+                    }
+                } catch(e) { 
+                    console.error('Error:', e); 
+                    Swal.fire('Error', 'Failed to delete', 'error'); 
+                }
+            }
+        }
+
+        // ============================================
+        // USER FUNCTIONS
+        // ============================================
+
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/users');
+                const data = await response.json();
+                const tbody = document.getElementById('usersTableBody');
+                if(data.users?.length > 0) {
+                    tbody.innerHTML = data.users.map(user => {
+                        const roleMap = { 'writer': 'Writer (RE)', 'master': 'Master', 'reviewer': 'Reviewer (RC)', 'approver': 'Approver (AP)', 'builder': 'Builder (RA)', 'admin': 'Admin' };
+                        const perms = [];
+                        if(user.perm_re) perms.push('<span class="perm-badge perm-re">RE</span>');
+                        if(user.perm_ra) perms.push('<span class="perm-badge perm-ra">RA</span>');
+                        if(user.perm_rc) perms.push('<span class="perm-badge perm-rc">RC</span>');
+                        if(user.perm_ap) perms.push('<span class="perm-badge perm-ap">AP</span>');
+                        if(user.perm_master) perms.push('<span class="perm-badge perm-master">MASTER</span>');
+                        return `
+                            <tr>
+                                <td>${user.id}</td>
+                                <td><strong>${user.username}</strong></td>
+                                <td><span class="badge role-${user.role}">${roleMap[user.role] || user.role}</span></td>
+                                <td>${perms.join(' ') || '-'}</td>
+                                <td>${user.group_code || 'None'}</td>
+                                <td>
+                                    <div class="action-group">
+                                        ${isAdmin ? `
+                                            <button class="icon-btn icon-edit" onclick="editUser('${user.id}', '${user.username}', '${user.role}', '${user.subject_group||''}')"><i class="fas fa-edit"></i></button>
+                                            <button class="icon-btn icon-key" onclick="openPasswordModal('${user.id}')"><i class="fas fa-key"></i></button>
+                                            <button class="icon-btn icon-delete" onclick="deleteUser('${user.id}')"><i class="fas fa-trash"></i></button>
+                                        ` : `<button class="icon-btn icon-view" onclick="showViewOnly('user', '${user.username}')"><i class="fas fa-eye"></i></button>`}
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: rgba(255,255,255,0.5);">No users</td></tr>';
+                }
+            } catch(e) { console.error('Error loading users:', e); }
+        }
+
+        async function loadSubjectGroupsForSelect() {
+            try {
+                const response = await fetch('/api/subject-groups');
+                const data = await response.json();
+                const select = document.getElementById('subjectGroup');
+                if(select) {
+                    select.innerHTML = '<option value="">None</option>' + (data.groups||[]).map(g => `<option value="${g.group_code}">${g.group_code} (${g.group_name})</option>`).join('');
+                }
+            } catch(e) { console.error('Error loading subject groups:', e); }
+        }
+
+        function openUserModal(userId = null) {
+            if(!isAdmin) return showViewOnly('user', '');
+            document.getElementById('userModalTitle').textContent = userId ? 'Edit User' : 'Add User';
+            document.getElementById('userId').value = userId || '';
+            if(!userId) {
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+                document.getElementById('role').value = 'writer';
+                document.getElementById('subjectGroup').value = '';
+                document.getElementById('passwordField').style.display = 'block';
+            } else {
+                document.getElementById('passwordField').style.display = 'none';
+            }
+            updateRoleDescription();
+            document.getElementById('userModal').classList.add('active');
+        }
+
+        function editUser(id, username, role, subjectGroup) {
+            if(!isAdmin) return showViewOnly('user', username);
+            document.getElementById('userModalTitle').textContent = 'Edit User';
+            document.getElementById('userId').value = id;
+            document.getElementById('username').value = username;
+            document.getElementById('role').value = role;
+            document.getElementById('subjectGroup').value = subjectGroup || '';
+            document.getElementById('passwordField').style.display = 'none';
+            updateRoleDescription();
+            document.getElementById('userModal').classList.add('active');
+        }
+
+        async function saveUser() {
+            if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can save users', 'error');
+            const userId = document.getElementById('userId').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const role = document.getElementById('role').value;
+            const subjectGroup = document.getElementById('subjectGroup').value;
+            if(!username || !role) return Swal.fire('Error', 'Username and role are required', 'error');
+            if(!userId && (!password || password.length < 8)) return Swal.fire('Error', 'Password must be at least 8 characters', 'error');
+            let perm_re=false, perm_ra=false, perm_rc=false, perm_ap=false, perm_master=false;
+            switch(role) {
+                case 'writer': perm_re = true; break;
+                case 'master': perm_master = true; break;
+                case 'reviewer': perm_rc = true; break;
+                case 'approver': perm_ap = true; break;
+                case 'builder': perm_ra = true; break;
+                case 'admin': perm_re = perm_ra = perm_rc = perm_ap = perm_master = true; break;
+            }
+            try {
+                const url = userId ? `/api/users/${userId}` : '/api/users';
+                const method = userId ? 'PUT' : 'POST';
+                const body = { username, role, subject_group: subjectGroup || null, perm_re, perm_ra, perm_rc, perm_ap, perm_master };
+                if(!userId) body.password = password;
+                const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                const result = await response.json();
+                if(result.success) {
+                    Swal.fire('Success', 'User saved successfully', 'success');
+                    closeModal('userModal');
+                    loadUsers();
+                    loadStats();
+                } else {
+                    Swal.fire('Error', result.error || 'Failed to save user', 'error');
+                }
+            } catch(e) { 
+                console.error('Error:', e); 
+                Swal.fire('Error', 'Failed to save user', 'error'); 
+            }
+        }
+
+        function openPasswordModal(userId) {
+            if(!isAdmin) return showViewOnly('password', '');
+            document.getElementById('passwordUserId').value = userId;
+            document.getElementById('newPassword').value = '';
+            document.getElementById('passwordModal').classList.add('active');
+        }
+
+        async function changePassword() {
+            if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can change passwords', 'error');
+            const userId = document.getElementById('passwordUserId').value;
+            const newPassword = document.getElementById('newPassword').value;
+            if(!newPassword || newPassword.length < 8) return Swal.fire('Error', 'Password must be at least 8 characters', 'error');
+            try {
+                const response = await fetch(`/api/users/reset-password/${userId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: newPassword }) });
+                const data = await response.json();
+                if(data.success) {
+                    Swal.fire({ icon: 'success', title: 'Password Changed', text: 'Password updated successfully', confirmButtonText: 'OK' });
+                    closeModal('passwordModal');
+                } else {
+                    Swal.fire('Error', data.error || 'Failed to change password', 'error');
+                }
+            } catch(e) { 
+                console.error('Error:', e); 
+                Swal.fire('Error', 'Failed to change password', 'error'); 
+            }
+        }
+
+        async function deleteUser(userId) {
+            if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can delete users', 'error');
+            const result = await Swal.fire({ 
+                title: 'Delete User?', 
+                text: 'This cannot be undone!', 
+                icon: 'warning', 
+                showCancelButton: true, 
+                confirmButtonColor: '#e74c3c', 
+                confirmButtonText: 'Delete' 
+            });
+            if(result.isConfirmed) {
+                try {
+                    const response = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
+                    const data = await response.json();
+                    if(data.success) {
+                        Swal.fire('Deleted!', 'User has been deleted.', 'success');
+                        loadUsers();
+                        loadStats();
+                    } else {
+                        Swal.fire('Error', data.error || 'Failed to delete user', 'error');
+                    }
+                } catch(e) { 
+                    console.error('Error:', e); 
+                    Swal.fire('Error', 'Failed to delete user', 'error'); 
+                }
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
     </script>
 </body>
 </html>
