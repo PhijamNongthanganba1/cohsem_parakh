@@ -102,25 +102,6 @@ def convert_doc(doc):
         return result
     return doc
 
-def get_object_id(value):
-    """Convert value to ObjectId if valid"""
-    if value is None:
-        return None
-    if isinstance(value, ObjectId):
-        return value
-    if isinstance(value, str) and len(value) == 24:
-        try:
-            return ObjectId(value)
-        except:
-            pass
-    return None
-
-def get_numeric_id(collection, doc):
-    """Get numeric ID from document, or generate if missing"""
-    if 'id' in doc and doc['id']:
-        return doc['id']
-    return None
-
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -142,26 +123,6 @@ def has_actual_content(html_content):
     if text and len(text.strip()) > 0:
         return True
     return False
-
-def get_user_subject_ids(username):
-    try:
-        user = db.users.find_one({'username': username})
-        if not user or not user.get('subject_group'):
-            return []
-        groups = db.subject_groups.find({'group_code': user['subject_group']})
-        return [g['subject_id'] for g in groups]
-    except:
-        return []
-
-def get_user_grades(username):
-    try:
-        user = db.users.find_one({'username': username})
-        if not user or not user.get('subject_group'):
-            return []
-        groups = db.subject_groups.find({'group_code': user['subject_group']})
-        return [g['grade_id'] for g in groups]
-    except:
-        return []
 
 # --- Database Initialization ---
 def init_db():
@@ -190,6 +151,8 @@ def init_db():
         db.subjects.create_index([('grade_id', 1), ('subject_name', 1)], unique=True)
         db.users.create_index('username', unique=True)
         db.subject_groups.create_index('group_code', unique=True)
+        db.curricular_goals.create_index('id', unique=True)
+        db.competencies.create_index('id', unique=True)
         
         # Cognitive Domains
         if db.cognitive_domains.count_documents({}) == 0:
@@ -277,8 +240,8 @@ def init_db():
         fix_collection_ids('simple_questions')
         fix_collection_ids('paper_blueprints')
         
-        # Fix grade_id in subjects to be numeric
-        fix_subject_grade_ids()
+        # Fix foreign keys to use numeric IDs
+        fix_foreign_keys()
         
         print("✅ Database initialization complete")
     except Exception as e:
@@ -309,30 +272,60 @@ def fix_collection_ids(collection_name):
         )
         print(f"✓ Added numeric IDs to {collection_name} ({seq} documents)")
 
-def fix_subject_grade_ids():
-    """Fix grade_id in subjects to be numeric"""
+def fix_foreign_keys():
+    """Fix foreign keys to use numeric IDs"""
+    # Fix subject grade_id
     subjects = db.subjects.find({})
     for subject in subjects:
         grade_id = subject.get('grade_id')
         if grade_id:
-            # If grade_id is ObjectId string, find the numeric id
-            if isinstance(grade_id, str) and len(grade_id) == 24:
-                grade = db.grades.find_one({'_id': ObjectId(grade_id)})
-                if grade and 'id' in grade:
-                    db.subjects.update_one(
-                        {'_id': subject['_id']},
-                        {'$set': {'grade_id': grade['id']}}
-                    )
-                    print(f"  Fixed subject '{subject.get('subject_name')}' grade_id: {grade['id']}")
-            # If grade_id is ObjectId
-            elif isinstance(grade_id, ObjectId):
+            if isinstance(grade_id, ObjectId):
                 grade = db.grades.find_one({'_id': grade_id})
                 if grade and 'id' in grade:
                     db.subjects.update_one(
                         {'_id': subject['_id']},
                         {'$set': {'grade_id': grade['id']}}
                     )
-                    print(f"  Fixed subject '{subject.get('subject_name')}' grade_id: {grade['id']}")
+            elif isinstance(grade_id, str) and len(grade_id) == 24:
+                grade = db.grades.find_one({'_id': ObjectId(grade_id)})
+                if grade and 'id' in grade:
+                    db.subjects.update_one(
+                        {'_id': subject['_id']},
+                        {'$set': {'grade_id': grade['id']}}
+                    )
+    
+    # Fix CG subject_id and chapter_id
+    cgs = db.curricular_goals.find({})
+    for cg in cgs:
+        subject_id = cg.get('subject_id')
+        if subject_id and isinstance(subject_id, ObjectId):
+            subject = db.subjects.find_one({'_id': subject_id})
+            if subject and 'id' in subject:
+                db.curricular_goals.update_one(
+                    {'_id': cg['_id']},
+                    {'$set': {'subject_id': subject['id']}}
+                )
+        
+        chapter_id = cg.get('chapter_id')
+        if chapter_id and isinstance(chapter_id, ObjectId):
+            chapter = db.chapters.find_one({'_id': chapter_id})
+            if chapter and 'id' in chapter:
+                db.curricular_goals.update_one(
+                    {'_id': cg['_id']},
+                    {'$set': {'chapter_id': chapter['id']}}
+                )
+    
+    # Fix Competency cg_id
+    comps = db.competencies.find({})
+    for comp in comps:
+        cg_id = comp.get('cg_id')
+        if cg_id and isinstance(cg_id, ObjectId):
+            cg = db.curricular_goals.find_one({'_id': cg_id})
+            if cg and 'id' in cg:
+                db.competencies.update_one(
+                    {'_id': comp['_id']},
+                    {'$set': {'cg_id': cg['id']}}
+                )
 
 with app.app_context():
     init_db()
@@ -546,26 +539,11 @@ def review():
         'MASTER': session.get('perm_master', False)
     }
     
-    page_title = "Questions List"
-    if user_role == 'admin':
-        page_title = "All Questions"
-    elif permissions.get('MASTER'):
-        page_title = "Master Dashboard - Assign Reviewers"
-    elif permissions.get('AP'):
-        page_title = "Approver Dashboard"
-    elif permissions.get('RC'):
-        page_title = "Reviewer Dashboard"
-    elif permissions.get('RA'):
-        page_title = "Approved Questions for Paper Building"
-    elif permissions.get('RE'):
-        page_title = "My Questions"
-    
     return render_template('review.html', 
                          user=username, 
                          user_id=user_id,
                          user_role=user_role,
-                         permissions=permissions,
-                         page_title=page_title)
+                         permissions=permissions)
 
 @app.route('/logout')
 def logout():
@@ -574,7 +552,7 @@ def logout():
     return redirect(url_for('dashboard_login'))
 
 # ============================================
-# API ENDPOINTS - WITH NUMERIC IDS
+# API ENDPOINTS
 # ============================================
 
 @app.route('/api/dashboard-stats')
@@ -700,7 +678,7 @@ def create_grade():
     
     try:
         next_id = get_next_id('grades')
-        result = db.grades.insert_one({
+        db.grades.insert_one({
             'id': next_id,
             'grade_name': name
         })
@@ -754,7 +732,7 @@ def delete_grade(grade_id):
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# SUBJECT ENDPOINTS - WITH NUMERIC IDS
+# SUBJECT ENDPOINTS
 # ============================================
 
 @app.route('/api/subjects', methods=['GET'])
@@ -788,11 +766,13 @@ def create_subject():
     
     try:
         # Convert grade_id to int
-        if isinstance(grade_id, str):
+        grade_id_int = None
+        if isinstance(grade_id, int):
+            grade_id_int = grade_id
+        elif isinstance(grade_id, str):
             if grade_id.isdigit():
                 grade_id_int = int(grade_id)
             elif len(grade_id) == 24:
-                # It's an ObjectId string, find the numeric id
                 grade = db.grades.find_one({'_id': ObjectId(grade_id)})
                 if grade and 'id' in grade:
                     grade_id_int = grade['id']
@@ -801,7 +781,7 @@ def create_subject():
             else:
                 return jsonify({'error': 'Invalid grade ID format'}), 400
         else:
-            grade_id_int = int(grade_id)
+            return jsonify({'error': 'Invalid grade ID'}), 400
         
         # Verify grade exists
         grade = db.grades.find_one({'id': grade_id_int})
@@ -818,7 +798,7 @@ def create_subject():
             return jsonify({'error': f'Subject "{name}" already exists for this grade'}), 400
         
         next_id = get_next_id('subjects')
-        result = db.subjects.insert_one({
+        db.subjects.insert_one({
             'id': next_id,
             'subject_name': name,
             'grade_id': grade_id_int
@@ -884,7 +864,7 @@ def delete_subject(subject_id):
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# PAGE1 DATA - WITH NUMERIC IDS
+# PAGE1 DATA - CRITICAL FIX FOR COMPETENCIES
 # ============================================
 
 @app.route('/api/page1-data')
@@ -929,7 +909,7 @@ def get_page1_data():
                     cgs_by_subject[subject_key] = []
                 cgs_by_subject[subject_key].append(cg)
         
-        # Build comps_by_cg
+        # Build comps_by_cg - CRITICAL FIX: Use numeric cg_id
         comps_by_cg = {}
         for comp in competencies:
             cg_id = comp.get('cg_id')
@@ -938,6 +918,12 @@ def get_page1_data():
                 if cg_key not in comps_by_cg:
                     comps_by_cg[cg_key] = []
                 comps_by_cg[cg_key].append(comp)
+        
+        # DEBUG: Print competency data
+        print(f"📊 Total competencies: {len(competencies)}")
+        for comp in competencies:
+            print(f"  Competency: {comp.get('comp_code')} - cg_id: {comp.get('cg_id')} (type: {type(comp.get('cg_id'))})")
+        print(f"📊 comps_by_cg keys: {list(comps_by_cg.keys())}")
         
         data = {
             'grades': grades,
@@ -950,12 +936,6 @@ def get_page1_data():
             'question_types': question_types,
             'cognitive_domains': cognitive_domains
         }
-        
-        print("📊 subjects_by_grade keys:", list(data['subjects_by_grade'].keys()))
-        for key, value in data['subjects_by_grade'].items():
-            print(f"  Grade {key}: {len(value)} subjects")
-            for s in value:
-                print(f"    - {s.get('subject_name')} (grade_id: {s.get('grade_id')})")
         
         return jsonify(data)
     except Exception as e:
@@ -1020,7 +1000,7 @@ def create_textbook():
             return jsonify({'error': 'Book already exists for this subject'}), 400
         
         next_id = get_next_id('textbooks')
-        result = db.textbooks.insert_one({
+        db.textbooks.insert_one({
             'id': next_id,
             'textbook_name': textbook_name,
             'subject_id': subject_id_int,
@@ -1176,7 +1156,6 @@ def create_chapter():
         subject_id_int = int(subject_id)
         textbook_id_int = int(textbook_id)
         
-        # Get grade_id from subject
         subject = db.subjects.find_one({'id': subject_id_int})
         grade_id = subject.get('grade_id') if subject else None
         
@@ -1185,7 +1164,7 @@ def create_chapter():
             return jsonify({'error': 'Chapter already exists for this subject'}), 400
         
         next_id = get_next_id('chapters')
-        result = db.chapters.insert_one({
+        db.chapters.insert_one({
             'id': next_id,
             'subject_id': subject_id_int,
             'chapter_name': chapter_name,
@@ -1344,7 +1323,7 @@ def create_cg():
             return jsonify({'error': f'Curricular Goal "{code}" already exists'}), 400
         
         next_id = get_next_id('curricular_goals')
-        result = db.curricular_goals.insert_one({
+        db.curricular_goals.insert_one({
             'id': next_id,
             'cg_code': code,
             'cg_description': description,
@@ -1413,7 +1392,7 @@ def delete_cg(cg_id):
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# COMPETENCY ENDPOINTS
+# COMPETENCY ENDPOINTS - CRITICAL FIX
 # ============================================
 
 @app.route('/api/competencies', methods=['GET'])
@@ -1422,17 +1401,27 @@ def get_competencies_api():
         return jsonify({'error': 'Not authenticated'}), 401
     
     try:
+        # Get competencies with proper numeric IDs
         pipeline = [
+            {'$match': {'status': 1}},
             {'$lookup': {'from': 'curricular_goals', 'localField': 'cg_id', 'foreignField': 'id', 'as': 'cg_info'}},
-            {'$addFields': {'cg_code': {'$arrayElemAt': ['$cg_info.cg_code', 0]}, 'subject_id': {'$arrayElemAt': ['$cg_info.subject_id', 0]}}},
-            {'$project': {'cg_info': 0}},
-            {'$match': {'status': 1}}
+            {'$addFields': {
+                'cg_code': {'$arrayElemAt': ['$cg_info.cg_code', 0]},
+                'subject_id': {'$arrayElemAt': ['$cg_info.subject_id', 0]}
+            }},
+            {'$project': {'cg_info': 0}}
         ]
         
         comps = list(db.competencies.aggregate(pipeline))
         comps = convert_doc(comps)
+        
+        print(f"📊 Returning {len(comps)} competencies")
+        for comp in comps:
+            print(f"  Competency: {comp.get('comp_code')} - cg_id: {comp.get('cg_id')}")
+        
         return jsonify({'competencies': comps})
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/competencies', methods=['POST'])
@@ -1454,18 +1443,40 @@ def create_competency():
         return jsonify({'error': 'Code and CG required'}), 400
     
     try:
-        cg_id_int = int(cg_id)
+        # Convert cg_id to int
+        if isinstance(cg_id, str):
+            if cg_id.isdigit():
+                cg_id_int = int(cg_id)
+            else:
+                return jsonify({'error': 'Invalid CG ID format'}), 400
+        else:
+            cg_id_int = int(cg_id)
+        
+        # Verify CG exists
+        cg = db.curricular_goals.find_one({'id': cg_id_int})
+        if not cg:
+            return jsonify({'error': 'Curricular Goal not found'}), 400
+        
+        # Check if competency already exists for this CG
+        existing = db.competencies.find_one({
+            'comp_code': code,
+            'cg_id': cg_id_int
+        })
+        if existing:
+            return jsonify({'error': f'Competency "{code}" already exists for this CG'}), 400
         
         next_id = get_next_id('competencies')
-        result = db.competencies.insert_one({
+        db.competencies.insert_one({
             'id': next_id,
             'comp_code': code,
             'comp_description': description,
             'cg_id': cg_id_int,
             'status': status
         })
+        
         return jsonify({'success': True, 'id': next_id})
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/competencies/<int:comp_id>', methods=['PUT'])
@@ -1600,7 +1611,7 @@ def create_subject_group():
             return jsonify({'error': 'Group code already exists'}), 400
         
         next_id = get_next_id('subject_groups')
-        result = db.subject_groups.insert_one({
+        db.subject_groups.insert_one({
             'id': next_id,
             'group_code': group_code,
             'group_name': group_name,
@@ -1737,7 +1748,7 @@ def create_user():
             perm_ra = True
         
         next_id = get_next_id('users')
-        result = db.users.insert_one({
+        db.users.insert_one({
             'id': next_id,
             'username': username,
             'password': hashed_password,
@@ -2032,7 +2043,7 @@ def create_simple_question():
         next_id = get_next_id('simple_questions')
         question_doc['id'] = next_id
         
-        result = db.simple_questions.insert_one(question_doc)
+        db.simple_questions.insert_one(question_doc)
         
         return jsonify({
             'success': True, 
@@ -2236,7 +2247,7 @@ def create_paper_blueprint():
     
     try:
         next_id = get_next_id('paper_blueprints')
-        result = db.paper_blueprints.insert_one({
+        db.paper_blueprints.insert_one({
             'id': next_id,
             'name': name,
             'grade_id': int(grade_id) if grade_id else None,
@@ -2421,14 +2432,15 @@ def debug_subjects():
     try:
         subjects = list(db.subjects.find({}))
         grades = list(db.grades.find({}))
+        cgs = list(db.curricular_goals.find({}))
+        comps = list(db.competencies.find({}))
         
         subjects_data = []
         for s in subjects:
             subjects_data.append({
                 'id': s.get('id'),
                 'subject_name': s.get('subject_name'),
-                'grade_id': s.get('grade_id'),
-                'grade_id_type': type(s.get('grade_id')).__name__
+                'grade_id': s.get('grade_id')
             })
         
         grades_data = []
@@ -2438,11 +2450,32 @@ def debug_subjects():
                 'grade_name': g.get('grade_name')
             })
         
+        cgs_data = []
+        for c in cgs:
+            cgs_data.append({
+                'id': c.get('id'),
+                'cg_code': c.get('cg_code'),
+                'subject_id': c.get('subject_id')
+            })
+        
+        comps_data = []
+        for c in comps:
+            comps_data.append({
+                'id': c.get('id'),
+                'comp_code': c.get('comp_code'),
+                'cg_id': c.get('cg_id'),
+                'status': c.get('status')
+            })
+        
         return jsonify({
             'subjects': subjects_data,
             'grades': grades_data,
+            'cgs': cgs_data,
+            'competencies': comps_data,
             'subject_count': len(subjects_data),
-            'grade_count': len(grades_data)
+            'grade_count': len(grades_data),
+            'cg_count': len(cgs_data),
+            'comp_count': len(comps_data)
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500

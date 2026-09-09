@@ -1650,7 +1650,7 @@
             if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can delete chapters', 'error');
             const result = await Swal.fire({ 
                 title: 'Delete Chapter?', 
-                text: 'This will delete the chapter and all associated questions. This cannot be undone!', 
+                text: '', 
                 icon: 'warning', 
                 showCancelButton: true, 
                 confirmButtonColor: '#e74c3c', 
