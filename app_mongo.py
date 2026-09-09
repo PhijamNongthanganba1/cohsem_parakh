@@ -161,6 +161,8 @@ def init_db():
         db.curricular_goals.create_index('id', unique=True)
         db.competencies.create_index('id', unique=True)
         db.competencies.create_index([('cg_id', 1), ('comp_code', 1)], unique=True)
+        db.knowledge_levels.create_index('id', unique=True)
+        db.knowledge_levels.create_index([('domain_id', 1), ('level_name', 1)], unique=True)
         
         # Cognitive Domains
         if db.cognitive_domains.count_documents({}) == 0:
@@ -182,7 +184,7 @@ def init_db():
             db.difficulty_levels.insert_many(difficulties)
             print("✓ Inserted default difficulty levels")
         
-        # Knowledge Levels
+        # Knowledge Levels (Sub-Domains) - CRITICAL: domain_id must be numeric
         if db.knowledge_levels.count_documents({}) == 0:
             knowledge = [
                 {'id': 1, 'level_name': 'Knowledge', 'description': 'Basic recall of information and facts', 'domain_id': 1, 'difficulty_id': 1},
@@ -202,7 +204,7 @@ def init_db():
                 {'id': 15, 'level_name': 'Reflection', 'description': 'Thoughtful self-assessment', 'domain_id': 3, 'difficulty_id': 3}
             ]
             db.knowledge_levels.insert_many(knowledge)
-            print("✓ Inserted default knowledge levels")
+            print("✓ Inserted default knowledge levels with domain_id")
         
         # Question Types
         if db.question_types.count_documents({}) == 0:
@@ -247,9 +249,13 @@ def init_db():
         fix_collection_ids('users')
         fix_collection_ids('simple_questions')
         fix_collection_ids('paper_blueprints')
+        fix_collection_ids('knowledge_levels')
         
         # Fix foreign keys to use numeric IDs
         fix_foreign_keys()
+        
+        # Fix knowledge_levels domain_id to be numeric
+        fix_knowledge_levels_domain_id()
         
         print("✅ Database initialization complete")
     except Exception as e:
@@ -347,6 +353,45 @@ def fix_foreign_keys():
                         {'$set': {'cg_id': cg['id']}}
                     )
                     print(f"  Fixed competency '{comp.get('comp_code')}' cg_id: {cg['id']}")
+
+def fix_knowledge_levels_domain_id():
+    """Fix knowledge_levels domain_id to be numeric and match cognitive_domains"""
+    # Get all cognitive domains with numeric IDs
+    domains = list(db.cognitive_domains.find({}))
+    domain_map = {str(d['_id']): d['id'] for d in domains}
+    
+    # Also map by name
+    domain_name_map = {d['domain_name']: d['id'] for d in domains}
+    
+    # Fix knowledge levels
+    levels = list(db.knowledge_levels.find({}))
+    for level in levels:
+        domain_id = level.get('domain_id')
+        if domain_id:
+            # If domain_id is an ObjectId, convert to numeric
+            if isinstance(domain_id, ObjectId):
+                domain_id_str = str(domain_id)
+                if domain_id_str in domain_map:
+                    db.knowledge_levels.update_one(
+                        {'_id': level['_id']},
+                        {'$set': {'domain_id': domain_map[domain_id_str]}}
+                    )
+                    print(f"  Fixed knowledge level '{level.get('level_name')}' domain_id: {domain_map[domain_id_str]}")
+            # If domain_id is a string ObjectId
+            elif isinstance(domain_id, str) and len(domain_id) == 24:
+                if domain_id in domain_map:
+                    db.knowledge_levels.update_one(
+                        {'_id': level['_id']},
+                        {'$set': {'domain_id': domain_map[domain_id]}}
+                    )
+                    print(f"  Fixed knowledge level '{level.get('level_name')}' domain_id: {domain_map[domain_id]}")
+            # If domain_id is a string name
+            elif isinstance(domain_id, str) and domain_id in domain_name_map:
+                db.knowledge_levels.update_one(
+                    {'_id': level['_id']},
+                    {'$set': {'domain_id': domain_name_map[domain_id]}}
+                )
+                print(f"  Fixed knowledge level '{level.get('level_name')}' domain_id: {domain_name_map[domain_id]}")
 
 with app.app_context():
     init_db()
@@ -891,7 +936,6 @@ def get_page1_data():
         return jsonify({'error': 'Not authenticated'}), 401
     
     try:
-        # Get all data with numeric IDs
         grades = list(db.grades.find({}))
         subjects = list(db.subjects.find({}))
         cgs = list(db.curricular_goals.find({}))
@@ -899,7 +943,6 @@ def get_page1_data():
         question_types = list(db.question_types.find({}))
         cognitive_domains = list(db.cognitive_domains.find({}))
         
-        # Convert to frontend format
         grades = convert_doc(grades)
         subjects = convert_doc(subjects)
         cgs = convert_doc(cgs)
@@ -907,7 +950,6 @@ def get_page1_data():
         question_types = convert_doc(question_types)
         cognitive_domains = convert_doc(cognitive_domains)
         
-        # Build subjects_by_grade
         subjects_by_grade = {}
         for s in subjects:
             grade_id = s.get('grade_id')
@@ -917,7 +959,6 @@ def get_page1_data():
                     subjects_by_grade[grade_key] = []
                 subjects_by_grade[grade_key].append(s)
         
-        # Build cgs_by_subject
         cgs_by_subject = {}
         for cg in cgs:
             subject_id = cg.get('subject_id')
@@ -927,7 +968,6 @@ def get_page1_data():
                     cgs_by_subject[subject_key] = []
                 cgs_by_subject[subject_key].append(cg)
         
-        # Build comps_by_cg
         comps_by_cg = {}
         for comp in competencies:
             cg_id = comp.get('cg_id')
@@ -955,7 +995,7 @@ def get_page1_data():
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# PAGE2 DATA - CRITICAL FOR COMPETENCIES TO COGNITIVE DOMAINS
+# PAGE2 DATA
 # ============================================
 
 @app.route('/api/page2-data')
@@ -1023,6 +1063,112 @@ def get_page2_data():
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
+# ============================================
+# KNOWLEDGE LEVELS (SUB-DOMAINS) - CRITICAL FIX
+# ============================================
+
+@app.route('/api/knowledge-levels', methods=['GET'])
+def get_knowledge_levels():
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    domain_id = request.args.get('domain_id')
+    difficulty_id = request.args.get('difficulty_id')
+    
+    print(f"📊 get_knowledge_levels called with domain_id: {domain_id}, difficulty_id: {difficulty_id}")
+    
+    try:
+        # Build query
+        query = {'is_active': True}
+        
+        if domain_id:
+            # Convert domain_id to int for matching
+            try:
+                domain_id_int = int(domain_id)
+                query['domain_id'] = domain_id_int
+                print(f"📊 Querying knowledge levels with domain_id: {domain_id_int}")
+            except:
+                print(f"⚠️ Could not convert domain_id to int: {domain_id}")
+                return jsonify({'knowledge_levels': []})
+        
+        if difficulty_id:
+            try:
+                query['difficulty_id'] = int(difficulty_id)
+            except:
+                pass
+        
+        # Get knowledge levels
+        levels = list(db.knowledge_levels.find(query).sort('id', 1))
+        
+        print(f"📊 Found {len(levels)} knowledge levels from database")
+        for level in levels:
+            print(f"  Level: {level.get('level_name')} - domain_id: {level.get('domain_id')} (type: {type(level.get('domain_id'))})")
+        
+        # Convert to frontend format
+        levels = convert_doc(levels)
+        
+        # If no levels found, return default mapping based on domain_id
+        if not levels:
+            print("📊 No levels found, using default mapping")
+            
+            # Default mapping from app.py
+            default_mapping = [
+                {'id': 1, 'level_name': 'Knowledge', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Basic recall of information and facts'},
+                {'id': 2, 'level_name': 'Remembering', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Retrieving knowledge from memory'},
+                {'id': 3, 'level_name': 'Understanding', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Constructing meaning from information'},
+                {'id': 4, 'level_name': 'Comprehension', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Grasping the meaning of information'},
+                {'id': 5, 'level_name': 'Application', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Apply knowledge to new situations'},
+                {'id': 6, 'level_name': 'Analysis', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Break down information into parts'},
+                {'id': 7, 'level_name': 'Synthesis', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Combine elements to form a new whole'},
+                {'id': 8, 'level_name': 'Empathy', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': "Understanding others' perspectives and feelings"},
+                {'id': 9, 'level_name': 'Interpretation', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Explaining and interpreting information'},
+                {'id': 10, 'level_name': 'Evaluation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Make judgments based on criteria and standards'},
+                {'id': 11, 'level_name': 'Creation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Generate new ideas and products'},
+                {'id': 12, 'level_name': 'Critical Thinking', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Deep analysis and evaluation of information'},
+                {'id': 13, 'level_name': 'Innovation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Novel approaches and solutions to problems'},
+                {'id': 14, 'level_name': 'Design Thinking', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Human-centered problem solving approach'},
+                {'id': 15, 'level_name': 'Reflection', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Thoughtful consideration and self-assessment'}
+            ]
+            
+            if domain_id:
+                try:
+                    domain_id_int = int(domain_id)
+                    levels = [l for l in default_mapping if l.get('domain_id') == domain_id_int]
+                    print(f"📊 Filtered default mapping for domain_id {domain_id_int}: {len(levels)} levels")
+                except:
+                    levels = []
+            else:
+                levels = default_mapping
+        
+        print(f"📊 Returning {len(levels)} knowledge levels")
+        return jsonify({'knowledge_levels': levels})
+    except Exception as e:
+        print(f"❌ Error in get_knowledge_levels: {e}")
+        traceback.print_exc()
+        return jsonify({'knowledge_levels': []})
+
+# ============================================
+# COGNITIVE DOMAINS
+# ============================================
+
+@app.route('/api/cognitive-domains', methods=['GET'])
+def get_cognitive_domains():
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    try:
+        domains = list(db.cognitive_domains.find({}).sort('id', 1))
+        domains = convert_doc(domains)
+        
+        print(f"📊 Returning {len(domains)} cognitive domains")
+        for domain in domains:
+            print(f"  Domain: {domain.get('domain_name')} - id: {domain.get('id')}")
+        
+        return jsonify({'domains': domains})
+    except Exception as e:
+        print(f"❌ Error in get_cognitive_domains: {e}")
+        return jsonify({'domains': []})
 
 # ============================================
 # TEXTBOOK ENDPOINTS
@@ -1483,7 +1629,6 @@ def get_competencies_api():
         return jsonify({'error': 'Not authenticated'}), 401
     
     try:
-        # Get ALL competencies - NO STATUS FILTER
         pipeline = [
             {'$lookup': {'from': 'curricular_goals', 'localField': 'cg_id', 'foreignField': 'id', 'as': 'cg_info'}},
             {'$addFields': {
@@ -1495,10 +1640,6 @@ def get_competencies_api():
         
         comps = list(db.competencies.aggregate(pipeline))
         comps = convert_doc(comps)
-        
-        print(f"📊 Returning {len(comps)} competencies")
-        for comp in comps:
-            print(f"  Competency: {comp.get('comp_code')} - cg_id: {comp.get('cg_id')}")
         
         return jsonify({'competencies': comps})
     except Exception as e:
@@ -1545,8 +1686,6 @@ def create_competency():
             'cg_id': cg_id_int,
             'status': status
         })
-        
-        print(f"✅ Created competency: {code} with cg_id: {cg_id_int}")
         
         return jsonify({'success': True, 'id': next_id})
     except Exception as e:
@@ -1631,68 +1770,6 @@ def toggle_competency_status(comp_id):
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-# ============================================
-# KNOWLEDGE LEVELS ENDPOINTS
-# ============================================
-
-@app.route('/api/knowledge-levels', methods=['GET'])
-def get_knowledge_levels():
-    if 'user' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    domain_id = request.args.get('domain_id')
-    difficulty_id = request.args.get('difficulty_id')
-    
-    try:
-        query = {'is_active': True}
-        if domain_id:
-            query['domain_id'] = int(domain_id)
-        elif difficulty_id:
-            query['difficulty_id'] = int(difficulty_id)
-        
-        levels = list(db.knowledge_levels.find(query))
-        levels = convert_doc(levels)
-        
-        if not levels:
-            # Return default levels if none found
-            default_levels = [
-                {'id': 1, 'level_name': 'Knowledge', 'description': 'Basic recall of information and facts', 'domain_id': 1},
-                {'id': 2, 'level_name': 'Remembering', 'description': 'Retrieving knowledge from memory', 'domain_id': 1},
-                {'id': 3, 'level_name': 'Understanding', 'description': 'Constructing meaning from information', 'domain_id': 1},
-                {'id': 4, 'level_name': 'Comprehension', 'description': 'Grasping the meaning of information', 'domain_id': 1},
-                {'id': 5, 'level_name': 'Application', 'description': 'Apply knowledge to new situations', 'domain_id': 2},
-                {'id': 6, 'level_name': 'Analysis', 'description': 'Break down information into parts', 'domain_id': 2},
-                {'id': 7, 'level_name': 'Synthesis', 'description': 'Combine elements to form a new whole', 'domain_id': 2},
-                {'id': 8, 'level_name': 'Empathy', 'description': "Understanding others' perspectives", 'domain_id': 2},
-                {'id': 9, 'level_name': 'Interpretation', 'description': 'Explaining and interpreting information', 'domain_id': 2},
-                {'id': 10, 'level_name': 'Evaluation', 'description': 'Make judgments based on criteria', 'domain_id': 3},
-                {'id': 11, 'level_name': 'Creation', 'description': 'Generate new ideas and products', 'domain_id': 3},
-                {'id': 12, 'level_name': 'Critical Thinking', 'description': 'Deep analysis and evaluation', 'domain_id': 3},
-                {'id': 13, 'level_name': 'Innovation', 'description': 'Novel approaches to problems', 'domain_id': 3},
-                {'id': 14, 'level_name': 'Design Thinking', 'description': 'Human-centered problem solving', 'domain_id': 3},
-                {'id': 15, 'level_name': 'Reflection', 'description': 'Thoughtful self-assessment', 'domain_id': 3}
-            ]
-            if domain_id:
-                filtered = [l for l in default_levels if l.get('domain_id') == int(domain_id)]
-                return jsonify({'knowledge_levels': filtered})
-            return jsonify({'knowledge_levels': default_levels})
-        
-        return jsonify({'knowledge_levels': levels})
-    except Exception as e:
-        return jsonify({'knowledge_levels': []})
-
-@app.route('/api/cognitive-domains', methods=['GET'])
-def get_cognitive_domains():
-    if 'user' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    try:
-        domains = list(db.cognitive_domains.find({}).sort('id', 1))
-        domains = convert_doc(domains)
-        return jsonify({'domains': domains})
-    except Exception as e:
-        return jsonify({'domains': []})
 
 # ============================================
 # SUBJECT GROUPS ENDPOINTS
@@ -2126,7 +2203,6 @@ def create_simple_question():
         username = session.get('user', 'Unknown')
         current_time = datetime.now()
         
-        # Convert string IDs to integers
         comp_id_int = int(comp_id) if comp_id else None
         grade_id_int = int(grade_id) if grade_id else None
         subject_id_int = int(subject_id) if subject_id else None
@@ -2173,7 +2249,6 @@ def create_simple_question():
             'reference_page': reference_page
         }
         
-        # Remove None values
         question_doc = {k: v for k, v in question_doc.items() if v is not None}
         
         next_id = get_next_id('simple_questions')
@@ -2559,41 +2634,6 @@ def debug_session():
             'MASTER': session.get('perm_master', False)
         }
     })
-
-@app.route('/api/debug/competencies')
-def debug_competencies():
-    if 'user' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    try:
-        comps = list(db.competencies.find({}))
-        cgs = list(db.curricular_goals.find({}))
-        
-        comps_data = []
-        for comp in comps:
-            comps_data.append({
-                'id': comp.get('id'),
-                'comp_code': comp.get('comp_code'),
-                'cg_id': comp.get('cg_id'),
-                'cg_id_type': type(comp.get('cg_id')).__name__,
-                'status': comp.get('status')
-            })
-        
-        cgs_data = []
-        for cg in cgs:
-            cgs_data.append({
-                'id': cg.get('id'),
-                'cg_code': cg.get('cg_code')
-            })
-        
-        return jsonify({
-            'competencies': comps_data,
-            'curricular_goals': cgs_data,
-            'comp_count': len(comps_data),
-            'cg_count': len(cgs_data)
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 # ============================================
 # MAIN
