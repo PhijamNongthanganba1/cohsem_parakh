@@ -829,9 +829,7 @@ def create_subject():
         })
     except Exception as e:
         traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/subjects/<int:subject_id>', methods=['PUT'])
+        return jsonify({'error': str(e)}), 500@app.route('/api/subjects/<int:subject_id>', methods=['PUT'])
 def update_subject(subject_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -1090,7 +1088,7 @@ def delete_textbook(textbook_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/subjects/<int:subject_id>/textbooks', methods=['GET'])
+@app.route('/api/subjects/<int:subject_id>/textbooks', methods(['GET'])
 def get_subject_textbooks(subject_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -1109,6 +1107,10 @@ def get_subject_textbooks(subject_id):
         return jsonify({'textbooks': textbooks})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/subjects/<int:subject_id>/textbooks', methods=['GET'])
+def get_subject_textbooks_route(subject_id):
+    return get_subject_textbooks(subject_id)
 
 # ============================================
 # CHAPTER ENDPOINTS
@@ -1409,7 +1411,7 @@ def delete_cg(cg_id):
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# COMPETENCY ENDPOINTS - CRITICAL FIX
+# COMPETENCY ENDPOINTS - CRITICAL FIX - REMOVED STATUS FILTER
 # ============================================
 
 @app.route('/api/competencies', methods=['GET'])
@@ -1418,15 +1420,8 @@ def get_competencies_api():
         return jsonify({'error': 'Not authenticated'}), 401
     
     try:
-        # Get ALL competencies first (including inactive ones for debugging)
-        all_comps = list(db.competencies.find({}))
-        print(f"📊 All competencies in DB: {len(all_comps)}")
-        for comp in all_comps:
-            print(f"  Competency: {comp.get('comp_code')} - cg_id: {comp.get('cg_id')} - status: {comp.get('status')}")
-        
-        # Get active competencies with proper numeric IDs
+        # Get ALL competencies - NO STATUS FILTER
         pipeline = [
-            {'$match': {'status': 1}},
             {'$lookup': {'from': 'curricular_goals', 'localField': 'cg_id', 'foreignField': 'id', 'as': 'cg_info'}},
             {'$addFields': {
                 'cg_code': {'$arrayElemAt': ['$cg_info.cg_code', 0]},
@@ -1438,9 +1433,9 @@ def get_competencies_api():
         comps = list(db.competencies.aggregate(pipeline))
         comps = convert_doc(comps)
         
-        print(f"📊 Returning {len(comps)} active competencies")
+        print(f"📊 Returning {len(comps)} competencies (all, no status filter)")
         for comp in comps:
-            print(f"  Competency: {comp.get('comp_code')} - cg_id: {comp.get('cg_id')} (type: {type(comp.get('cg_id'))})")
+            print(f"  Competency: {comp.get('comp_code')} - cg_id: {comp.get('cg_id')} - status: {comp.get('status')}")
         
         return jsonify({'competencies': comps})
     except Exception as e:
@@ -1480,7 +1475,7 @@ def create_competency():
             return jsonify({'error': f'Competency "{code}" already exists for this CG'}), 400
         
         next_id = get_next_id('competencies')
-        result = db.competencies.insert_one({
+        db.competencies.insert_one({
             'id': next_id,
             'comp_code': code,
             'comp_description': description,
