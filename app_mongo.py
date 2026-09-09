@@ -117,7 +117,31 @@ def convert_objectid(doc):
                     result[key] = str(value)
                 else:
                     result[key] = value
-            # Convert any other ObjectId fields
+            # Convert domain_id to string
+            elif key == 'domain_id':
+                if isinstance(value, ObjectId):
+                    result[key] = str(value)
+                else:
+                    result[key] = value
+            # Convert difficulty_id to string
+            elif key == 'difficulty_id':
+                if isinstance(value, ObjectId):
+                    result[key] = str(value)
+                else:
+                    result[key] = value
+            # Convert knowledge_level_id to string
+            elif key == 'knowledge_level_id':
+                if isinstance(value, ObjectId):
+                    result[key] = str(value)
+                else:
+                    result[key] = value
+            # Convert question_type_id to string
+            elif key == 'question_type_id':
+                if isinstance(value, ObjectId):
+                    result[key] = str(value)
+                else:
+                    result[key] = value
+            # Handle any other ObjectId
             elif isinstance(value, ObjectId):
                 result[key] = str(value)
             # Handle datetime
@@ -687,6 +711,10 @@ def dashboard_stats():
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
+# ============================================
+# GRADE ENDPOINTS
+# ============================================
+
 @app.route('/api/grades', methods=['GET'])
 def get_grades():
     if 'user' not in session:
@@ -778,7 +806,7 @@ def delete_grade(grade_id):
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# SUBJECT ENDPOINTS
+# SUBJECT ENDPOINTS - CRITICAL FIX FOR grade_id
 # ============================================
 
 @app.route('/api/subjects', methods=['GET'])
@@ -825,7 +853,14 @@ def get_subjects():
             else:
                 subjects = []
         
-        subjects = convert_objectid(subjects)
+        # CRITICAL: Convert ObjectId fields to string
+        for s in subjects:
+            if '_id' in s:
+                s['id'] = str(s['_id'])
+                del s['_id']
+            if 'grade_id' in s and isinstance(s['grade_id'], ObjectId):
+                s['grade_id'] = str(s['grade_id'])
+        
         return jsonify({'subjects': subjects})
     except Exception as e:
         traceback.print_exc()
@@ -867,7 +902,18 @@ def create_subject():
             'subject_name': name, 
             'grade_id': grade_id_obj
         })
-        return jsonify({'success': True, 'id': str(result.inserted_id)})
+        
+        # Get the created subject and convert IDs to strings
+        created_subject = db.subjects.find_one({'_id': result.inserted_id})
+        subject_id = str(result.inserted_id)
+        grade_id_str = str(grade_id_obj) if grade_id_obj else None
+        
+        return jsonify({
+            'success': True, 
+            'id': subject_id,
+            'grade_id': grade_id_str,
+            'subject_name': name
+        })
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
@@ -925,7 +971,7 @@ def delete_subject(subject_id):
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# CRITICAL FIX: PAGE1 DATA - Converts grade_id to string
+# PAGE1 DATA - CRITICAL FIX FOR grade_id
 # ============================================
 
 @app.route('/api/page1-data')
@@ -1061,7 +1107,7 @@ def get_page1_data():
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# OTHER API ENDPOINTS (Textbooks, Chapters, CGs, Competencies)
+# TEXTBOOK ENDPOINTS
 # ============================================
 
 @app.route('/api/textbooks', methods=['GET'])
@@ -1226,6 +1272,10 @@ def get_subject_textbooks(subject_id):
         return jsonify({'textbooks': textbooks})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# ============================================
+# CHAPTER ENDPOINTS
+# ============================================
 
 @app.route('/api/chapters', methods=['GET'])
 def get_chapters():
@@ -1397,6 +1447,10 @@ def get_subject_chapters(subject_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ============================================
+# CG ENDPOINTS
+# ============================================
+
 @app.route('/api/cgs', methods=['GET'])
 def get_cgs():
     if 'user' not in session:
@@ -1543,6 +1597,10 @@ def delete_cg(cg_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ============================================
+# COMPETENCY ENDPOINTS
+# ============================================
+
 @app.route('/api/competencies', methods=['GET'])
 def get_competencies_api():
     if 'user' not in session:
@@ -1684,6 +1742,10 @@ def toggle_competency_status(comp_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ============================================
+# SUBJECT GROUPS ENDPOINTS
+# ============================================
+
 @app.route('/api/subject-groups', methods=['GET'])
 def get_subject_groups():
     if 'user' not in session:
@@ -1822,6 +1884,10 @@ def delete_subject_group(group_id):
         return jsonify({'success': True, 'message': 'Group deleted successfully'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# ============================================
+# USER MANAGEMENT ENDPOINTS
+# ============================================
 
 @app.route('/api/users', methods=['GET'])
 def get_users():
