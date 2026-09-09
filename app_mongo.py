@@ -68,52 +68,68 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 def convert_objectid(doc):
     """
     Recursively convert ObjectId and datetime to serializable types.
-    CRITICAL: Converts grade_id from ObjectId to string for frontend compatibility.
+    CRITICAL FIX: Converts ALL ObjectId fields to strings, especially grade_id.
     """
     if isinstance(doc, list):
         return [convert_objectid(item) for item in doc]
     if isinstance(doc, dict):
         result = {}
         for key, value in doc.items():
+            # Handle _id field
             if key == '_id':
                 result[key] = str(value)
                 result['id'] = str(value)  # Add 'id' field for frontend
+            # CRITICAL: Convert grade_id to string
             elif key == 'grade_id':
-                # CRITICAL FIX: Convert grade_id to string
                 if isinstance(value, ObjectId):
                     result[key] = str(value)
                 elif value is None:
                     result[key] = None
                 else:
                     result[key] = str(value)
+            # Convert subject_id to string
             elif key == 'subject_id':
                 if isinstance(value, ObjectId):
                     result[key] = str(value)
                 else:
                     result[key] = value
+            # Convert cg_id to string
             elif key == 'cg_id':
                 if isinstance(value, ObjectId):
                     result[key] = str(value)
                 else:
                     result[key] = value
+            # Convert chapter_id to string
             elif key == 'chapter_id':
                 if isinstance(value, ObjectId):
                     result[key] = str(value)
                 else:
                     result[key] = value
+            # Convert comp_id to string
             elif key == 'comp_id':
                 if isinstance(value, ObjectId):
                     result[key] = str(value)
                 else:
                     result[key] = value
+            # Convert textbook_id to string
+            elif key == 'textbook_id':
+                if isinstance(value, ObjectId):
+                    result[key] = str(value)
+                else:
+                    result[key] = value
+            # Convert any other ObjectId fields
             elif isinstance(value, ObjectId):
                 result[key] = str(value)
+            # Handle datetime
             elif isinstance(value, datetime):
                 result[key] = value.isoformat()
+            # Recursively process lists
             elif isinstance(value, list):
                 result[key] = [convert_objectid(item) for item in value]
+            # Recursively process dicts
             elif isinstance(value, dict):
                 result[key] = convert_objectid(value)
+            # Keep other values as is
             else:
                 result[key] = value
         return result
@@ -762,7 +778,7 @@ def delete_grade(grade_id):
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# SUBJECT ENDPOINTS - CRITICAL FIX FOR grade_id
+# SUBJECT ENDPOINTS
 # ============================================
 
 @app.route('/api/subjects', methods=['GET'])
@@ -909,7 +925,7 @@ def delete_subject(subject_id):
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# PAGE1 DATA - CRITICAL FIX FOR grade_id
+# CRITICAL FIX: PAGE1 DATA - Converts grade_id to string
 # ============================================
 
 @app.route('/api/page1-data')
@@ -955,16 +971,18 @@ def get_page1_data():
             'cognitive_domains': []
         }
         
-        # Convert grades - ensure 'id' field exists
+        # Process grades
         for g in grades:
-            g['id'] = str(g['_id'])
+            grade_id_str = str(g['_id'])
+            g['id'] = grade_id_str
             if '_id' in g:
                 del g['_id']
             data['grades'].append(g)
         
-        # Convert subjects - CRITICAL: ensure grade_id is string
+        # Process subjects - CRITICAL: Convert grade_id to string
         for s in subjects:
-            s['id'] = str(s['_id'])
+            subject_id_str = str(s['_id'])
+            s['id'] = subject_id_str
             
             # CRITICAL FIX: Convert grade_id to string
             if 'grade_id' in s:
@@ -989,12 +1007,11 @@ def get_page1_data():
                 data['subjects_by_grade'][grade_id_str].append(s)
             data['subjects'].append(s)
         
-        # Convert CGs
+        # Process CGs
         for cg in cgs:
             cg['id'] = str(cg['_id'])
-            if cg.get('subject_id'):
-                if isinstance(cg['subject_id'], ObjectId):
-                    cg['subject_id'] = str(cg['subject_id'])
+            if cg.get('subject_id') and isinstance(cg['subject_id'], ObjectId):
+                cg['subject_id'] = str(cg['subject_id'])
             if cg.get('chapter_id') and isinstance(cg['chapter_id'], ObjectId):
                 cg['chapter_id'] = str(cg['chapter_id'])
             
@@ -1008,12 +1025,11 @@ def get_page1_data():
                 data['cgs_by_subject'][subject_id_str].append(cg)
             data['cgs'].append(cg)
         
-        # Convert Competencies
+        # Process Competencies
         for comp in competencies:
             comp['id'] = str(comp['_id'])
-            if comp.get('cg_id'):
-                if isinstance(comp['cg_id'], ObjectId):
-                    comp['cg_id'] = str(comp['cg_id'])
+            if comp.get('cg_id') and isinstance(comp['cg_id'], ObjectId):
+                comp['cg_id'] = str(comp['cg_id'])
             
             if '_id' in comp:
                 del comp['_id']
@@ -1025,14 +1041,14 @@ def get_page1_data():
                 data['comps_by_cg'][cg_id_str].append(comp)
             data['competencies'].append(comp)
         
-        # Convert Question Types
+        # Process Question Types
         for qt in question_types:
             qt['id'] = str(qt['_id'])
             if '_id' in qt:
                 del qt['_id']
             data['question_types'].append(qt)
         
-        # Convert Cognitive Domains
+        # Process Cognitive Domains
         for cd in cognitive_domains:
             cd['id'] = str(cd['_id'])
             if '_id' in cd:
@@ -1068,9 +1084,9 @@ def get_textbooks():
                 query['subject_id'] = {'$in': subject_ids}
         
         if subject_id:
-            query['subject_id'] = ObjectId(subject_id)
+            query['subject_id'] = ObjectId(subject_id) if len(subject_id) == 24 else subject_id
         if grade_id:
-            query['grade_id'] = ObjectId(grade_id)
+            query['grade_id'] = ObjectId(grade_id) if len(grade_id) == 24 else grade_id
         if book_type == 'textbook':
             query['is_reference'] = {'$ne': 1}
         elif book_type == 'reference':
@@ -1199,7 +1215,7 @@ def get_subject_textbooks(subject_id):
     book_type = request.args.get('book_type')
     
     try:
-        query = {'subject_id': ObjectId(subject_id)}
+        query = {'subject_id': ObjectId(subject_id) if len(subject_id) == 24 else subject_id}
         if book_type == 'textbook':
             query['is_reference'] = {'$ne': 1}
         elif book_type == 'reference':
@@ -1223,7 +1239,7 @@ def get_chapters():
     try:
         query = {}
         if subject_id:
-            query['subject_id'] = ObjectId(subject_id)
+            query['subject_id'] = ObjectId(subject_id) if len(subject_id) == 24 else subject_id
         
         if user_role != 'admin' and subject_group:
             subject_ids = [row['subject_id'] for row in db.subject_groups.find({'group_code': subject_group})]
@@ -1375,7 +1391,7 @@ def get_subject_chapters(subject_id):
         return jsonify({'error': 'Not authenticated'}), 401
     
     try:
-        chapters = list(db.chapters.find({'subject_id': ObjectId(subject_id)}).sort('chapter_number', 1))
+        chapters = list(db.chapters.find({'subject_id': ObjectId(subject_id) if len(subject_id) == 24 else subject_id}).sort('chapter_number', 1))
         chapters = convert_objectid(chapters)
         return jsonify({'chapters': chapters})
     except Exception as e:
@@ -1394,9 +1410,9 @@ def get_cgs():
     try:
         query = {}
         if subject_id:
-            query['subject_id'] = ObjectId(subject_id)
+            query['subject_id'] = ObjectId(subject_id) if len(subject_id) == 24 else subject_id
         if chapter_id:
-            query['chapter_id'] = ObjectId(chapter_id)
+            query['chapter_id'] = ObjectId(chapter_id) if len(chapter_id) == 24 else chapter_id
         
         if user_role != 'admin' and subject_group:
             subject_ids = [row['subject_id'] for row in db.subject_groups.find({'group_code': subject_group})]
@@ -2046,7 +2062,7 @@ def get_approvers():
         return jsonify({'error': str(e)}), 500
 
 # ============================================
-# QUESTION REVIEW OPERATIONS (Continued)
+# QUESTION REVIEW OPERATIONS
 # ============================================
 
 @app.route('/api/master-review-question/<question_id>', methods=['POST'])
