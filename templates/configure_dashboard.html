@@ -770,6 +770,8 @@
             </div>
         </div>
     </div>
+    
+    <!-- Modals -->
     <div class="modal" id="addEditModal">
         <div class="modal-content">
             <div class="modal-header"><h3><i class="fas fa-plus-circle"></i> <span id="modalTitle">Add Item</span></h3><button class="close-btn" onclick="closeModal('addEditModal')">&times;</button></div>
@@ -777,6 +779,7 @@
             <div class="modal-footer"><button class="btn btn-danger" onclick="closeModal('addEditModal')">Cancel</button><button class="btn btn-success" id="saveItemBtn" onclick="saveItem()">Save</button></div>
         </div>
     </div>
+    
     <div class="modal" id="chapterModal">
         <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header" style="background: linear-gradient(135deg, #27ae60, #2ecc71);"><h3><i class="fas fa-book"></i> <span id="chapterModalTitle">Add Chapter</span></h3><button class="close-btn" onclick="closeModal('chapterModal')">&times;</button></div>
@@ -796,6 +799,7 @@
             <div class="modal-footer"><button class="btn btn-danger" onclick="closeModal('chapterModal')">Cancel</button><button class="btn btn-success" onclick="saveChapter()">Save Chapter</button></div>
         </div>
     </div>
+    
     <div class="modal" id="textbookModal">
         <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header" style="background: linear-gradient(135deg, #8e44ad, #9b59b6);">
@@ -1050,6 +1054,10 @@
             });
         }
 
+        // ============================================
+        // GRADE FUNCTIONS
+        // ============================================
+
         async function loadGrades() {
             try {
                 const response = await fetch('/api/grades');
@@ -1126,6 +1134,10 @@
             }
         }
 
+        // ============================================
+        // SUBJECT FUNCTIONS
+        // ============================================
+
         async function loadSubjects(gradeId) {
             try {
                 const gradeIdStr = gradeId.toString();
@@ -1133,25 +1145,10 @@
                 
                 const response = await fetch('/api/page1-data');
                 const data = await response.json();
-                console.log('📦 API response received');
-                console.log('📚 Total subjects in response:', data.subjects?.length || 0);
-                
-                if (data.subjects && data.subjects.length > 0) {
-                    console.log('📋 All subjects:', data.subjects.map(s => ({
-                        id: s.id,
-                        name: s.subject_name,
-                        grade_id: s.grade_id,
-                        grade_id_type: typeof s.grade_id
-                    })));
-                }
                 
                 subjects = data.subjects?.filter(s => {
                     const sGradeId = s.grade_id ? s.grade_id.toString() : '';
-                    const match = sGradeId === gradeIdStr;
-                    if (match) {
-                        console.log('✅ Matched subject:', s.subject_name, 'grade_id:', sGradeId);
-                    }
-                    return match;
+                    return sGradeId === gradeIdStr;
                 }) || [];
                 
                 console.log(`🎯 Filtered ${subjects.length} subjects for grade ${gradeIdStr}`);
@@ -1163,11 +1160,7 @@
                             <i class="fas fa-book" style="font-size: 40px; display: block; margin-bottom: 10px; opacity: 0.3;"></i>
                             <h3 style="color: white; margin-bottom: 10px;">No Subjects Found</h3>
                             <p style="color: rgba(255,255,255,0.5);">No subjects found for this grade.</p>
-                            <p style="color: rgba(255,255,255,0.3); font-size: 12px;">Grade ID: ${gradeIdStr}</p>
                             ${isAdmin ? `<br><button class="btn btn-success" onclick="openAddModal('subject')"><i class="fas fa-plus"></i> Add New Subject</button>` : ''}
-                            <div style="margin-top: 10px;">
-                                <button class="btn btn-primary" onclick="loadSubjects('${gradeIdStr}')"><i class="fas fa-redo"></i> Refresh</button>
-                            </div>
                         </div>
                     `;
                     return;
@@ -1176,7 +1169,6 @@
                     <div class="card" onclick="selectSubject('${s.id}', '${s.subject_name}')">
                         <div class="card-icon"><i class="fas fa-book"></i></div>
                         <h3>${s.subject_name}</h3>
-                        <p style="font-size: 10px; color: rgba(255,255,255,0.3);">ID: ${s.id}</p>
                         <div class="metadata-actions">
                             ${isAdmin ? `
                                 <button class="action-btn action-edit" onclick="event.stopPropagation(); openEditModal('subject', '${s.id}', '${s.subject_name}', '${s.grade_id}')"><i class="fas fa-edit"></i></button>
@@ -1191,9 +1183,6 @@
                     <div class="error-message" style="grid-column: span 3;">
                         <i class="fas fa-exclamation-circle"></i>
                         <strong>Error:</strong> ${e.message}
-                        <div style="margin-top: 10px;">
-                            <button class="btn btn-primary" onclick="loadSubjects('${gradeId}')"><i class="fas fa-redo"></i> Retry</button>
-                        </div>
                     </div>
                 `;
             }
@@ -1251,9 +1240,13 @@
             }
         }
 
+        // ============================================
+        // TEXTBOOK FUNCTIONS
+        // ============================================
+
         async function loadTextbooks(subjectId) {
             const container = document.getElementById('textbookGrid');
-            container.innerHTML = `<div class="loading" style="grid-column: span 3;"><i class="fas fa-spinner fa-pulse"></i><br>Loading books...<br><small style="color: rgba(255,255,255,0.3);">Subject ID: ${subjectId}</small></div>`;
+            container.innerHTML = `<div class="loading" style="grid-column: span 3;"><i class="fas fa-spinner fa-pulse"></i><br>Loading books...</div>`;
             
             try {
                 const response = await fetch(`/api/subjects/${subjectId}/textbooks`);
@@ -1301,9 +1294,6 @@
                     <div class="error-message" style="grid-column: span 3;">
                         <i class="fas fa-exclamation-circle"></i>
                         <strong>Error:</strong> ${error.message}
-                        <div style="margin-top: 10px;">
-                            <button class="btn btn-primary" onclick="loadTextbooks(${subjectId})"><i class="fas fa-redo"></i> Retry</button>
-                        </div>
                     </div>
                 `;
             }
@@ -1464,16 +1454,13 @@
             }
         }
 
+        // ============================================
+        // CHAPTER FUNCTIONS
+        // ============================================
+
         async function loadChapters(textbookId) {
             const container = document.getElementById('chapterGrid');
-            
-            container.innerHTML = `
-                <div class="loading" style="grid-column: span 3;">
-                    <i class="fas fa-spinner fa-pulse"></i><br>
-                    Loading chapters...<br>
-                    <small style="color: rgba(255,255,255,0.3);">Textbook ID: ${textbookId}</small>
-                </div>
-            `;
+            container.innerHTML = `<div class="loading" style="grid-column: span 3;"><i class="fas fa-spinner fa-pulse"></i><br>Loading chapters...</div>`;
             
             try {
                 let subjectId = currentSelections.subject ? currentSelections.subject.id : null;
@@ -1490,11 +1477,7 @@
                 }
                 
                 const response = await fetch(`/api/subjects/${subjectId}/chapters`);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const data = await response.json();
                 chapters = data.chapters || [];
                 
@@ -1530,9 +1513,6 @@
                     <div class="error-message" style="grid-column: span 3;">
                         <i class="fas fa-exclamation-circle"></i>
                         <strong>Error:</strong> ${error.message}
-                        <div style="margin-top: 10px;">
-                            <button class="btn btn-primary" onclick="loadChapters(${textbookId})"><i class="fas fa-redo"></i> Retry</button>
-                        </div>
                     </div>
                 `;
             }
@@ -1650,7 +1630,7 @@
             if(!isAdmin) return Swal.fire('Access Denied', 'Only administrators can delete chapters', 'error');
             const result = await Swal.fire({ 
                 title: 'Delete Chapter?', 
-                text: '', 
+                text: 'This will delete the chapter and all associated questions. This cannot be undone!', 
                 icon: 'warning', 
                 showCancelButton: true, 
                 confirmButtonColor: '#e74c3c', 
@@ -1682,24 +1662,19 @@
             }
         }
 
+        // ============================================
+        // CG FUNCTIONS
+        // ============================================
+
         async function loadCGs(subjectId) {
             const container = document.getElementById('cgGrid');
-            container.innerHTML = `
-                <div class="loading" style="grid-column: span 3;">
-                    <i class="fas fa-spinner fa-pulse"></i><br>
-                    Loading curricular goals...<br>
-                    <small style="color: rgba(255,255,255,0.3);">Subject ID: ${subjectId}</small>
-                </div>
-            `;
+            container.innerHTML = `<div class="loading" style="grid-column: span 3;"><i class="fas fa-spinner fa-pulse"></i><br>Loading curricular goals...</div>`;
             
             try {
                 const response = await fetch(`/api/cgs?subject_id=${subjectId}`);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const data = await response.json();
                 let cgsData = data.cgs || [];
-                if (!Array.isArray(cgsData)) {
-                    cgsData = Object.values(cgsData).filter(item => typeof item === 'object' && item !== null);
-                }
                 cgs = cgsData;
                 
                 if (cgsData.length === 0) {
@@ -1741,9 +1716,6 @@
                     <div class="error-message" style="grid-column: span 3;">
                         <i class="fas fa-exclamation-circle"></i>
                         <strong>Error:</strong> ${error.message}
-                        <div style="margin-top: 10px;">
-                            <button class="btn btn-primary" onclick="loadCGs(${subjectId})"><i class="fas fa-redo"></i> Retry</button>
-                        </div>
                     </div>
                 `;
             }
@@ -1793,6 +1765,10 @@
             }
         }
 
+        // ============================================
+        // COMPETENCY FUNCTIONS - CRITICAL FIX
+        // ============================================
+
         async function loadCompetencies(cgId) {
             const container = document.getElementById('competencyGrid');
             container.innerHTML = `
@@ -1807,11 +1783,23 @@
                 const response = await fetch('/api/competencies');
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const data = await response.json();
+                
+                console.log('📊 All competencies from API:', data.competencies);
+                
                 const allComps = data.competencies || [];
+                
+                // CRITICAL FIX: Compare cg_id correctly - convert both to string
                 competencies = allComps.filter(c => {
-                    const cCgId = c.cg_id ? c.cg_id.toString() : '';
-                    return cCgId === cgId.toString();
+                    const cCgId = c.cg_id !== undefined && c.cg_id !== null ? c.cg_id.toString() : '';
+                    const targetCgId = cgId.toString();
+                    const match = cCgId === targetCgId;
+                    if (match) {
+                        console.log('✅ Matched competency:', c.comp_code, 'cg_id:', c.cg_id);
+                    }
+                    return match;
                 });
+                
+                console.log(`🎯 Filtered ${competencies.length} competencies for CG ${cgId}`);
                 
                 if (competencies.length === 0) {
                     container.innerHTML = `
@@ -1819,7 +1807,12 @@
                             <i class="fas fa-tasks" style="font-size: 40px; display: block; margin-bottom: 10px; opacity: 0.3;"></i>
                             <h3 style="color: white; margin-bottom: 10px;">No Competencies Found</h3>
                             <p style="color: rgba(255,255,255,0.5);">No Competencies found for this Curricular Goal.</p>
+                            <p style="color: rgba(255,255,255,0.3); font-size: 12px;">CG ID: ${cgId}</p>
+                            <p style="color: rgba(255,255,255,0.3); font-size: 12px;">Total competencies in system: ${allComps.length}</p>
                             ${isAdmin ? `<br><button class="btn btn-success" onclick="openAddModal('competency')"><i class="fas fa-plus"></i> Add New Competencies</button>` : ''}
+                            <div style="margin-top: 10px;">
+                                <button class="btn btn-primary" onclick="loadCompetencies('${cgId}')"><i class="fas fa-redo"></i> Refresh</button>
+                            </div>
                         </div>
                     `;
                     return;
@@ -1853,6 +1846,7 @@
                     `;
                 });
                 container.innerHTML = html;
+                
             } catch (error) {
                 console.error('Error loading Competencies:', error);
                 container.innerHTML = `
@@ -1860,7 +1854,7 @@
                         <i class="fas fa-exclamation-circle"></i>
                         <strong>Error:</strong> ${error.message}
                         <div style="margin-top: 10px;">
-                            <button class="btn btn-primary" onclick="loadCompetencies(${cgId})"><i class="fas fa-redo"></i> Retry</button>
+                            <button class="btn btn-primary" onclick="loadCompetencies('${cgId}')"><i class="fas fa-redo"></i> Retry</button>
                         </div>
                     </div>
                 `;
@@ -1945,6 +1939,10 @@
             }
         }
 
+        // ============================================
+        // ADD/EDIT MODAL FUNCTIONS
+        // ============================================
+
         function openAddModal(type) {
             if(!isAdmin) return showViewOnly(type, '');
             document.getElementById('editItemId').value = '';
@@ -1960,7 +1958,6 @@
                     if (!selectedGradeId && grades.length > 0) {
                         selectedGradeId = grades[0].id;
                     }
-                    console.log('📝 Selected grade for new subject:', selectedGradeId);
                     fields = `
                         <div class="form-group"><label>Subject Name *</label><input type="text" id="editName" class="form-control" placeholder="e.g., Physics, Chemistry" required></div>
                         <div class="form-group"><label>Grade *</label>
@@ -2053,7 +2050,6 @@
                         Swal.fire('Error', 'Please select a grade', 'error');
                         return;
                     }
-                    console.log('📝 Saving subject with grade_id:', gradeId);
                     data = { 
                         name: document.getElementById('editName').value, 
                         grade_id: gradeId 
@@ -2183,14 +2179,11 @@
                 const response = await fetch('/api/page1-data');
                 const data = await response.json();
                 const gradeIdStr = gradeId.toString();
-                console.log('🔍 Loading subjects for group, grade:', gradeIdStr);
                 
                 const subjectList = data.subjects?.filter(s => {
                     const sGradeId = s.grade_id ? s.grade_id.toString() : '';
                     return sGradeId === gradeIdStr;
                 }) || [];
-                
-                console.log('📚 Filtered subjects for group:', subjectList.length);
                 
                 const subjectSelect = document.getElementById('groupSubject');
                 subjectSelect.innerHTML = '<option value="">Select Subject</option>';
@@ -2223,7 +2216,6 @@
             const subjectSelect = document.getElementById('groupSubject');
             if(gradeSelect.value && subjectSelect.value) {
                 const gradeName = gradeSelect.options[gradeSelect.selectedIndex].textContent;
-                
                 const gradeCode = getGradeCode(gradeName);
                 const subjectName = subjectSelect.options[subjectSelect.selectedIndex].textContent;
                 const subjectPrefix = getSubjectPrefix(subjectName);
@@ -2259,7 +2251,6 @@
             if (numMatch) {
                 const num = parseInt(numMatch[1]);
                 if (num <= 10) return num.toString();
-                
                 const romanNumerals = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV'];
                 if (num <= 15) return romanNumerals[num];
                 return num.toString();
