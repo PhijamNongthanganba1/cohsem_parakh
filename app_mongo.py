@@ -773,7 +773,21 @@ def get_grades():
         return jsonify({'error': 'Not authenticated'}), 401
     
     try:
-        grades = list(db.grades.find({}).sort('id', 1))
+        user_role = session.get('user_role', 'writer')
+        subject_group = session.get('subject_group')
+        
+        if user_role == 'admin' or not subject_group:
+            grades = list(db.grades.find({}).sort('id', 1))
+        else:
+            group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
+            subject_ids = [s['subject_id'] for s in group_subjects]
+            if subject_ids:
+                subjects_in_group = list(db.subjects.find({'id': {'$in': subject_ids}}))
+                grade_ids = list(set([s['grade_id'] for s in subjects_in_group if s.get('grade_id')]))
+                grades = list(db.grades.find({'id': {'$in': grade_ids}}).sort('id', 1)) if grade_ids else []
+            else:
+                grades = []
+        
         grades = convert_doc(grades)
         return jsonify({'grades': grades})
     except Exception as e:
@@ -855,7 +869,19 @@ def get_subjects():
         return jsonify({'error': 'Not authenticated'}), 401
     
     try:
-        subjects = list(db.subjects.find({}).sort('id', 1))
+        user_role = session.get('user_role', 'writer')
+        subject_group = session.get('subject_group')
+        
+        if user_role == 'admin' or not subject_group:
+            subjects = list(db.subjects.find({}).sort('id', 1))
+        else:
+            group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
+            subject_ids = [s['subject_id'] for s in group_subjects]
+            if subject_ids:
+                subjects = list(db.subjects.find({'id': {'$in': subject_ids}}).sort('id', 1))
+            else:
+                subjects = []
+        
         subjects = convert_doc(subjects)
         return jsonify({'subjects': subjects})
     except Exception as e:
@@ -984,38 +1010,27 @@ def get_page1_data():
         subject_group = session.get('subject_group')
         username = session.get('user', '')
         
-        grades = list(db.grades.find({}))
-        
-        if subject_group and user_role != 'admin':
+        if user_role == 'admin' or not subject_group:
+            grades = list(db.grades.find({}).sort('id', 1))
+            subjects = list(db.subjects.find({}).sort('id', 1))
+            cgs = list(db.curricular_goals.find({}).sort('id', 1))
+            competencies = list(db.competencies.find({}).sort('id', 1))
+        else:
             group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
             subject_ids = [s['subject_id'] for s in group_subjects]
             
             if subject_ids:
-                subjects_in_group = list(db.subjects.find({'id': {'$in': subject_ids}}))
-                grade_ids = list(set([s['grade_id'] for s in subjects_in_group]))
-                grades = [g for g in grades if g['id'] in grade_ids]
+                subjects = list(db.subjects.find({'id': {'$in': subject_ids}}).sort('id', 1))
+                grade_ids = list(set([s['grade_id'] for s in subjects if s.get('grade_id')]))
+                grades = list(db.grades.find({'id': {'$in': grade_ids}}).sort('id', 1)) if grade_ids else []
+                cgs = list(db.curricular_goals.find({'subject_id': {'$in': subject_ids}}).sort('id', 1))
+                cg_ids = [cg['id'] for cg in cgs]
+                competencies = list(db.competencies.find({'cg_id': {'$in': cg_ids}}).sort('id', 1)) if cg_ids else []
             else:
                 grades = []
-        
-        subjects = list(db.subjects.find({}))
-        if subject_group and user_role != 'admin':
-            group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
-            subject_ids = [s['subject_id'] for s in group_subjects]
-            if subject_ids:
-                subjects = [s for s in subjects if s['id'] in subject_ids]
-        
-        cgs = list(db.curricular_goals.find({}))
-        if subject_group and user_role != 'admin':
-            group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
-            subject_ids = [s['subject_id'] for s in group_subjects]
-            if subject_ids:
-                cgs = [cg for cg in cgs if cg['subject_id'] in subject_ids]
-        
-        competencies = list(db.competencies.find({}))
-        if subject_group and user_role != 'admin':
-            cg_ids = [cg['id'] for cg in cgs]
-            if cg_ids:
-                competencies = [comp for comp in competencies if comp['cg_id'] in cg_ids]
+                subjects = []
+                cgs = []
+                competencies = []
         
         question_types = list(db.question_types.find({}))
         cognitive_domains = list(db.cognitive_domains.find({}))
@@ -1247,6 +1262,9 @@ def get_textbooks():
     book_type = request.args.get('book_type')
     
     try:
+        user_role = session.get('user_role', 'writer')
+        subject_group = session.get('subject_group')
+        
         query = {}
         if subject_id:
             query['subject_id'] = int(subject_id)
@@ -1256,6 +1274,21 @@ def get_textbooks():
             query['is_reference'] = {'$ne': 1}
         elif book_type == 'reference':
             query['is_reference'] = 1
+        
+        if user_role != 'admin' and subject_group:
+            group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
+            subject_ids = [s['subject_id'] for s in group_subjects]
+            if subject_ids:
+                if subject_id:
+                    try:
+                        if int(subject_id) not in subject_ids:
+                            return jsonify({'textbooks': []})
+                    except:
+                        return jsonify({'textbooks': []})
+                else:
+                    query['subject_id'] = {'$in': subject_ids}
+            else:
+                return jsonify({'textbooks': []})
         
         textbooks = list(db.textbooks.find(query).sort('textbook_name', 1))
         textbooks = convert_doc(textbooks)
@@ -1372,6 +1405,15 @@ def get_subject_textbooks(subject_id):
     book_type = request.args.get('book_type')
     
     try:
+        user_role = session.get('user_role', 'writer')
+        subject_group = session.get('subject_group')
+        
+        if user_role != 'admin' and subject_group:
+            group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
+            subject_ids = [s['subject_id'] for s in group_subjects]
+            if subject_id not in subject_ids:
+                return jsonify({'textbooks': []})
+        
         query = {'subject_id': subject_id}
         if book_type == 'textbook':
             query['is_reference'] = {'$ne': 1}
@@ -1392,9 +1434,27 @@ def get_chapters():
     subject_id = request.args.get('subject_id')
     
     try:
+        user_role = session.get('user_role', 'writer')
+        subject_group = session.get('subject_group')
+        
         query = {}
         if subject_id:
             query['subject_id'] = int(subject_id)
+        
+        if user_role != 'admin' and subject_group:
+            group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
+            subject_ids = [s['subject_id'] for s in group_subjects]
+            if subject_ids:
+                if subject_id:
+                    try:
+                        if int(subject_id) not in subject_ids:
+                            return jsonify({'chapters': []})
+                    except:
+                        return jsonify({'chapters': []})
+                else:
+                    query['subject_id'] = {'$in': subject_ids}
+            else:
+                return jsonify({'chapters': []})
         
         pipeline = [
             {'$match': query},
@@ -1533,6 +1593,15 @@ def get_subject_chapters(subject_id):
         return jsonify({'error': 'Not authenticated'}), 401
     
     try:
+        user_role = session.get('user_role', 'writer')
+        subject_group = session.get('subject_group')
+        
+        if user_role != 'admin' and subject_group:
+            group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
+            subject_ids = [s['subject_id'] for s in group_subjects]
+            if subject_id not in subject_ids:
+                return jsonify({'chapters': []})
+        
         chapters = list(db.chapters.find({'subject_id': subject_id}).sort('chapter_number', 1))
         chapters = convert_doc(chapters)
         return jsonify({'chapters': chapters})
@@ -1548,11 +1617,29 @@ def get_cgs():
     chapter_id = request.args.get('chapter_id')
     
     try:
+        user_role = session.get('user_role', 'writer')
+        subject_group = session.get('subject_group')
+        
         query = {}
         if subject_id:
             query['subject_id'] = int(subject_id)
         if chapter_id:
             query['chapter_id'] = int(chapter_id)
+        
+        if user_role != 'admin' and subject_group:
+            group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
+            subject_ids = [s['subject_id'] for s in group_subjects]
+            if subject_ids:
+                if subject_id:
+                    try:
+                        if int(subject_id) not in subject_ids:
+                            return jsonify({'cgs': []})
+                    except:
+                        return jsonify({'cgs': []})
+                else:
+                    query['subject_id'] = {'$in': subject_ids}
+            else:
+                return jsonify({'cgs': []})
         
         pipeline = [
             {'$match': query},
@@ -1680,14 +1767,33 @@ def get_competencies_api():
         return jsonify({'error': 'Not authenticated'}), 401
     
     try:
-        pipeline = [
+        user_role = session.get('user_role', 'writer')
+        subject_group = session.get('subject_group')
+        
+        match_stage = {}
+        
+        if user_role != 'admin' and subject_group:
+            group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
+            subject_ids = [s['subject_id'] for s in group_subjects]
+            if not subject_ids:
+                return jsonify({'competencies': []})
+            group_cgs = list(db.curricular_goals.find({'subject_id': {'$in': subject_ids}}))
+            cg_ids = [cg['id'] for cg in group_cgs]
+            if not cg_ids:
+                return jsonify({'competencies': []})
+            match_stage = {'$match': {'cg_id': {'$in': cg_ids}}}
+        
+        pipeline = []
+        if match_stage:
+            pipeline.append(match_stage)
+        pipeline.extend([
             {'$lookup': {'from': 'curricular_goals', 'localField': 'cg_id', 'foreignField': 'id', 'as': 'cg_info'}},
             {'$addFields': {
                 'cg_code': {'$arrayElemAt': ['$cg_info.cg_code', 0]},
                 'subject_id': {'$arrayElemAt': ['$cg_info.subject_id', 0]}
             }},
             {'$project': {'cg_info': 0}}
-        ]
+        ])
         
         comps = list(db.competencies.aggregate(pipeline))
         comps = convert_doc(comps)
