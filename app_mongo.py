@@ -1095,9 +1095,9 @@ def get_page2_data():
         
         if not domains:
             domains = [
-                {'id': 1, 'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
-                {'id': 2, 'domain_name': 'Sensitivity', 'description': 'Sensitivity to applications and real-world connections'},
-                {'id': 3, 'domain_name': 'Creativity', 'description': 'Creative thinking and problem solving'}
+                {'id': 1, 'domain_name': 'Awareness', 'description': ''},
+                {'id': 2, 'domain_name': 'Sensitivity', 'description': ''},
+                {'id': 3, 'domain_name': 'Creativity', 'description': ''}
             ]
             for domain in domains:
                 if not db.cognitive_domains.find_one({'id': domain['id']}):
@@ -1222,9 +1222,9 @@ def get_cognitive_domains():
         
         if not domains:
             default_domains = [
-                {'id': 1, 'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
-                {'id': 2, 'domain_name': 'Sensitivity', 'description': 'Sensitivity to applications and real-world connections'},
-                {'id': 3, 'domain_name': 'Creativity', 'description': 'Creative thinking and problem solving'}
+                {'id': 1, 'domain_name': 'Awareness', 'description': ''},
+                {'id': 2, 'domain_name': 'Sensitivity', 'description': ''},
+                {'id': 3, 'domain_name': 'Creativity', 'description': ''}
             ]
             for domain in default_domains:
                 if not db.cognitive_domains.find_one({'id': domain['id']}):
@@ -2311,7 +2311,7 @@ def review_question(question_id):
         
         if not has_approver_perm:
             return jsonify({
-                'error': f'Selected user "{approver.get("username")}" does not have approver permissions. Please select a user with Approver role or AP permission.'
+                'error': f'Selected user "{approver.get("username")}" does not have approver permissions. Please select a user with Approver permission.'
             }), 400
         
         if user_role != 'admin' and subject_group:
