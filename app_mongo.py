@@ -14,7 +14,7 @@ import sys
 import ssl
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'cohsem_it_secure_key_2026_change_this_in_production')
+app.secret_key = os.environ.get('SECRET_KEY', 'my_new_secret_key_here_12345')
 
 MONGO_URI = 'mongodb+srv://nongthanganbaphijam_db_user:BG2uPkyRu1L4ov30@cluster0.b5arftz.mongodb.net/?retryWrites=true&w=majority'
 
