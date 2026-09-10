@@ -13,14 +13,10 @@ import pymongo
 import sys
 import ssl
 
-print(f" Python version: {sys.version}")
-
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'cohsem_it_secure_key_2026_change_this_in_production')
 
 MONGO_URI = 'mongodb+srv://nongthanganbaphijam_db_user:BG2uPkyRu1L4ov30@cluster0.b5arftz.mongodb.net/?retryWrites=true&w=majority'
-
-print(f"🔗 Connecting to MongoDB Atlas...")
 
 class MongoJSONEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -41,7 +37,6 @@ try:
     )
     client.admin.command('ping')
     db = client['cohsemitms']
-    print(" MongoDB Atlas connected successfully!")
     
     app.config["MONGO_URI"] = MONGO_URI
     mongo = PyMongo(app)
@@ -49,7 +44,6 @@ try:
     mongo.cx = client
     
 except Exception as e:
-    print(f" MongoDB connection failed: {e}")
     sys.exit(1)
 
 # --- File Upload Configuration ---
@@ -166,13 +160,9 @@ def init_db():
                 {'_id': 'paper_blueprints', 'seq': 0}
             ]
             db.counters.insert_many(counters)
-            print("✓ Initialized counters")
-        
-        print("🔄 Creating indexes...")
         
         try:
             db.knowledge_levels.drop_index('id_1')
-            print("  Dropped existing id_1 index on knowledge_levels")
         except:
             pass
         
@@ -189,41 +179,33 @@ def init_db():
         try:
             db.knowledge_levels.delete_many({'id': None})
             db.knowledge_levels.create_index('id', unique=True)
-            print("  ✓ Created id index on knowledge_levels")
         except pymongo.errors.DuplicateKeyError as e:
-            print(f"   DuplicateKeyError on knowledge_levels: {e}")
             db.knowledge_levels.delete_many({'id': None})
             try:
                 db.knowledge_levels.drop_index('id_1')
             except:
                 pass
             db.knowledge_levels.create_index('id', unique=True)
-            print("   Fixed and created id index on knowledge_levels")
         
         db.knowledge_levels.create_index([('domain_id', 1), ('level_name', 1)], unique=True)
         
-        print(" Setting up cognitive domains with numeric IDs...")
-        
         domains_data = [
-            {'id': 1, 'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
-            {'id': 2, 'domain_name': 'Sensitivity', 'description': 'Sensitivity to applications and real-world connections'},
-            {'id': 3, 'domain_name': 'Creativity', 'description': 'Creative thinking and problem solving'}
+            {'id': 1, 'domain_name': 'Awareness', 'description': ''},
+            {'id': 2, 'domain_name': 'Sensitivity', 'description': ''},
+            {'id': 3, 'domain_name': 'Creativity', 'description': ''}
         ]
         
         for domain in domains_data:
             existing = db.cognitive_domains.find_one({'id': domain['id']})
             if not existing:
                 db.cognitive_domains.insert_one(domain)
-                print(f"   Inserted cognitive domain: {domain['domain_name']} (id: {domain['id']})")
             else:
                 if existing.get('domain_name') != domain['domain_name'] or existing.get('description') != domain['description']:
                     db.cognitive_domains.update_one(
                         {'id': domain['id']},
                         {'$set': {'domain_name': domain['domain_name'], 'description': domain['description']}}
                     )
-                    print(f"   Updated cognitive domain: {domain['domain_name']} (id: {domain['id']})")
         
-        print(" Setting up difficulty levels with numeric IDs...")
         difficulties_data = [
             {'id': 1, 'level_name': 'Easy'},
             {'id': 2, 'level_name': 'Medium'},
@@ -234,9 +216,6 @@ def init_db():
             existing = db.difficulty_levels.find_one({'id': diff['id']})
             if not existing:
                 db.difficulty_levels.insert_one(diff)
-                print(f"   Inserted difficulty level: {diff['level_name']} (id: {diff['id']})")
-        
-        print(" Setting up knowledge levels with numeric domain_id...")
         
         knowledge_data = [
             {'id': 1, 'level_name': 'Knowledge', 'description': 'Basic recall of information and facts', 'domain_id': 1, 'difficulty_id': 1, 'is_active': True},
@@ -262,7 +241,6 @@ def init_db():
             existing = db.knowledge_levels.find_one({'id': level['id']})
             if not existing:
                 db.knowledge_levels.insert_one(level)
-                print(f"   Inserted knowledge level: {level['level_name']} (domain_id: {level['domain_id']})")
             else:
                 if existing.get('domain_id') != level['domain_id']:
                     db.knowledge_levels.update_one(
@@ -274,9 +252,7 @@ def init_db():
                             'is_active': level['is_active']
                         }}
                     )
-                    print(f"   Updated knowledge level: {level['level_name']} (domain_id: {level['domain_id']})")
         
-        print(" Setting up question types with cognitive_id...")
         question_types_data = [
             {'id': 1, 'type_name': 'Objective', 'cognitive_id': 1, 'description': 'Objective type questions'},
             {'id': 2, 'type_name': 'Very Short Answer', 'cognitive_id': 1, 'description': 'Very short answer type questions'},
@@ -289,7 +265,6 @@ def init_db():
             existing = db.question_types.find_one({'id': qt['id']})
             if not existing:
                 db.question_types.insert_one(qt)
-                print(f"   Inserted question type: {qt['type_name']} (cognitive_id: {qt['cognitive_id']})")
         
         if db.users.count_documents({}) == 0:
             hashed_password = generate_password_hash("admin123")
@@ -308,39 +283,6 @@ def init_db():
                 'created_at': datetime.now()
             })
             db.counters.update_one({'_id': 'users'}, {'$set': {'seq': 1}})
-            print("✓ Created default admin user")
-        
-        test_users = [
-            {'username': 'master1', 'password': 'master123', 'role': 'master', 'perm_master': True},
-            {'username': 'reviewer1', 'password': 'reviewer123', 'role': 'reviewer', 'perm_rc': True},
-            {'username': 'approver1', 'password': 'approver123', 'role': 'approver', 'perm_ap': True},
-            {'username': 'builder1', 'password': 'builder123', 'role': 'builder', 'perm_ra': True},
-            {'username': 'writer1', 'password': 'writer123', 'role': 'writer', 'perm_re': True}
-        ]
-        
-        for test_user in test_users:
-            if not db.users.find_one({'username': test_user['username']}):
-                hashed_pw = generate_password_hash(test_user['password'])
-                next_id = get_next_id('users')
-                db.users.insert_one({
-                    'id': next_id,
-                    'username': test_user['username'],
-                    'password': hashed_pw,
-                    'role': test_user['role'],
-                    'subject_group': None,
-                    'group_role': 'member',
-                    'perm_re': test_user.get('perm_re', False),
-                    'perm_ra': test_user.get('perm_ra', False),
-                    'perm_rc': test_user.get('perm_rc', False),
-                    'perm_ap': test_user.get('perm_ap', False),
-                    'perm_master': test_user.get('perm_master', False),
-                    'created_at': datetime.now()
-                })
-                print(f"✓ Created test user: {test_user['username']} ({test_user['role']})")
-        
-        if db.simple_questions.count_documents({}) == 0:
-            print("🔄 Creating test questions...")
-            create_test_questions()
         
         fix_collection_ids('grades')
         fix_collection_ids('subjects')
@@ -358,154 +300,10 @@ def init_db():
         
         fix_knowledge_levels_domain_id()
         
-        # Verify the data
         verify_domain_data()
         
-        print(" Database initialization complete")
     except Exception as e:
-        print(f" Database initialization error: {e}")
         traceback.print_exc()
-
-def create_test_questions():
-    """Create test questions for development"""
-    try:
-        if db.grades.count_documents({}) == 0:
-            grades = [
-                {'id': 1, 'grade_name': 'Class IX'},
-                {'id': 2, 'grade_name': 'Class X'},
-                {'id': 3, 'grade_name': 'Class XI'},
-                {'id': 4, 'grade_name': 'Class XII'}
-            ]
-            db.grades.insert_many(grades)
-            db.counters.update_one({'_id': 'grades'}, {'$set': {'seq': 4}})
-            print("  ✓ Created test grades")
-        
-        if db.subjects.count_documents({}) == 0:
-            subjects = [
-                {'id': 1, 'subject_name': 'Physics', 'grade_id': 3},
-                {'id': 2, 'subject_name': 'Chemistry', 'grade_id': 3},
-                {'id': 3, 'subject_name': 'Biology', 'grade_id': 3},
-                {'id': 4, 'subject_name': 'Mathematics', 'grade_id': 3},
-                {'id': 5, 'subject_name': 'Physics', 'grade_id': 4},
-                {'id': 6, 'subject_name': 'Chemistry', 'grade_id': 4},
-                {'id': 7, 'subject_name': 'Biology', 'grade_id': 4},
-                {'id': 8, 'subject_name': 'Mathematics', 'grade_id': 4}
-            ]
-            db.subjects.insert_many(subjects)
-            db.counters.update_one({'_id': 'subjects'}, {'$set': {'seq': 8}})
-            print("   Created test subjects")
-        
-        questions = [
-            {
-                'id': 1,
-                'question_text': 'What is the SI unit of force?',
-                'answer': 'Newton (N)',
-                'marks': 1,
-                'duration_minutes': 1,
-                'grade_id': 3,
-                'subject_id': 1,
-                'created_by': 'admin',
-                'created_at': datetime.now(),
-                'status': 'approved',
-                'question_type_name': 'Objective',
-                'difficulty_name': 'Easy',
-                'domain_name': 'Awareness',
-                'knowledge_level_name': 'Knowledge',
-                'language': 'en'
-            },
-            {
-                'id': 2,
-                'question_text': 'Explain Newton\'s First Law of Motion with an example.',
-                'answer': 'Newton\'s First Law states that an object at rest stays at rest and an object in motion stays in motion unless acted upon by an external force. Example: A book on a table remains at rest until someone pushes it.',
-                'marks': 5,
-                'duration_minutes': 10,
-                'grade_id': 3,
-                'subject_id': 1,
-                'created_by': 'writer1',
-                'created_at': datetime.now(),
-                'status': 'under_review',
-                'question_type_name': 'Long Answer',
-                'difficulty_name': 'Medium',
-                'domain_name': 'Sensitivity',
-                'knowledge_level_name': 'Application',
-                'language': 'en'
-            },
-            {
-                'id': 3,
-                'question_text': 'What is the chemical formula of water?',
-                'answer': 'H₂O',
-                'marks': 1,
-                'duration_minutes': 1,
-                'grade_id': 3,
-                'subject_id': 2,
-                'created_by': 'writer1',
-                'created_at': datetime.now(),
-                'status': 'unassigned',
-                'question_type_name': 'Very Short Answer',
-                'difficulty_name': 'Easy',
-                'domain_name': 'Awareness',
-                'knowledge_level_name': 'Remembering',
-                'language': 'en'
-            },
-            {
-                'id': 4,
-                'question_text': 'Describe the process of photosynthesis.',
-                'answer': 'Photosynthesis is the process by which plants use sunlight, water, and carbon dioxide to produce glucose and oxygen. It occurs in the chloroplasts of plant cells.',
-                'marks': 5,
-                'duration_minutes': 10,
-                'grade_id': 3,
-                'subject_id': 3,
-                'created_by': 'writer1',
-                'created_at': datetime.now(),
-                'status': 'reviewed_completed',
-                'question_type_name': 'Long Answer',
-                'difficulty_name': 'Medium',
-                'domain_name': 'Sensitivity',
-                'knowledge_level_name': 'Comprehension',
-                'language': 'en'
-            },
-            {
-                'id': 5,
-                'question_text': 'Solve: 2x + 5 = 13',
-                'answer': 'x = 4',
-                'marks': 2,
-                'duration_minutes': 3,
-                'grade_id': 3,
-                'subject_id': 4,
-                'created_by': 'writer1',
-                'created_at': datetime.now(),
-                'status': 'rejected',
-                'question_type_name': 'Short Answer',
-                'difficulty_name': 'Easy',
-                'domain_name': 'Awareness',
-                'knowledge_level_name': 'Knowledge',
-                'language': 'en'
-            },
-            {
-                'id': 6,
-                'question_text': 'What is the difference between speed and velocity?',
-                'answer': 'Speed is a scalar quantity measuring the rate of motion, while velocity is a vector quantity measuring rate of motion with direction.',
-                'marks': 3,
-                'duration_minutes': 5,
-                'grade_id': 4,
-                'subject_id': 1,
-                'created_by': 'writer1',
-                'created_at': datetime.now(),
-                'status': 'approved',
-                'question_type_name': 'Short Answer',
-                'difficulty_name': 'Medium',
-                'domain_name': 'Sensitivity',
-                'knowledge_level_name': 'Analysis',
-                'language': 'en'
-            }
-        ]
-        
-        db.simple_questions.insert_many(questions)
-        db.counters.update_one({'_id': 'simple_questions'}, {'$set': {'seq': 6}})
-        print(f"   Created {len(questions)} test questions")
-        
-    except Exception as e:
-        print(f"   Error creating test questions: {e}")
 
 def fix_collection_ids(collection_name):
     """Add numeric 'id' field to documents if missing"""
@@ -530,7 +328,6 @@ def fix_collection_ids(collection_name):
             {'_id': collection_name},
             {'$set': {'seq': seq}}
         )
-        print(f" Added numeric IDs to {collection_name} ({seq} documents)")
 
 def fix_foreign_keys():
     """Fix foreign keys to use numeric IDs"""
@@ -545,7 +342,6 @@ def fix_foreign_keys():
                         {'_id': subject['_id']},
                         {'$set': {'grade_id': grade['id']}}
                     )
-                    print(f"  Fixed subject '{subject.get('subject_name')}' grade_id: {grade['id']}")
             elif isinstance(grade_id, str) and len(grade_id) == 24:
                 grade = db.grades.find_one({'_id': ObjectId(grade_id)})
                 if grade and 'id' in grade:
@@ -553,7 +349,6 @@ def fix_foreign_keys():
                         {'_id': subject['_id']},
                         {'$set': {'grade_id': grade['id']}}
                     )
-                    print(f"  Fixed subject '{subject.get('subject_name')}' grade_id: {grade['id']}")
     
     cgs = db.curricular_goals.find({})
     for cg in cgs:
@@ -565,7 +360,6 @@ def fix_foreign_keys():
                     {'_id': cg['_id']},
                     {'$set': {'subject_id': subject['id']}}
                 )
-                print(f"  Fixed CG '{cg.get('cg_code')}' subject_id: {subject['id']}")
         
         chapter_id = cg.get('chapter_id')
         if chapter_id and isinstance(chapter_id, ObjectId):
@@ -587,7 +381,6 @@ def fix_foreign_keys():
                         {'_id': comp['_id']},
                         {'$set': {'cg_id': cg['id']}}
                     )
-                    print(f"  Fixed competency '{comp.get('comp_code')}' cg_id: {cg['id']}")
             elif isinstance(cg_id, str) and len(cg_id) == 24:
                 cg = db.curricular_goals.find_one({'_id': ObjectId(cg_id)})
                 if cg and 'id' in cg:
@@ -595,12 +388,9 @@ def fix_foreign_keys():
                         {'_id': comp['_id']},
                         {'$set': {'cg_id': cg['id']}}
                     )
-                    print(f"  Fixed competency '{comp.get('comp_code')}' cg_id: {cg['id']}")
 
 def fix_knowledge_levels_domain_id():
     """Fix knowledge_levels domain_id to be numeric and match cognitive_domains"""
-    print(" Fixing knowledge_levels domain_id...")
-    
     domains = list(db.cognitive_domains.find({}))
     domain_map = {str(d['_id']): d['id'] for d in domains}
     domain_name_map = {d['domain_name']: d['id'] for d in domains}
@@ -646,21 +436,12 @@ def fix_knowledge_levels_domain_id():
                     {'$set': {'domain_id': new_domain_id}}
                 )
                 fixed_count += 1
-                print(f"  Fixed knowledge level '{level.get('level_name')}' domain_id: {new_domain_id}")
-    
-    print(f"✓ Fixed {fixed_count} knowledge_levels domain_id references")
 
 def verify_domain_data():
     """Verify that cognitive domains and knowledge levels are correctly linked"""
-    print("🔍 Verifying domain data...")
-    
     domains = list(db.cognitive_domains.find({}))
-    print(f"  Cognitive domains found: {len(domains)}")
-    for d in domains:
-        print(f"    - {d.get('domain_name')} (id: {d.get('id')})")
     
     levels = list(db.knowledge_levels.find({}))
-    print(f"  Knowledge levels found: {len(levels)}")
     
     invalid_levels = []
     for level in levels:
@@ -671,13 +452,6 @@ def verify_domain_data():
             domain_exists = db.cognitive_domains.find_one({'id': domain_id})
             if not domain_exists:
                 invalid_levels.append(level)
-    
-    if invalid_levels:
-        print(f"  ⚠️ Found {len(invalid_levels)} knowledge levels with invalid domain_id")
-        for level in invalid_levels:
-            print(f"    - {level.get('level_name')} (domain_id: {level.get('domain_id')})")
-    else:
-        print("  ✅ All knowledge levels have valid domain_id references")
 
 with app.app_context():
     init_db()
@@ -728,7 +502,6 @@ def dashboard_login():
                 flash('Invalid username or password!', 'error')
                 return render_template('dashboard_login.html')
         except Exception as e:
-            print(f" Login error: {e}")
             flash(f'Login error: {str(e)}', 'error')
             return render_template('dashboard_login.html')
 
@@ -1211,33 +984,25 @@ def get_page1_data():
         subject_group = session.get('subject_group')
         username = session.get('user', '')
         
-        print(f" Page1 data request - user: {username}, role: {user_role}, group: {subject_group}")
-        
         grades = list(db.grades.find({}))
         
         if subject_group and user_role != 'admin':
             group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
             subject_ids = [s['subject_id'] for s in group_subjects]
-            print(f" Subject group {subject_group} has {len(subject_ids)} subjects")
             
             if subject_ids:
-                # Get grades that have subjects in this group
                 subjects_in_group = list(db.subjects.find({'id': {'$in': subject_ids}}))
                 grade_ids = list(set([s['grade_id'] for s in subjects_in_group]))
                 grades = [g for g in grades if g['id'] in grade_ids]
-                print(f" Filtered to {len(grades)} grades for group {subject_group}")
             else:
                 grades = []
-                print(f" No subjects found for group {subject_group}")
         
-        # Get subjects - filter by subject group if needed
         subjects = list(db.subjects.find({}))
         if subject_group and user_role != 'admin':
             group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
             subject_ids = [s['subject_id'] for s in group_subjects]
             if subject_ids:
                 subjects = [s for s in subjects if s['id'] in subject_ids]
-                print(f" Filtered to {len(subjects)} subjects for group {subject_group}")
         
         cgs = list(db.curricular_goals.find({}))
         if subject_group and user_role != 'admin':
@@ -1245,14 +1010,12 @@ def get_page1_data():
             subject_ids = [s['subject_id'] for s in group_subjects]
             if subject_ids:
                 cgs = [cg for cg in cgs if cg['subject_id'] in subject_ids]
-                print(f" Filtered to {len(cgs)} CGs for group {subject_group}")
         
         competencies = list(db.competencies.find({}))
         if subject_group and user_role != 'admin':
             cg_ids = [cg['id'] for cg in cgs]
             if cg_ids:
                 competencies = [comp for comp in competencies if comp['cg_id'] in cg_ids]
-                print(f" Filtered to {len(competencies)} competencies for group {subject_group}")
         
         question_types = list(db.question_types.find({}))
         cognitive_domains = list(db.cognitive_domains.find({}))
@@ -1305,7 +1068,6 @@ def get_page1_data():
             'subject_group': subject_group
         }
         
-        print(f" Returning data: {len(grades)} grades, {len(subjects)} subjects, {len(cgs)} CGs, {len(competencies)} competencies")
         return jsonify(data)
     except Exception as e:
         traceback.print_exc()
@@ -1327,7 +1089,6 @@ def get_page2_data():
             comp = db.competencies.find_one({'id': int(comp_id)})
             if comp:
                 comp_data = convert_doc(comp)
-                print(f" Found competency: {comp_data.get('comp_code')} - cg_id: {comp_data.get('cg_id')}")
         
         domains = list(db.cognitive_domains.find({}).sort('id', 1))
         domains = convert_doc(domains)
@@ -1376,9 +1137,6 @@ def get_page2_data():
             'subject_group': subject_group
         }
         
-        print(f" Returning {len(domains)} domains, {len(question_types)} question types")
-        print(f" question_types_by_domain keys: {list(question_types_by_domain.keys())}")
-        
         return jsonify(data)
     except Exception as e:
         traceback.print_exc()
@@ -1393,8 +1151,6 @@ def get_knowledge_levels():
     domain_id = request.args.get('domain_id')
     difficulty_id = request.args.get('difficulty_id')
     
-    print(f" get_knowledge_levels called with domain_id: {domain_id}, difficulty_id: {difficulty_id}")
-    
     try:
         query = {'is_active': True}
         
@@ -1402,9 +1158,7 @@ def get_knowledge_levels():
             try:
                 domain_id_int = int(domain_id)
                 query['domain_id'] = domain_id_int
-                print(f" Querying knowledge levels with domain_id: {domain_id_int}")
             except:
-                print(f" Could not convert domain_id to int: {domain_id}")
                 return jsonify({'knowledge_levels': []})
         
         if difficulty_id:
@@ -1415,13 +1169,7 @@ def get_knowledge_levels():
         
         levels = list(db.knowledge_levels.find(query).sort('id', 1))
         
-        print(f" Found {len(levels)} knowledge levels from database")
-        for level in levels:
-            print(f"  Level: {level.get('level_name')} - domain_id: {level.get('domain_id')} (type: {type(level.get('domain_id'))})")
-        
         if not levels:
-            print(" No levels found in database, using default mapping")
-            
             default_mapping = [
                 {'id': 1, 'level_name': 'Knowledge', 'domain_id': 1, 'domain_name': 'Awareness', 'description': ''},
                 {'id': 2, 'level_name': 'Remembering', 'domain_id': 1, 'domain_name': 'Awareness', 'description': ''},
@@ -1444,7 +1192,6 @@ def get_knowledge_levels():
                 try:
                     domain_id_int = int(domain_id)
                     levels = [l for l in default_mapping if l.get('domain_id') == domain_id_int]
-                    print(f" Filtered default mapping for domain_id {domain_id_int}: {len(levels)} levels")
                 except:
                     levels = []
             else:
@@ -1456,14 +1203,11 @@ def get_knowledge_levels():
                     level_copy = level.copy()
                     level_copy.pop('domain_name', None)
                     db.knowledge_levels.insert_one(level_copy)
-                    print(f"   Inserted default knowledge level: {level['level_name']}")
         
         levels = convert_doc(levels)
         
-        print(f" Returning {len(levels)} knowledge levels")
         return jsonify({'knowledge_levels': levels})
     except Exception as e:
-        print(f" Error in get_knowledge_levels: {e}")
         traceback.print_exc()
         return jsonify({'knowledge_levels': []})
 
@@ -1488,13 +1232,8 @@ def get_cognitive_domains():
             domains = list(db.cognitive_domains.find({}).sort('id', 1))
             domains = convert_doc(domains)
         
-        print(f" Returning {len(domains)} cognitive domains")
-        for domain in domains:
-            print(f"  Domain: {domain.get('domain_name')} - id: {domain.get('id')}")
-        
         return jsonify({'domains': domains})
     except Exception as e:
-        print(f" Error in get_cognitive_domains: {e}")
         traceback.print_exc()
         return jsonify({'domains': []})
 
@@ -2405,13 +2144,8 @@ def get_reviewers():
         reviewers = list(db.users.find(query).sort('username', 1))
         reviewers = convert_doc(reviewers)
         
-        print(f" Found {len(reviewers)} reviewers")
-        for r in reviewers:
-            print(f"   - {r.get('username')} (perm_rc: {r.get('perm_rc')}, role: {r.get('role')})")
-        
         return jsonify({'reviewers': reviewers})
     except Exception as e:
-        print(f" Error in get_reviewers: {e}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
@@ -2446,13 +2180,8 @@ def get_approvers():
         approvers = list(db.users.find(query).sort('username', 1))
         approvers = convert_doc(approvers)
         
-        print(f" Found {len(approvers)} approvers")
-        for a in approvers:
-            print(f"   - {a.get('username')} (perm_ap: {a.get('perm_ap')}, role: {a.get('role')})")
-        
         return jsonify({'approvers': approvers})
     except Exception as e:
-        print(f" Error in get_approvers: {e}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
@@ -2503,8 +2232,6 @@ def master_review_question(question_id):
         )
         
         if not has_reviewer_perm:
-            print(f" User {reviewer.get('username')} (id: {reviewer_id}) does not have reviewer permissions")
-            print(f"   perm_rc: {reviewer.get('perm_rc')}, role: {reviewer.get('role')}")
             return jsonify({
                 'error': f'Selected user "{reviewer.get("username")}" does not have reviewer permissions. Please select a user with Reviewer role or RC permission.'
             }), 400
@@ -2538,7 +2265,6 @@ def master_review_question(question_id):
         
         return jsonify({'success': True, 'message': f'Question assigned to {reviewer_name} for review'})
     except Exception as e:
-        print(f" Error in master_review_question: {e}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
@@ -2584,8 +2310,6 @@ def review_question(question_id):
         )
         
         if not has_approver_perm:
-            print(f"⚠️ User {approver.get('username')} (id: {approver_id}) does not have approver permissions")
-            print(f"   perm_ap: {approver.get('perm_ap')}, role: {approver.get('role')}")
             return jsonify({
                 'error': f'Selected user "{approver.get("username")}" does not have approver permissions. Please select a user with Approver role or AP permission.'
             }), 400
@@ -2614,7 +2338,6 @@ def review_question(question_id):
         
         return jsonify({'success': True, 'message': f'Question assigned to {approver_name} for approval'})
     except Exception as e:
-        print(f" Error in review_question: {e}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
@@ -2656,7 +2379,6 @@ def approve_question(question_id):
         
         return jsonify({'success': True, 'message': 'Question approved successfully'})
     except Exception as e:
-        print(f" Error in approve_question: {e}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
@@ -2730,7 +2452,6 @@ def rework_question(question_id):
         
         return jsonify({'success': True, 'message': 'Question sent back for rework'})
     except Exception as e:
-        print(f" Error in rework_question: {e}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
@@ -2785,7 +2506,6 @@ def update_question(question_id):
         
         return jsonify({'success': True, 'message': 'Question updated successfully'})
     except Exception as e:
-        print(f" Error in update_question: {e}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
@@ -2866,7 +2586,6 @@ def get_builder_questions():
         
         return jsonify({'questions': questions})
     except Exception as e:
-        print(f"❌ Error in get_builder_questions: {e}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
@@ -2886,18 +2605,13 @@ def get_review_questions():
     status = request.args.get('status', '')
     search = request.args.get('search', '')
     
-    print(f" Review Questions called by: {username} (role: {user_role}, id: {user_id})")
-    
     try:
-        # First, get total count for debugging
         total_questions = db.simple_questions.count_documents({})
-        print(f" Total questions in database: {total_questions}")
         
-        # Build the query
         match_conditions = []
         
         if user_role == 'admin':
-            print("👑 Admin user - showing all questions")
+            pass
         else:
             permission_filters = []
             
@@ -2937,15 +2651,12 @@ def get_review_questions():
                 match_conditions.append({'$or': permission_filters})
             else:
                 match_conditions.append({'_id': None})
-            
-            print(f" Permission filters: {len(permission_filters)} filters applied")
         
         if user_role != 'admin' and subject_group:
             group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
             subject_ids = [s['subject_id'] for s in group_subjects]
             if subject_ids:
                 match_conditions.append({'subject_id': {'$in': subject_ids}})
-                print(f" Subject group filter: {len(subject_ids)} subjects")
             else:
                 match_conditions.append({'_id': None})
         
@@ -2966,7 +2677,6 @@ def get_review_questions():
                 ]
             })
         
-        # Build the pipeline
         pipeline = []
         
         if match_conditions:
@@ -3002,8 +2712,6 @@ def get_review_questions():
         questions = list(db.simple_questions.aggregate(pipeline))
         questions = convert_doc(questions)
         
-        print(f" Filtered questions count: {len(questions)}")
-        
         for q in questions:
             if q.get('images'):
                 try:
@@ -3013,7 +2721,6 @@ def get_review_questions():
             else:
                 q['images'] = []
             
-            # Add permission flags
             is_my = q.get('created_by') == username
             is_assigned_reviewer = q.get('assigned_reviewer_id') == user_id
             is_assigned_approver = q.get('assigned_approver_id') == user_id
@@ -3049,7 +2756,6 @@ def get_review_questions():
             'total_count': total_questions
         })
     except Exception as e:
-        print(f"❌ Error in review-questions: {e}")
         traceback.print_exc()
         return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
 
@@ -3187,8 +2893,8 @@ def create_simple_question():
             'textbook_page': textbook_page,
             'reference_book': reference_book,
             'reference_page': reference_page,
-            'question_text_raw': question_text,  # Store original raw HTML if needed
-            'answer_raw': answer  # Store original raw HTML if needed
+            'question_text_raw': question_text,
+            'answer_raw': answer
         }
         
         question_doc = {k: v for k, v in question_doc.items() if v is not None}
@@ -3600,7 +3306,6 @@ def get_question(question_id):
         if not question:
             return jsonify({'error': 'Question not found'}), 404
         
-        # Check permissions
         username = session.get('user', '')
         user_role = session.get('user_role', 'writer')
         perm_re = session.get('perm_re', False)
@@ -3608,12 +3313,10 @@ def get_question(question_id):
         if user_role != 'admin' and not perm_re:
             return jsonify({'error': 'Permission denied'}), 403
         
-        # Convert to frontend format
         question = convert_doc(question)
         
         return jsonify({'question': question})
     except Exception as e:
-        print(f" Error in get_question: {e}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
