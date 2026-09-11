@@ -103,7 +103,10 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def clean_editor_html(html_content):
-    """Remove <p> tags from Quill editor content while preserving the content inside."""
+    """
+    Remove <p> tags from Quill editor content while preserving the content inside.
+    This ensures question and answer text don't have unnecessary paragraph tags.
+    """
     if not html_content:
         return ''
     
@@ -219,11 +222,13 @@ def init_db():
             {'id': 2, 'level_name': 'Remembering', 'description': 'Retrieving knowledge from memory', 'domain_id': 1, 'difficulty_id': 1, 'is_active': True},
             {'id': 3, 'level_name': 'Understanding', 'description': 'Constructing meaning from information', 'domain_id': 1, 'difficulty_id': 1, 'is_active': True},
             {'id': 4, 'level_name': 'Comprehension', 'description': 'Grasping the meaning of information', 'domain_id': 1, 'difficulty_id': 2, 'is_active': True},
+            
             {'id': 5, 'level_name': 'Application', 'description': 'Apply knowledge to new situations', 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
             {'id': 6, 'level_name': 'Analysis', 'description': 'Break down information into parts', 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
             {'id': 7, 'level_name': 'Synthesis', 'description': 'Combine elements to form a new whole', 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
             {'id': 8, 'level_name': 'Empathy', 'description': "Understanding others' perspectives and feelings", 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
             {'id': 9, 'level_name': 'Interpretation', 'description': 'Explaining and interpreting information', 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
+            
             {'id': 10, 'level_name': 'Evaluation', 'description': 'Make judgments based on criteria and standards', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True},
             {'id': 11, 'level_name': 'Creation', 'description': 'Generate new ideas and products', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True},
             {'id': 12, 'level_name': 'Critical Thinking', 'description': 'Deep analysis and evaluation of information', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True},
@@ -292,7 +297,9 @@ def init_db():
         fix_collection_ids('knowledge_levels')
         
         fix_foreign_keys()
+        
         fix_knowledge_levels_domain_id()
+        
         verify_domain_data()
         
     except Exception as e:
@@ -389,6 +396,7 @@ def fix_knowledge_levels_domain_id():
     domain_name_map = {d['domain_name']: d['id'] for d in domains}
     
     levels = list(db.knowledge_levels.find({}))
+    fixed_count = 0
     
     for level in levels:
         domain_id = level.get('domain_id')
@@ -427,18 +435,23 @@ def fix_knowledge_levels_domain_id():
                     {'_id': level['_id']},
                     {'$set': {'domain_id': new_domain_id}}
                 )
+                fixed_count += 1
 
 def verify_domain_data():
     """Verify that cognitive domains and knowledge levels are correctly linked"""
     domains = list(db.cognitive_domains.find({}))
+    
     levels = list(db.knowledge_levels.find({}))
     
+    invalid_levels = []
     for level in levels:
         domain_id = level.get('domain_id')
         if not domain_id:
-            pass
+            invalid_levels.append(level)
         elif isinstance(domain_id, int):
-            db.cognitive_domains.find_one({'id': domain_id})
+            domain_exists = db.cognitive_domains.find_one({'id': domain_id})
+            if not domain_exists:
+                invalid_levels.append(level)
 
 with app.app_context():
     init_db()
@@ -1173,21 +1186,21 @@ def get_knowledge_levels():
         
         if not levels:
             default_mapping = [
-                {'id': 1, 'level_name': 'Knowledge', 'domain_id': 1, 'description': ''},
-                {'id': 2, 'level_name': 'Remembering', 'domain_id': 1, 'description': ''},
-                {'id': 3, 'level_name': 'Understanding', 'domain_id': 1, 'description': ''},
-                {'id': 4, 'level_name': 'Comprehension', 'domain_id': 1, 'description': ''},
-                {'id': 5, 'level_name': 'Application', 'domain_id': 2, 'description': ''},
-                {'id': 6, 'level_name': 'Analysis', 'domain_id': 2, 'description': ''},
-                {'id': 7, 'level_name': 'Synthesis', 'domain_id': 2, 'description': ''},
-                {'id': 8, 'level_name': 'Empathy', 'domain_id': 2, 'description': ""},
-                {'id': 9, 'level_name': 'Interpretation', 'domain_id': 2, 'description': ''},
-                {'id': 10, 'level_name': 'Evaluation', 'domain_id': 3, 'description': ''},
-                {'id': 11, 'level_name': 'Creation', 'domain_id': 3, 'description': ''},
-                {'id': 12, 'level_name': 'Critical Thinking', 'domain_id': 3, 'description': ''},
-                {'id': 13, 'level_name': 'Innovation', 'domain_id': 3, 'description': ''},
-                {'id': 14, 'level_name': 'Design Thinking', 'domain_id': 3, 'description': ''},
-                {'id': 15, 'level_name': 'Reflection', 'domain_id': 3, 'description': ''}
+                {'id': 1, 'level_name': 'Knowledge', 'domain_id': 1, 'domain_name': 'Awareness', 'description': ''},
+                {'id': 2, 'level_name': 'Remembering', 'domain_id': 1, 'domain_name': 'Awareness', 'description': ''},
+                {'id': 3, 'level_name': 'Understanding', 'domain_id': 1, 'domain_name': 'Awareness', 'description': ''},
+                {'id': 4, 'level_name': 'Comprehension', 'domain_id': 1, 'domain_name': 'Awareness', 'description': ''},
+                {'id': 5, 'level_name': 'Application', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': ''},
+                {'id': 6, 'level_name': 'Analysis', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': ''},
+                {'id': 7, 'level_name': 'Synthesis', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': ''},
+                {'id': 8, 'level_name': 'Empathy', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': ""},
+                {'id': 9, 'level_name': 'Interpretation', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': ''},
+                {'id': 10, 'level_name': 'Evaluation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': ''},
+                {'id': 11, 'level_name': 'Creation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': ''},
+                {'id': 12, 'level_name': 'Critical Thinking', 'domain_id': 3, 'domain_name': 'Creativity', 'description': ''},
+                {'id': 13, 'level_name': 'Innovation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': ''},
+                {'id': 14, 'level_name': 'Design Thinking', 'domain_id': 3, 'domain_name': 'Creativity', 'description': ''},
+                {'id': 15, 'level_name': 'Reflection', 'domain_id': 3, 'domain_name': 'Creativity', 'description': ''}
             ]
             
             if domain_id:
@@ -1203,6 +1216,7 @@ def get_knowledge_levels():
                 existing = db.knowledge_levels.find_one({'id': level['id']})
                 if not existing:
                     level_copy = level.copy()
+                    level_copy.pop('domain_name', None)
                     db.knowledge_levels.insert_one(level_copy)
         
         levels = convert_doc(levels)
@@ -1915,10 +1929,6 @@ def toggle_competency_status(comp_id):
         return jsonify({'error': str(e)}), 500
 
 
-# ============================================
-# SUBJECT GROUPS
-# ============================================
-
 @app.route('/api/subject-groups', methods=['GET'])
 def get_subject_groups():
     if 'user' not in session:
@@ -1928,25 +1938,17 @@ def get_subject_groups():
         pipeline = [
             {'$lookup': {'from': 'grades', 'localField': 'grade_id', 'foreignField': 'id', 'as': 'grade_info'}},
             {'$lookup': {'from': 'subjects', 'localField': 'subject_id', 'foreignField': 'id', 'as': 'subject_info'}},
-            {'$lookup': {
-                'from': 'users',
-                'localField': 'group_code',
-                'foreignField': 'subject_group',
-                'as': 'members_info'
-            }},
             {'$addFields': {
                 'grade_name': {'$arrayElemAt': ['$grade_info.grade_name', 0]},
-                'subject_name': {'$arrayElemAt': ['$subject_info.subject_name', 0]},
-                'member_count': {'$size': '$members_info'}
+                'subject_name': {'$arrayElemAt': ['$subject_info.subject_name', 0]}
             }},
-            {'$project': {'grade_info': 0, 'subject_info': 0, 'members_info': 0}}
+            {'$project': {'grade_info': 0, 'subject_info': 0}}
         ]
         
         groups = list(db.subject_groups.aggregate(pipeline))
         groups = convert_doc(groups)
         return jsonify({'groups': groups})
     except Exception as e:
-        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/subject-groups', methods=['POST'])
@@ -2047,132 +2049,6 @@ def delete_subject_group(group_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# ============================================
-# SUBJECT GROUP MEMBER MANAGEMENT
-# ============================================
-
-@app.route('/api/subject-groups/<int:group_id>/members', methods=['GET'])
-def get_group_members(group_id):
-    """Get all users assigned to a subject group + list of available users"""
-    if 'user' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    if session.get('user_role') != 'admin':
-        return jsonify({'error': 'Admin access required'}), 403
-    
-    try:
-        group = db.subject_groups.find_one({'id': group_id})
-        if not group:
-            return jsonify({'error': 'Group not found'}), 404
-        
-        group_code = group.get('group_code')
-        
-        assigned = list(db.users.find({'subject_group': group_code}).sort('username', 1))
-        assigned = convert_doc(assigned)
-        
-        available = list(db.users.find({
-            '$or': [
-                {'subject_group': None},
-                {'subject_group': {'$exists': False}},
-                {'subject_group': ''}
-            ]
-        }).sort('username', 1))
-        available = convert_doc(available)
-        
-        for u in assigned:
-            u.pop('password', None)
-        for u in available:
-            u.pop('password', None)
-        
-        return jsonify({
-            'group': convert_doc(group),
-            'group_code': group_code,
-            'assigned': assigned,
-            'available': available,
-            'member_count': len(assigned)
-        })
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/subject-groups/<int:group_id>/members', methods=['POST'])
-def add_group_member(group_id):
-    """Assign a user to a subject group (no role needed)"""
-    if 'user' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    if session.get('user_role') != 'admin':
-        return jsonify({'error': 'Admin access required'}), 403
-    
-    data = request.json or {}
-    user_id = data.get('user_id')
-    
-    if not user_id:
-        return jsonify({'error': 'User ID is required'}), 400
-    
-    try:
-        group = db.subject_groups.find_one({'id': group_id})
-        if not group:
-            return jsonify({'error': 'Group not found'}), 404
-        
-        user = db.users.find_one({'id': int(user_id)})
-        if not user:
-            return jsonify({'error': 'User not found'}), 404
-        
-        if user.get('role') == 'admin':
-            return jsonify({'error': 'Admin users cannot be assigned to subject groups'}), 400
-        
-        db.users.update_one(
-            {'id': int(user_id)},
-            {'$set': {'subject_group': group.get('group_code')}}
-        )
-        
-        return jsonify({
-            'success': True,
-            'message': f'User "{user.get("username")}" added to group "{group.get("group_code")}"'
-        })
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/subject-groups/<int:group_id>/members/<int:user_id>', methods=['DELETE'])
-def remove_group_member(group_id, user_id):
-    """Remove a user from a subject group"""
-    if 'user' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    if session.get('user_role') != 'admin':
-        return jsonify({'error': 'Admin access required'}), 403
-    
-    try:
-        group = db.subject_groups.find_one({'id': group_id})
-        if not group:
-            return jsonify({'error': 'Group not found'}), 404
-        
-        user = db.users.find_one({'id': int(user_id)})
-        if not user:
-            return jsonify({'error': 'User not found'}), 404
-        
-        if user.get('subject_group') != group.get('group_code'):
-            return jsonify({'error': 'User is not a member of this group'}), 400
-        
-        db.users.update_one(
-            {'id': int(user_id)},
-            {'$set': {'subject_group': None}}
-        )
-        
-        return jsonify({
-            'success': True,
-            'message': f'User "{user.get("username")}" removed from group "{group.get("group_code")}"'
-        })
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
-
-
-# ============================================
-# USERS
-# ============================================
 
 @app.route('/api/users', methods=['GET'])
 def get_users():
@@ -2346,6 +2222,7 @@ def delete_user(user_id):
 
 @app.route('/api/reviewers', methods=['GET'])
 def get_reviewers():
+    """Get list of users with reviewer permissions"""
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
@@ -2380,6 +2257,7 @@ def get_reviewers():
 
 @app.route('/api/approvers', methods=['GET'])
 def get_approvers():
+    """Get list of users with approver permissions"""
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
@@ -2415,6 +2293,7 @@ def get_approvers():
 
 @app.route('/api/master-review-question/<int:question_id>', methods=['POST'])
 def master_review_question(question_id):
+    """Master assigns question to a reviewer"""
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
@@ -2460,7 +2339,7 @@ def master_review_question(question_id):
         
         if not has_reviewer_perm:
             return jsonify({
-                'error': f'Selected user "{reviewer.get("username")}" does not have reviewer permissions.'
+                'error': f'Selected user "{reviewer.get("username")}" does not have reviewer permissions. Please select a user with Reviewer role or RC permission.'
             }), 400
         
         if user_role != 'admin' and subject_group:
@@ -2497,6 +2376,7 @@ def master_review_question(question_id):
 
 @app.route('/api/review-question/<int:question_id>', methods=['POST'])
 def review_question(question_id):
+    """Reviewer assigns question to an approver"""
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
@@ -2537,7 +2417,7 @@ def review_question(question_id):
         
         if not has_approver_perm:
             return jsonify({
-                'error': f'Selected user "{approver.get("username")}" does not have approver permissions.'
+                'error': f'Selected user "{approver.get("username")}" does not have approver permissions. Please select a user with Approver permission.'
             }), 400
         
         if user_role != 'admin' and subject_group:
@@ -2569,6 +2449,7 @@ def review_question(question_id):
 
 @app.route('/api/approve-question/<int:question_id>', methods=['POST'])
 def approve_question(question_id):
+    """Approver approves a question"""
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
@@ -2609,6 +2490,7 @@ def approve_question(question_id):
 
 @app.route('/api/rework-question/<int:question_id>', methods=['POST'])
 def rework_question(question_id):
+    """Send a question back for rework"""
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
@@ -2681,6 +2563,7 @@ def rework_question(question_id):
 
 @app.route('/api/update-question/<int:question_id>', methods=['POST'])
 def update_question(question_id):
+    """Update question details (for writers to edit their own questions)"""
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
@@ -2734,6 +2617,7 @@ def update_question(question_id):
 
 @app.route('/api/builder-questions', methods=['GET'])
 def get_builder_questions():
+    """Get questions for paper builder (approved questions only)"""
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
@@ -3495,6 +3379,7 @@ def debug_session():
 
 @app.route('/api/debug/user/<username>')
 def debug_user(username):
+    """Debug endpoint to check user permissions"""
     if 'user' not in session or session.get('user_role') != 'admin':
         return jsonify({'error': 'Unauthorized'}), 401
     
@@ -3518,6 +3403,7 @@ def debug_user(username):
 
 @app.route('/api/question/<int:question_id>', methods=['GET'])
 def get_question(question_id):
+    """Get a single question for editing"""
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
@@ -3542,6 +3428,7 @@ def get_question(question_id):
 
 @app.route('/api/debug/questions')
 def debug_questions():
+    """Debug endpoint to check questions"""
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
