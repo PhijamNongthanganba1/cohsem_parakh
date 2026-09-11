@@ -369,20 +369,28 @@
         .member-badge {
             display: inline-flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
             background: rgba(52,152,219,0.2);
             color: #3498db;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
+            padding: 5px 14px;
+            border-radius: 14px;
+            font-size: 13px;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.2s ease;
+            border: 1px solid rgba(52,152,219,0.4);
         }
-        .member-badge:hover { background: rgba(52,152,219,0.35); }
+        .member-badge:hover {
+            background: rgba(52,152,219,0.35);
+            transform: scale(1.05);
+        }
         .member-badge.zero {
             background: rgba(255,255,255,0.08);
-            color: rgba(255,255,255,0.4);
+            color: rgba(255,255,255,0.5);
+            border-color: rgba(255,255,255,0.1);
+        }
+        .member-badge.zero:hover {
+            background: rgba(255,255,255,0.15);
         }
         .status-active { background: #27ae60; color: white; }
         .status-inactive { background: #95a5a6; color: white; }
@@ -652,7 +660,6 @@
             background: #f3e5f5;
         }
 
-        /* Member manager styles */
         .member-item {
             display: flex;
             justify-content: space-between;
@@ -945,7 +952,7 @@
         </div>
     </div>
 
-    <!-- MEMBERS MODAL -->
+    <!-- MEMBERS MODAL (Simplified — no Lead/Member role) -->
     <div class="modal" id="membersModal">
         <div class="modal-content" style="max-width: 700px;">
             <div class="modal-header" style="background: linear-gradient(135deg, #3498db, #2980b9);">
@@ -960,10 +967,6 @@
                     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                         <select id="availableUsersSelect" class="form-control" style="flex:1; min-width:200px;">
                             <option value="">Select a user...</option>
-                        </select>
-                        <select id="memberGroupRole" class="form-control" style="width:150px;">
-                            <option value="member">Member</option>
-                            <option value="lead">Lead</option>
                         </select>
                         <button class="btn btn-success btn-sm" onclick="assignMemberToGroup()">
                             <i class="fas fa-plus"></i> Add
@@ -1000,7 +1003,6 @@
         let isAdmin = userRole === 'admin';
 
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM loaded');
             loadStats();
             loadGrades();
             loadUsers();
@@ -1238,7 +1240,7 @@
                     </div>
                 `).join('');
             } catch(e) { 
-                console.error(' Error loading subjects:', e); 
+                console.error('Error loading subjects:', e); 
                 document.getElementById('subjectGrid').innerHTML = `
                     <div class="error-message" style="grid-column: span 3;">
                         <i class="fas fa-exclamation-circle"></i>
@@ -2426,7 +2428,7 @@
         }
 
         // ============================================
-        // MEMBER MANAGEMENT
+        // MEMBER MANAGEMENT (Simplified — no Lead role)
         // ============================================
         let currentMembersGroupId = null;
         let currentMembersGroupCode = null;
@@ -2466,17 +2468,13 @@
                         '<div style="text-align:center; padding:25px; color:#999;">No members assigned to this group yet.</div>';
                 } else {
                     document.getElementById('currentMembersList').innerHTML = assigned.map(u => {
-                        const roleBadge = u.group_role === 'lead'
-                            ? '<span class="badge" style="background:#f39c12; color:white; margin-left:6px;">Lead</span>'
-                            : '<span class="badge" style="background:#95a5a6; color:white; margin-left:6px;">Member</span>';
-                        
                         const userRoleBadge = `<span class="badge role-${u.role}" style="margin-left:6px;">${u.role}</span>`;
                         
                         return `
                             <div class="member-item">
                                 <div>
                                     <strong style="color:#333;">${u.username}</strong>
-                                    ${userRoleBadge}${roleBadge}
+                                    ${userRoleBadge}
                                 </div>
                                 <button class="icon-btn icon-delete"
                                         onclick="removeMemberFromGroup('${u.id}')"
@@ -2510,7 +2508,6 @@
 
         async function assignMemberToGroup() {
             const userId = document.getElementById('availableUsersSelect').value;
-            const groupRole = document.getElementById('memberGroupRole').value;
             
             if (!userId) {
                 return Swal.fire('Warning', 'Please select a user to add', 'warning');
@@ -2520,7 +2517,7 @@
                 const response = await fetch(`/api/subject-groups/${currentMembersGroupId}/members`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: userId, group_role: groupRole })
+                    body: JSON.stringify({ user_id: userId })
                 });
                 const data = await response.json();
                 

@@ -1915,6 +1915,10 @@ def toggle_competency_status(comp_id):
         return jsonify({'error': str(e)}), 500
 
 
+# ============================================
+# SUBJECT GROUPS
+# ============================================
+
 @app.route('/api/subject-groups', methods=['GET'])
 def get_subject_groups():
     if 'user' not in session:
@@ -1933,19 +1937,7 @@ def get_subject_groups():
             {'$addFields': {
                 'grade_name': {'$arrayElemAt': ['$grade_info.grade_name', 0]},
                 'subject_name': {'$arrayElemAt': ['$subject_info.subject_name', 0]},
-                'member_count': {'$size': '$members_info'},
-                'members': {
-                    '$map': {
-                        'input': '$members_info',
-                        'as': 'm',
-                        'in': {
-                            'id': '$$m.id',
-                            'username': '$$m.username',
-                            'role': '$$m.role',
-                            'group_role': '$$m.group_role'
-                        }
-                    }
-                }
+                'member_count': {'$size': '$members_info'}
             }},
             {'$project': {'grade_info': 0, 'subject_info': 0, 'members_info': 0}}
         ]
@@ -2075,11 +2067,9 @@ def get_group_members(group_id):
         
         group_code = group.get('group_code')
         
-        # Assigned members
         assigned = list(db.users.find({'subject_group': group_code}).sort('username', 1))
         assigned = convert_doc(assigned)
         
-        # Available users (not assigned to any group)
         available = list(db.users.find({
             '$or': [
                 {'subject_group': None},
@@ -2089,7 +2079,6 @@ def get_group_members(group_id):
         }).sort('username', 1))
         available = convert_doc(available)
         
-        # Strip password from response
         for u in assigned:
             u.pop('password', None)
         for u in available:
@@ -2109,7 +2098,7 @@ def get_group_members(group_id):
 
 @app.route('/api/subject-groups/<int:group_id>/members', methods=['POST'])
 def add_group_member(group_id):
-    """Assign a user to a subject group"""
+    """Assign a user to a subject group (no role needed)"""
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     if session.get('user_role') != 'admin':
@@ -2117,7 +2106,6 @@ def add_group_member(group_id):
     
     data = request.json or {}
     user_id = data.get('user_id')
-    group_role = data.get('group_role', 'member')
     
     if not user_id:
         return jsonify({'error': 'User ID is required'}), 400
@@ -2136,10 +2124,7 @@ def add_group_member(group_id):
         
         db.users.update_one(
             {'id': int(user_id)},
-            {'$set': {
-                'subject_group': group.get('group_code'),
-                'group_role': group_role
-            }}
+            {'$set': {'subject_group': group.get('group_code')}}
         )
         
         return jsonify({
@@ -2173,10 +2158,7 @@ def remove_group_member(group_id, user_id):
         
         db.users.update_one(
             {'id': int(user_id)},
-            {'$set': {
-                'subject_group': None,
-                'group_role': 'member'
-            }}
+            {'$set': {'subject_group': None}}
         )
         
         return jsonify({
@@ -2187,6 +2169,10 @@ def remove_group_member(group_id, user_id):
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
+
+# ============================================
+# USERS
+# ============================================
 
 @app.route('/api/users', methods=['GET'])
 def get_users():
