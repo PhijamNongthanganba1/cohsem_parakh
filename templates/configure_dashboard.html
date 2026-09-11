@@ -696,7 +696,6 @@
                                 <div class="tracker-step" id="tracker-cg" onclick="navigateToStage(5)"><div class="step-number">5</div><div class="step-info"><div class="step-label">Step 5 (CURRICULAR GOAL)</div><div class="step-value" id="tracker-cg-value">Select Curricular Goal</div></div></div>
                                 <div class="tracker-step" id="tracker-competency" onclick="navigateToStage(6)"><div class="step-number">6</div><div class="step-info"><div class="step-label">Step 6 (COMPETENCIES)</div><div class="step-value" id="tracker-competency-value">Select Competencies</div></div></div>
                             </div>
-                            
                         </div>
                         <div class="content-area">
                             <div class="progress-container">
@@ -857,7 +856,7 @@
             <div class="modal-body">
                 <form id="groupForm">
                     <input type="hidden" id="groupId">
-                    <div class="form-group"><label>Grade *</label><select id="groupGrade" class="form-control" required onchange="loadSubjectsForGroup()"><option value="">Select Grade</option></select></div>
+                    <div class="form-group"><label>Grade *</label><select id="groupGrade" class="form-control" required onchange="loadSubjectsForGroup(this.value)"><option value="">Select Grade</option></select></div>
                     <div class="form-group"><label>Subject *</label><select id="groupSubject" class="form-control" required onchange="generateGroupName()" disabled><option value="">First select a grade</option></select></div>
                     <div class="form-group"><label>Group Code</label><input type="text" id="groupPrefix" class="form-control" readonly style="background: #f0f0f0; cursor: not-allowed;"></div>
                     <div class="form-group"><label>Custom Suffix (Optional)</label><input type="text" id="groupSuffix" class="form-control" placeholder="e.g., A, B, C" oninput="updateFullGroupName()"><small>Add to create multiple groups for same subject</small></div>
@@ -929,7 +928,6 @@
         let isAdmin = userRole === 'admin';
 
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM loaded');
             loadStats();
             loadGrades();
             loadUsers();
@@ -1054,10 +1052,6 @@
             });
         }
 
-        
-        
-        
-
         async function loadGrades() {
             try {
                 const response = await fetch('/api/grades');
@@ -1134,14 +1128,9 @@
             }
         }
 
-        
-        
-        
-
         async function loadSubjects(gradeId) {
             try {
                 const gradeIdStr = gradeId.toString();
-                console.log(' Loading subjects for grade ID:', gradeIdStr);
                 
                 const response = await fetch('/api/page1-data');
                 const data = await response.json();
@@ -1150,8 +1139,6 @@
                     const sGradeId = s.grade_id ? s.grade_id.toString() : '';
                     return sGradeId === gradeIdStr;
                 }) || [];
-                
-                console.log(` Filtered ${subjects.length} subjects for grade ${gradeIdStr}`);
                 
                 const container = document.getElementById('subjectGrid');
                 if(subjects.length === 0) {
@@ -1178,7 +1165,7 @@
                     </div>
                 `).join('');
             } catch(e) { 
-                console.error(' Error loading subjects:', e); 
+                console.error('Error loading subjects:', e); 
                 document.getElementById('subjectGrid').innerHTML = `
                     <div class="error-message" style="grid-column: span 3;">
                         <i class="fas fa-exclamation-circle"></i>
@@ -1239,10 +1226,6 @@
                 }
             }
         }
-
-        
-        
-        
 
         async function loadTextbooks(subjectId) {
             const container = document.getElementById('textbookGrid');
@@ -1453,10 +1436,6 @@
                 }
             }
         }
-
-        
-        
-        
 
         async function loadChapters(textbookId) {
             const container = document.getElementById('chapterGrid');
@@ -1776,21 +1755,13 @@
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const data = await response.json();
                 
-                console.log(' All competencies from API:', data.competencies);
-                
                 const allComps = data.competencies || [];
                 
                 competencies = allComps.filter(c => {
                     const cCgId = c.cg_id !== undefined && c.cg_id !== null ? c.cg_id.toString() : '';
                     const targetCgId = cgId.toString();
-                    const match = cCgId === targetCgId;
-                    if (match) {
-                        console.log(' Matched competency:', c.comp_code, 'cg_id:', c.cg_id);
-                    }
-                    return match;
+                    return cCgId === targetCgId;
                 });
-                
-                console.log(` Filtered ${competencies.length} competencies for CG ${cgId}`);
                 
                 if (competencies.length === 0) {
                     container.innerHTML = `
@@ -2053,10 +2024,8 @@
                     break;
             }
             try {
-                console.log(' Saving item:', type, data);
                 const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
                 const result = await response.json();
-                console.log(' Save result:', result);
                 if(result.success) {
                     Swal.fire('Success', 'Saved successfully', 'success');
                     closeModal('addEditModal');
@@ -2093,7 +2062,7 @@
                             <td>${g.group_name || 'N/A'}</td>
                             <td>${g.grade_name || 'N/A'}</td>
                             <td>${g.subject_name || 'N/A'}</td>
-                            <td>${g.member_count || 0}</td>
+                            <td><strong>${g.member_count || 0}</strong></td>
                             <td>
                                 <div class="action-group">
                                     ${isAdmin ? `
@@ -2371,7 +2340,6 @@
                 }
             }
         }
-
 
         async function loadUsers() {
             try {
