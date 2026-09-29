@@ -248,18 +248,31 @@ def init_db():
                         }}
                     )
         
+        # ===== FIXED: Question types now available for ALL cognitive domains =====
         question_types_data = [
-            {'id': 1, 'type_name': 'Objective', 'cognitive_id': 1, 'description': 'Objective type questions'},
-            {'id': 2, 'type_name': 'Very Short Answer', 'cognitive_id': 1, 'description': 'Very short answer type questions'},
-            {'id': 3, 'type_name': 'Short Answer', 'cognitive_id': 2, 'description': 'Short answer type questions'},
-            {'id': 4, 'type_name': 'Long Answer', 'cognitive_id': 2, 'description': 'Long answer type questions'},
-            {'id': 5, 'type_name': 'MCQ', 'cognitive_id': 3, 'description': 'Multiple choice questions'}
+            {'id': 1, 'type_name': 'Objective', 'description': 'Objective type questions'},
+            {'id': 2, 'type_name': 'Very Short Answer', 'description': 'Very short answer type questions'},
+            {'id': 3, 'type_name': 'Short Answer', 'description': 'Short answer type questions'},
+            {'id': 4, 'type_name': 'Long Answer', 'description': 'Long answer type questions'}
         ]
         
         for qt in question_types_data:
             existing = db.question_types.find_one({'id': qt['id']})
             if not existing:
                 db.question_types.insert_one(qt)
+            else:
+                # Ensure old cognitive_id field is removed and names are correct
+                db.question_types.update_one(
+                    {'id': qt['id']},
+                    {
+                        '$set': {
+                            'type_name': qt['type_name'],
+                            'description': qt['description']
+                        },
+                        '$unset': {'cognitive_id': ''}
+                    }
+                )
+        # ===== END FIX =====
         
         if db.users.count_documents({}) == 0:
             hashed_password = generate_password_hash("admin123")
@@ -790,8 +803,7 @@ def create_grade():
     if user_role != 'admin' and user_role != 'master':
         return jsonify({'error': 'Admin or Master access required'}), 403
     
-    data = request.json
-    name = data.get('name')
+    data = request.json    name = data.get('name')
     if not name:
         return jsonify({'error': 'Grade name is required'}), 400
     
@@ -1105,17 +1117,15 @@ def get_page2_data():
                 if not db.cognitive_domains.find_one({'id': domain['id']}):
                     db.cognitive_domains.insert_one(domain)
         
-        question_types = list(db.question_types.find({}).sort('cognitive_id', 1))
+        # ===== FIXED: Question types are now the same for every cognitive domain =====
+        question_types = list(db.question_types.find({}).sort('id', 1))
         question_types = convert_doc(question_types)
         
         question_types_by_domain = {}
-        for qt in question_types:
-            cognitive_id = qt.get('cognitive_id')
-            if cognitive_id:
-                cognitive_key = str(cognitive_id)
-                if cognitive_key not in question_types_by_domain:
-                    question_types_by_domain[cognitive_key] = []
-                question_types_by_domain[cognitive_key].append(qt)
+        for domain in domains:
+            domain_key = str(domain.get('id'))
+            question_types_by_domain[domain_key] = list(question_types)
+        # ===== END FIX =====
         
         difficulty_levels = list(db.difficulty_levels.find({}).sort('id', 1))
         difficulty_levels = convert_doc(difficulty_levels)
