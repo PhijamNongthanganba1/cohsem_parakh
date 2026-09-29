@@ -248,7 +248,10 @@ def init_db():
                         }}
                     )
         
-        # ===== FIXED: Question types now available for ALL cognitive domains =====
+        # ===== FIXED: Question types available for ALL cognitive domains =====
+        # Wipe old records entirely so no stale cognitive_id lingers
+        db.question_types.delete_many({})
+        
         question_types_data = [
             {'id': 1, 'type_name': 'Objective', 'description': 'Objective type questions'},
             {'id': 2, 'type_name': 'Very Short Answer', 'description': 'Very short answer type questions'},
@@ -256,22 +259,7 @@ def init_db():
             {'id': 4, 'type_name': 'Long Answer', 'description': 'Long answer type questions'}
         ]
         
-        for qt in question_types_data:
-            existing = db.question_types.find_one({'id': qt['id']})
-            if not existing:
-                db.question_types.insert_one(qt)
-            else:
-                # Ensure old cognitive_id field is removed and names are correct
-                db.question_types.update_one(
-                    {'id': qt['id']},
-                    {
-                        '$set': {
-                            'type_name': qt['type_name'],
-                            'description': qt['description']
-                        },
-                        '$unset': {'cognitive_id': ''}
-                    }
-                )
+        db.question_types.insert_many(question_types_data)
         # ===== END FIX =====
         
         if db.users.count_documents({}) == 0:
@@ -803,7 +791,8 @@ def create_grade():
     if user_role != 'admin' and user_role != 'master':
         return jsonify({'error': 'Admin or Master access required'}), 403
     
-    data = request.json    name = data.get('name')
+    data = request.json
+    name = data.get('name')
     if not name:
         return jsonify({'error': 'Grade name is required'}), 400
     
@@ -1117,9 +1106,17 @@ def get_page2_data():
                 if not db.cognitive_domains.find_one({'id': domain['id']}):
                     db.cognitive_domains.insert_one(domain)
         
-        # ===== FIXED: Question types are now the same for every cognitive domain =====
-        question_types = list(db.question_types.find({}).sort('id', 1))
-        question_types = convert_doc(question_types)
+        # ===== FIXED: Same question types for EVERY cognitive domain, no cognitive_id =====
+        question_types_raw = list(db.question_types.find({}).sort('id', 1))
+        
+        question_types = []
+        for qt in question_types_raw:
+            qt_clean = {
+                'id': qt.get('id'),
+                'type_name': qt.get('type_name'),
+                'description': qt.get('description', '')
+            }
+            question_types.append(qt_clean)
         
         question_types_by_domain = {}
         for domain in domains:
