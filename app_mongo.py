@@ -187,9 +187,9 @@ def init_db():
         db.knowledge_levels.create_index([('domain_id', 1), ('level_name', 1)], unique=True)
         
         domains_data = [
-            {'id': 1, 'domain_name': 'Awareness', 'description': ''},
-            {'id': 2, 'domain_name': 'Sensitivity', 'description': ''},
-            {'id': 3, 'domain_name': 'Creativity', 'description': ''}
+            {'id': 1, 'domain_name': 'Awareness', 'description': 'Questions testing factual recall, conceptual understanding, and procedural fluency'},
+            {'id': 2, 'domain_name': 'Sensitivity', 'description': 'Questions testing interpersonal skills, ethical reasoning, and collaborative thinking'},
+            {'id': 3, 'domain_name': 'Creativity', 'description': 'Questions testing higher-order thinking, innovation, and original application of concepts'}
         ]
         
         for domain in domains_data:
@@ -1092,9 +1092,9 @@ def get_page2_data():
         
         if not domains:
             domains = [
-                {'id': 1, 'domain_name': 'Awareness', 'description': ''},
-                {'id': 2, 'domain_name': 'Sensitivity', 'description': ''},
-                {'id': 3, 'domain_name': 'Creativity', 'description': ''}
+                {'id': 1, 'domain_name': 'Awareness', 'description': 'Questions testing factual recall, conceptual understanding, and procedural fluency'},
+                {'id': 2, 'domain_name': 'Sensitivity', 'description': 'Questions testing interpersonal skills, ethical reasoning, and collaborative thinking'},
+                {'id': 3, 'domain_name': 'Creativity', 'description': 'Questions testing higher-order thinking, innovation, and original application of concepts'}
             ]
             for domain in domains:
                 if not db.cognitive_domains.find_one({'id': domain['id']}):
