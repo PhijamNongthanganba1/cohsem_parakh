@@ -215,21 +215,16 @@ def init_db():
                 db.difficulty_levels.insert_one(diff)
         
         knowledge_data = [
-            {'id': 1, 'level_name': 'Knowledge', 'description': 'Basic recall of information and facts', 'domain_id': 1, 'difficulty_id': 1, 'is_active': True},
-            {'id': 2, 'level_name': 'Remembering', 'description': 'Retrieving knowledge from memory', 'domain_id': 1, 'difficulty_id': 1, 'is_active': True},
-            {'id': 3, 'level_name': 'Understanding', 'description': 'Constructing meaning from information', 'domain_id': 1, 'difficulty_id': 1, 'is_active': True},
-            {'id': 4, 'level_name': 'Comprehension', 'description': 'Grasping the meaning of information', 'domain_id': 1, 'difficulty_id': 2, 'is_active': True},
-            {'id': 5, 'level_name': 'Application', 'description': 'Apply knowledge to new situations', 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
-            {'id': 6, 'level_name': 'Analysis', 'description': 'Break down information into parts', 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
-            {'id': 7, 'level_name': 'Synthesis', 'description': 'Combine elements to form a new whole', 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
-            {'id': 8, 'level_name': 'Empathy', 'description': "Understanding others' perspectives and feelings", 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
-            {'id': 9, 'level_name': 'Interpretation', 'description': 'Explaining and interpreting information', 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
-            {'id': 10, 'level_name': 'Evaluation', 'description': 'Make judgments based on criteria and standards', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True},
-            {'id': 11, 'level_name': 'Creation', 'description': 'Generate new ideas and products', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True},
-            {'id': 12, 'level_name': 'Critical Thinking', 'description': 'Deep analysis and evaluation of information', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True},
-            {'id': 13, 'level_name': 'Innovation', 'description': 'Novel approaches and solutions to problems', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True},
-            {'id': 14, 'level_name': 'Design Thinking', 'description': 'Human-centered problem solving approach', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True},
-            {'id': 15, 'level_name': 'Reflection', 'description': 'Thoughtful consideration and self-assessment', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True}
+            {'id': 1, 'level_name': 'Knowledge', 'description': 'Recall of facts, terms, concepts', 'domain_id': 1, 'difficulty_id': 1, 'is_active': True},
+            {'id': 2, 'level_name': 'Understanding of the Construct', 'description': 'Grasp of principles and theories', 'domain_id': 1, 'difficulty_id': 1, 'is_active': True},
+            {'id': 3, 'level_name': 'Understanding of the Process', 'description': 'Steps, methods, procedures', 'domain_id': 1, 'difficulty_id': 1, 'is_active': True},
+            {'id': 4, 'level_name': 'Conflict Resolution', 'description': 'Evaluating perspectives, finding solutions', 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
+            {'id': 5, 'level_name': 'Open Mindedness', 'description': 'Accepting diverse viewpoints', 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
+            {'id': 6, 'level_name': 'Collaboration', 'description': 'Working together, team-based problem solving', 'domain_id': 2, 'difficulty_id': 2, 'is_active': True},
+            {'id': 7, 'level_name': 'Generation of Innovative Ideas', 'description': 'Novel approaches and solutions', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True},
+            {'id': 8, 'level_name': 'Flexibility & Fluency', 'description': 'Multiple solution paths, speed of ideation', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True},
+            {'id': 9, 'level_name': 'Exploration', 'description': 'Investigating beyond the given, curiosity-driven', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True},
+            {'id': 10, 'level_name': 'Combining Ideas & Concepts', 'description': 'Cross-domain synthesis', 'domain_id': 3, 'difficulty_id': 3, 'is_active': True},
         ]
         
         for level in knowledge_data:
@@ -260,7 +255,6 @@ def init_db():
         ]
         
         db.question_types.insert_many(question_types_data)
-        # ===== END FIX =====
         
         if db.users.count_documents({}) == 0:
             hashed_password = generate_password_hash("admin123")
@@ -1180,21 +1174,16 @@ def get_knowledge_levels():
         
         if not levels:
             default_mapping = [
-                {'id': 1, 'level_name': 'Knowledge', 'domain_id': 1, 'description': ''},
-                {'id': 2, 'level_name': 'Remembering', 'domain_id': 1, 'description': ''},
-                {'id': 3, 'level_name': 'Understanding', 'domain_id': 1, 'description': ''},
-                {'id': 4, 'level_name': 'Comprehension', 'domain_id': 1, 'description': ''},
-                {'id': 5, 'level_name': 'Application', 'domain_id': 2, 'description': ''},
-                {'id': 6, 'level_name': 'Analysis', 'domain_id': 2, 'description': ''},
-                {'id': 7, 'level_name': 'Synthesis', 'domain_id': 2, 'description': ''},
-                {'id': 8, 'level_name': 'Empathy', 'domain_id': 2, 'description': ""},
-                {'id': 9, 'level_name': 'Interpretation', 'domain_id': 2, 'description': ''},
-                {'id': 10, 'level_name': 'Evaluation', 'domain_id': 3, 'description': ''},
-                {'id': 11, 'level_name': 'Creation', 'domain_id': 3, 'description': ''},
-                {'id': 12, 'level_name': 'Critical Thinking', 'domain_id': 3, 'description': ''},
-                {'id': 13, 'level_name': 'Innovation', 'domain_id': 3, 'description': ''},
-                {'id': 14, 'level_name': 'Design Thinking', 'domain_id': 3, 'description': ''},
-                {'id': 15, 'level_name': 'Reflection', 'domain_id': 3, 'description': ''}
+                {'id': 1, 'level_name': 'Knowledge', 'domain_id': 1, 'description': 'Recall of facts, terms, concepts'},
+                {'id': 2, 'level_name': 'Understanding of the Construct', 'domain_id': 1, 'description': 'Grasp of principles and theories'},
+                {'id': 3, 'level_name': 'Understanding of the Process', 'domain_id': 1, 'description': 'Steps, methods, procedures'},
+                {'id': 4, 'level_name': 'Conflict Resolution', 'domain_id': 2, 'description': ' Evaluating perspectives, finding solutions'},
+                {'id': 5, 'level_name': 'Open Mindedness', 'domain_id': 2, 'description': 'Accepting diverse viewpoints'},
+                {'id': 6, 'level_name': 'Collaboration', 'domain_id': 2, 'description': 'Working together, team-based problem solving'},
+                {'id': 7, 'level_name': 'Generation of Innovative Ideas', 'domain_id': 3, 'description': 'Novel approaches and solutions'},
+                {'id': 8, 'level_name': 'Flexibility & Fluency', 'domain_id': 3, 'description': 'Multiple solution paths, speed of ideation'},
+                {'id': 9, 'level_name': 'Exploration ', 'domain_id': 3, 'description': 'Investigating beyond the given, curiosity-driven'},
+                {'id': 10, 'level_name': 'Combining Ideas & Concepts', 'domain_id': 3, 'description': 'Cross-domain synthesis'}
             ]
             
             if domain_id:
@@ -1230,9 +1219,9 @@ def get_cognitive_domains():
         
         if not domains:
             default_domains = [
-                {'id': 1, 'domain_name': 'Awareness', 'description': ''},
-                {'id': 2, 'domain_name': 'Sensitivity', 'description': ''},
-                {'id': 3, 'domain_name': 'Creativity', 'description': ''}
+                {'id': 1, 'domain_name': 'Awareness', 'description': 'Questions testing factual recall, conceptual understanding, and procedural fluency'},
+                {'id': 2, 'domain_name': 'Sensitivity', 'description': 'Questions testing interpersonal skills, ethical reasoning, and collaborative thinking'},
+                {'id': 3, 'domain_name': 'Creativity', 'description': 'Questions testing higher-order thinking, innovation, and original application of concepts'}
             ]
             for domain in default_domains:
                 if not db.cognitive_domains.find_one({'id': domain['id']}):

@@ -6,7 +6,6 @@
     <title>COHSEM · Paper Builder (Two-Phase)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -564,16 +563,144 @@
         .close-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
         .modal-body { padding: 25px; }
         .modal-footer { padding: 15px 25px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 10px; }
-        .paper-preview { background: #f8f9fa; padding: 25px; border-radius: 10px; max-height: 55vh; overflow-y: auto; }
-        .paper-header { text-align: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #e67e22; }
-        .paper-header h2 { color: #2c3e50; margin-bottom: 4px; font-size: 22px; }
-        .paper-header h3 { color: #e67e22; margin-bottom: 10px; font-size: 18px; }
-        .paper-meta { display: flex; justify-content: center; gap: 25px; color: #666; font-size: 13px; }
-        .question-item { margin-bottom: 20px; padding: 12px 15px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); page-break-inside: avoid; break-inside: avoid; }
-        .question-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; color: #2c3e50; line-height: 1.5; font-size: 14px; }
-        .question-marks { color: #27ae60; font-weight: 600; white-space: nowrap; font-size: 13px; }
-        .question-images-preview-modal { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; }
-        .preview-image { max-width: 150px; max-height: 120px; border-radius: 5px; border: 1px solid #ddd; }
+
+        /* ================================================================
+           OFFICIAL EXAM STYLE PAPER PREVIEW (NO COLORS, NO BORDERS)
+           ================================================================ */
+        .paper-preview {
+            background: #ffffff;
+            padding: 40px 45px;
+            border-radius: 0;
+            max-height: 60vh;
+            overflow-y: auto;
+            font-family: 'Times New Roman', Times, serif;
+            color: #000;
+            border: none;
+            line-height: 1.55;
+            font-size: 15px;
+        }
+
+        .paper-preview .exam-header {
+            text-align: center;
+            margin-bottom: 22px;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .paper-preview .exam-header .year {
+            font-size: 18px;
+            font-weight: normal;
+            margin-bottom: 2px;
+            font-family: 'Times New Roman', Times, serif;
+            color: #000;
+        }
+
+        .paper-preview .exam-header h2 {
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            font-family: 'Times New Roman', Times, serif;
+            color: #000;
+        }
+
+        .paper-preview .exam-header .paper-meta-line {
+            font-size: 15px;
+            font-weight: normal;
+            color: #000;
+            margin: 1px 0;
+            font-family: 'Times New Roman', Times, serif;
+        }
+
+        .paper-preview .exam-header .paper-meta {
+            display: none;
+        }
+
+        .paper-preview .instructions-block {
+            display: none;
+        }
+
+        .paper-preview .section-heading {
+            display: none;
+        }
+
+        .paper-preview .question-item {
+            margin-bottom: 16px;
+            padding: 0;
+            background: transparent;
+            border-radius: 0;
+            box-shadow: none;
+            page-break-inside: avoid;
+            break-inside: avoid;
+            border-bottom: none;
+            color: #000;
+        }
+
+        .paper-preview .question-item:last-child {
+            border-bottom: none;
+        }
+
+        .paper-preview .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            color: #000;
+            line-height: 1.55;
+            font-size: 15px;
+            font-family: 'Times New Roman', Times, serif;
+        }
+
+        .paper-preview .question-header .q-num {
+            font-weight: bold;
+            min-width: 26px;
+        }
+
+        .paper-preview .question-header .q-text {
+            flex: 1;
+            text-align: justify;
+        }
+
+        .paper-preview .question-marks {
+            color: #000;
+            font-weight: bold;
+            white-space: nowrap;
+            font-size: 14px;
+            font-family: 'Times New Roman', Times, serif;
+        }
+
+        .paper-preview .question-images-preview-modal {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 6px;
+            padding-left: 38px;
+            padding-top: 4px;
+            border-top: none;
+        }
+
+        .paper-preview .preview-image {
+            max-width: 140px;
+            max-height: 110px;
+            border-radius: 0;
+            border: 1px solid #666;
+            background: #fff;
+            padding: 1px;
+            object-fit: contain;
+        }
+
+        .paper-preview .paper-footer {
+            margin-top: 25px;
+            border-top: none;
+            padding-top: 8px;
+            font-size: 14px;
+            text-align: center;
+            font-style: normal;
+            color: #000;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        /* ================================================================ */
 
         .image-modal {
             display: none;
@@ -1053,6 +1180,7 @@
             .btn-generate-blueprint { padding: 12px 25px; font-size: 15px; }
             .blueprint-summary .summary-grid { grid-template-columns: 1fr; }
             .blueprint-summary .summary-totals { flex-direction: column; gap: 5px; align-items: flex-end; }
+            .paper-preview { padding: 25px 20px; }
         }
     </style>
 </head>
@@ -2650,24 +2778,23 @@
     }
 
     function createPaperContent() {
-        let html = `
-            <div class="paper-header">
-                <h2>COHSEM | PARAKH</h2>
-                <h3>${currentSelections.grade.display_name} - ${currentSelections.subject.name}</h3>
-                <div class="paper-meta">
-                    <span><i class="far fa-clock"></i> Time: 3 Hours</span>
-                    <span><i class="fas fa-star"></i> Total Marks: ${selectedQuestions.reduce((sum, q) => sum + (q.marks || 1), 0)}</span>
-                </div>
-            </div>
-        `;
+        const gradeName = currentSelections.grade?.display_name || 'Class';
+        const subjectName = currentSelections.subject?.name || 'Subject';
+        const totalMarks = selectedQuestions.reduce((sum, q) => sum + (q.marks || 1), 0);
+        const passMarks = Math.ceil(totalMarks * 0.33);
+        const currentYear = new Date().getFullYear();
+
+        let questionsHtml = '';
         selectedQuestions.forEach((q, index) => {
             const hasImages = q.images && q.images.length > 0;
             const cleanQuestionText = stripHtmlForPrint(q.question_text || '');
-            html += `
+            const marks = q.marks || 1;
+            questionsHtml += `
                 <div class="question-item">
                     <div class="question-header">
-                        <span><strong>Q${index + 1}.</strong> ${escapeHtml(cleanQuestionText)}</span>
-                        <span class="question-marks">[${q.marks || 1} marks]</span>
+                        <span class="q-num">${index + 1}.</span>
+                        <span class="q-text">${escapeHtml(cleanQuestionText)}</span>
+                        <span class="question-marks">[${marks}]</span>
                     </div>
                     ${hasImages ? `
                         <div class="question-images-preview-modal">
@@ -2677,10 +2804,140 @@
                 </div>
             `;
         });
+        let html = `
+            <div class="exam-header">
+                <div class="year">${currentYear}</div>
+                <h2>${subjectName}</h2>
+                <div class="paper-meta-line">Full Marks : 100</div>
+                <div class="paper-meta-line">Pass Marks : 33</div>
+                <div class="paper-meta-line">Time: 3 hours</div>
+            </div>
+            ${questionsHtml}
+            <div class="paper-footer"></div>
+        `;
         return html;
     }
+   
 
     function generatePreview() { document.getElementById('paperPreview').innerHTML = createPaperContent(); }
+
+    function buildPDFBlob() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+
+        const gradeName = currentSelections.grade?.display_name || 'Class';
+        const subjectName = currentSelections.subject?.name || 'Subject';
+        const totalMarks = selectedQuestions.reduce((sum, q) => sum + (q.marks || 1), 0);
+        const passMarks = Math.ceil(totalMarks * 0.33);
+        const currentYear = new Date().getFullYear();
+
+        const pageWidth = 210;
+        const pageHeight = 297;
+        const marginLeft = 20;
+        const marginRight = 20;
+        const marginTop = 20;
+        const marginBottom = 20;
+        const contentWidth = pageWidth - marginLeft - marginRight;
+        const lineHeight = 6.5; 
+        let y = marginTop;
+
+        function checkPage(needed) {
+            if (y + needed > pageHeight - marginBottom) {
+                doc.addPage();
+                y = marginTop;
+            }
+        }
+
+        doc.setFont('times', 'normal');
+        doc.setFontSize(12);
+        doc.text(String(currentYear), pageWidth / 2, y, { align: 'center' });
+        y += lineHeight + 1;
+
+        doc.setFont('times', 'bold');
+        doc.setFontSize(14);
+        doc.text(subjectName.toUpperCase(), pageWidth / 2, y, { align: 'center' });
+        y += lineHeight + 1.5;
+
+        doc.setFont('times', 'normal');
+        doc.setFontSize(12);
+        doc.text(`Full Marks : 100`, pageWidth / 2, y, { align: 'center' });
+        y += lineHeight;
+        doc.text(`Pass Marks : 33`, pageWidth / 2, y, { align: 'center' });
+        y += lineHeight;
+        doc.text(`Time: 3 hours`, pageWidth / 2, y, { align: 'center' });
+        y += lineHeight + 4;
+
+        selectedQuestions.forEach((q, index) => {
+            const cleanText = stripHtmlForPrint(q.question_text || '');
+            const marks = q.marks || 1;
+            const numLabel = `${index + 1}.`;
+
+            const numWidth = 8;
+            const marksLabel = `[${marks}]`;
+            
+            doc.setFont('times', 'bold');
+            doc.setFontSize(11);
+            const marksWidth = doc.getTextWidth(marksLabel);
+            const textMaxWidth = contentWidth - numWidth - marksWidth - 4;
+
+            doc.setFont('times', 'normal');
+            doc.setFontSize(11);
+            const lines = doc.splitTextToSize(cleanText, textMaxWidth);
+
+            const questionHeight = lines.length * lineHeight;
+
+            checkPage(questionHeight + 4);
+
+            doc.setFont('times', 'bold');
+            doc.setFontSize(11);
+            doc.text(numLabel, marginLeft, y);
+
+            doc.setFont('times', 'normal');
+            doc.setFontSize(11);
+            lines.forEach((line, i) => {
+                doc.text(line, marginLeft + numWidth, y + (i * lineHeight));
+            });
+
+            doc.setFont('times', 'bold');
+            doc.setFontSize(11);
+            doc.text(marksLabel, pageWidth - marginRight, y, { align: 'right' });
+
+            y += questionHeight + 4;
+
+            if (q.images && q.images.length > 0) {
+                const imgMaxW = 50;
+                const imgMaxH = 35;
+                let imgX = marginLeft + numWidth;
+                let imgY = y;
+                q.images.forEach((imgData) => {
+                    try {
+                        checkPage(imgMaxH + 4);
+                       
+                        doc.addImage(imgData, 'JPEG', imgX, imgY, imgMaxW, imgMaxH);
+                        imgX += imgMaxW + 4;
+                        if (imgX + imgMaxW > pageWidth - marginRight) {
+                            imgX = marginLeft + numWidth;
+                            imgY += imgMaxH + 4;
+                            y = imgY + imgMaxH + 4;
+                        }
+                    } catch (e) {
+                        console.warn('Could not add image to PDF', e);
+                    }
+                });
+                if (imgX > marginLeft + numWidth) {
+                    y = imgY + imgMaxH + 4;
+                }
+            }
+        });
+
+        checkPage(lineHeight + 4);
+        y += 4;
+        doc.setFont('times', 'italic');
+        doc.setFontSize(11);
+        doc.text('', pageWidth / 2, y, { align: 'center' });
+
+        return doc.output('blob');
+    }
 
     async function generatePaper() {
         if (selectedQuestions.length === 0) {
@@ -2784,48 +3041,12 @@
         document.getElementById('loadingModal').classList.add('active');
         try {
             generatePreview();
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            const tempDiv = document.createElement('div');
-            tempDiv.style.position = 'absolute';
-            tempDiv.style.left = '-9999px';
-            tempDiv.style.top = '0';
-            tempDiv.style.width = '800px';
-            tempDiv.style.backgroundColor = 'white';
-            tempDiv.style.padding = '30px';
-            tempDiv.innerHTML = createPaperContent();
-            document.body.appendChild(tempDiv);
-            const tempImages = tempDiv.querySelectorAll('img');
-            await Promise.all(Array.from(tempImages).map(img => {
-                if (img.complete) return Promise.resolve();
-                return new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
-            }));
-            await new Promise(resolve => setTimeout(resolve, 300));
-            const canvas = await html2canvas(tempDiv, {
-                scale: 2,
-                backgroundColor: '#ffffff',
-                useCORS: true,
-                logging: false,
-                allowTaint: false,
-                imageTimeout: 0
-            });
-            document.body.removeChild(tempDiv);
-            const imgData = canvas.toDataURL('image/jpeg', 0.95);
-            if (!imgData || imgData === 'data:,') throw new Error('Failed to capture preview image');
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4');
-            const imgWidth = 210;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-            let position = 0;
-            doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-            let remainingHeight = imgHeight;
-            while (remainingHeight > 297) {
-                position = position - 297;
-                doc.addPage();
-                doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-                remainingHeight -= 297;
-            }
-            generatedPDF = doc.output('datauristring');
+
+            await new Promise(resolve => setTimeout(resolve, 400));
+            const pdfBlob = buildPDFBlob();
+            generatedPDF = URL.createObjectURL(pdfBlob);
             generatedPDFName = `${currentSelections.grade.display_name}_${currentSelections.subject.name}_Question_Paper.pdf`;
+
             document.getElementById('loadingModal').classList.remove('active');
             document.getElementById('paperPreviewModal').classList.add('active');
             Swal.fire({ icon: 'success', title: 'Success!', text: 'Your question paper is ready', timer: 1500, showConfirmButton: false });

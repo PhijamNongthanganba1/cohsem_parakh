@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash, send_file
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash, send_file, make_response
 import mysql.connector
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
@@ -9,11 +9,14 @@ import traceback
 import re
 import os
 import uuid
+import secrets
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = "cohsem_it_secure_key_2026_change_this_in_production"
-
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = False  
 UPLOAD_FOLDER = 'static/uploads/questions'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 MAX_CONTENT_LENGTH = 5 * 1024 * 1024
@@ -21,16 +24,31 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+
+@app.after_request
+def add_no_cache_headers(response):
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0, private'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    existing_vary = response.headers.get('Vary', '')
+    if 'Cookie' not in existing_vary:
+        response.headers['Vary'] = (existing_vary + ', Cookie').strip(', ') if existing_vary else 'Cookie'
+    return response
+
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 def get_db():
     return mysql.connector.connect(
         host="localhost",
         user="root",
         password="nong@123",
-        database="cohsemitms"
+        database="cohsemitms",
+        autocommit=True,
     )
+
 
 def add_column_if_not_exists(cursor, table, column, definition):
     cursor.execute(f"SHOW COLUMNS FROM {table} LIKE '{column}'")
@@ -40,8 +58,8 @@ def add_column_if_not_exists(cursor, table, column, definition):
         return True
     return False
 
+
 def add_cognitive_config_column():
-    """Add cognitive_config column to paper_blueprints if it doesn't exist"""
     db = get_db()
     cur = db.cursor()
     try:
@@ -49,18 +67,34 @@ def add_cognitive_config_column():
         exists = cur.fetchone()
         if not exists:
             cur.execute("ALTER TABLE paper_blueprints ADD COLUMN cognitive_config TEXT")
-            db.commit()
-            
-            return True
-        else:
-            
-            return True
-    except Exception as e:
-        
+        return True
+    except Exception:
         return False
     finally:
         cur.close()
         db.close()
+
+
+def add_textbook_id_to_cgs():
+    db = get_db()
+    cur = db.cursor()
+    try:
+        cur.execute("SHOW COLUMNS FROM curricular_goals LIKE 'textbook_id'")
+        exists = cur.fetchone()
+        if not exists:
+            cur.execute("ALTER TABLE curricular_goals ADD COLUMN textbook_id INT DEFAULT NULL")
+            try:
+                cur.execute("ALTER TABLE curricular_goals ADD FOREIGN KEY (textbook_id) REFERENCES textbooks(id) ON DELETE SET NULL")
+            except Exception:
+                pass
+            return True
+        return True
+    except Exception:
+        return False
+    finally:
+        cur.close()
+        db.close()
+
 
 def strip_html_tags(html_content):
     if not html_content:
@@ -69,26 +103,22 @@ def strip_html_tags(html_content):
     clean = re.sub(r'\s+', ' ', clean)
     return clean.strip()
 
+
 def has_actual_content(html_content):
     if not html_content:
         return False
-    
     if '<img' in html_content.lower():
         return True
-    
     if any(tag in html_content.lower() for tag in ['<ul', '<ol', '<blockquote', '<pre', '<code']):
         return True
-    
     text = strip_html_tags(html_content)
     if text and len(text.strip()) > 0:
         return True
-    import re
-    clean_text = re.sub(r'<[^>]+>', '', html_content)
-    clean_text = clean_text.strip()
+    clean_text = re.sub(r'<[^>]+>', '', html_content).strip()
     if clean_text and len(clean_text) > 0:
         return True
-    
     return False
+
 
 def get_question_text_safe(html_content):
     if not html_content:
@@ -96,6 +126,7 @@ def get_question_text_safe(html_content):
     if has_actual_content(html_content):
         return strip_html_tags(html_content)
     return ''
+
 
 def get_user_subject_ids(username):
     db = get_db()
@@ -108,11 +139,12 @@ def get_user_subject_ids(username):
         cur.execute("SELECT subject_id FROM subject_groups WHERE group_code = %s", (user['subject_group'],))
         subjects = cur.fetchall()
         return [s['subject_id'] for s in subjects]
-    except Exception as e:
+    except Exception:
         return []
     finally:
         cur.close()
         db.close()
+
 
 def get_user_grades(username):
     db = get_db()
@@ -125,16 +157,16 @@ def get_user_grades(username):
         cur.execute("SELECT grade_id FROM subject_groups WHERE group_code = %s", (user['subject_group'],))
         grades = cur.fetchall()
         return [g['grade_id'] for g in grades]
-    except Exception as e:
+    except Exception:
         return []
     finally:
         cur.close()
         db.close()
 
+
 def apply_subject_filter(query, user_role, subject_group, subject_id_column='subject_id'):
     if user_role == 'admin':
         return query, []
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
@@ -150,41 +182,39 @@ def apply_subject_filter(query, user_role, subject_group, subject_id_column='sub
         cur.close()
         db.close()
 
+
 def insert_default_reference_data(cur):
     domains_data = [
         ('Awareness', 'Basic awareness of concepts and information'),
         ('Sensitivity', 'Sensitivity to applications and real-world connections'),
         ('Creativity', 'Creative thinking and problem solving')
     ]
-    
     for domain_name, description in domains_data:
         cur.execute("""
             INSERT IGNORE INTO cognitive_domains (domain_name, description) 
             VALUES (%s, %s)
         """, (domain_name, description))
-    
+
     cur.execute("SELECT id, domain_name FROM cognitive_domains")
     domains = {row[1]: row[0] for row in cur.fetchall()}
-    
+
     difficulty_data = ['Easy', 'Medium', 'Hard']
     for level in difficulty_data:
         cur.execute("INSERT IGNORE INTO difficulty_levels (level_name) VALUES (%s)", (level,))
-    
+
     cur.execute("SELECT id, level_name FROM difficulty_levels")
     difficulties = {row[1]: row[0] for row in cur.fetchall()}
-    
+
     knowledge_levels = [
         ('Knowledge', 'Basic recall of information and facts', domains.get('Awareness'), difficulties.get('Easy')),
         ('Remembering', 'Retrieving knowledge from memory', domains.get('Awareness'), difficulties.get('Easy')),
         ('Understanding', 'Constructing meaning from information', domains.get('Awareness'), difficulties.get('Easy')),
         ('Comprehension', 'Grasping the meaning of information', domains.get('Awareness'), difficulties.get('Medium')),
-        
         ('Application', 'Apply knowledge to new situations', domains.get('Sensitivity'), difficulties.get('Medium')),
         ('Analysis', 'Break down information into parts', domains.get('Sensitivity'), difficulties.get('Medium')),
         ('Synthesis', 'Combine elements to form a new whole', domains.get('Sensitivity'), difficulties.get('Medium')),
         ('Empathy', "Understanding others' perspectives and feelings", domains.get('Sensitivity'), difficulties.get('Medium')),
         ('Interpretation', 'Explaining and interpreting information', domains.get('Sensitivity'), difficulties.get('Medium')),
-        
         ('Evaluation', 'Make judgments based on criteria and standards', domains.get('Creativity'), difficulties.get('Hard')),
         ('Creation', 'Generate new ideas and products', domains.get('Creativity'), difficulties.get('Hard')),
         ('Critical Thinking', 'Deep analysis and evaluation of information', domains.get('Creativity'), difficulties.get('Hard')),
@@ -192,14 +222,13 @@ def insert_default_reference_data(cur):
         ('Design Thinking', 'Human-centered problem solving approach', domains.get('Creativity'), difficulties.get('Hard')),
         ('Reflection', 'Thoughtful consideration and self-assessment', domains.get('Creativity'), difficulties.get('Hard'))
     ]
-    
     for level_name, description, domain_id, difficulty_id in knowledge_levels:
         cur.execute("""
             INSERT IGNORE INTO knowledge_levels 
             (level_name, description, is_active, domain_id, difficulty_id) 
             VALUES (%s, %s, %s, %s, %s)
         """, (level_name, description, True, domain_id, difficulty_id))
-    
+
     question_types = [
         ('Objective', domains.get('Awareness')),
         ('Very Short Answer', domains.get('Awareness')),
@@ -207,12 +236,12 @@ def insert_default_reference_data(cur):
         ('Long Answer', domains.get('Sensitivity')),
         ('MCQ', domains.get('Creativity'))
     ]
-    
     for type_name, cognitive_id in question_types:
         cur.execute("""
             INSERT IGNORE INTO question_types (type_name, cognitive_id) 
             VALUES (%s, %s)
         """, (type_name, cognitive_id))
+
 
 def init_db():
     db = get_db()
@@ -234,14 +263,12 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-
         cur.execute("""
             CREATE TABLE IF NOT EXISTS grades (
                 id INT PRIMARY KEY AUTO_INCREMENT,
                 grade_name VARCHAR(50) NOT NULL
             )
         """)
-
         cur.execute("""
             CREATE TABLE IF NOT EXISTS subjects (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -251,7 +278,6 @@ def init_db():
                 INDEX idx_grade_id (grade_id)
             )
         """)
-
         cur.execute("""
             CREATE TABLE IF NOT EXISTS textbooks (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -268,7 +294,6 @@ def init_db():
                 INDEX idx_grade_id (grade_id)
             )
         """)
-
         cur.execute("""
             CREATE TABLE IF NOT EXISTS chapters (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -281,10 +306,10 @@ def init_db():
                 FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
                 FOREIGN KEY (textbook_id) REFERENCES textbooks(id) ON DELETE SET NULL,
                 UNIQUE KEY unique_chapter_subject (subject_id, chapter_name),
-                INDEX idx_subject_id (subject_id)
+                INDEX idx_subject_id (subject_id),
+                INDEX idx_textbook_id (textbook_id)
             )
         """)
-
         cur.execute("""
             CREATE TABLE IF NOT EXISTS cognitive_domains (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -292,14 +317,12 @@ def init_db():
                 description TEXT
             )
         """)
-
         cur.execute("""
             CREATE TABLE IF NOT EXISTS difficulty_levels (
                 id INT PRIMARY KEY AUTO_INCREMENT,
                 level_name VARCHAR(50) NOT NULL
             )
         """)
-
         cur.execute("""
             CREATE TABLE IF NOT EXISTS knowledge_levels (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -314,7 +337,6 @@ def init_db():
                 INDEX idx_difficulty_id (difficulty_id)
             )
         """)
-
         cur.execute("""
             CREATE TABLE IF NOT EXISTS question_types (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -325,7 +347,6 @@ def init_db():
                 INDEX idx_cognitive_id (cognitive_id)
             )
         """)
-
         cur.execute("""
             CREATE TABLE IF NOT EXISTS curricular_goals (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -333,13 +354,15 @@ def init_db():
                 cg_description TEXT,
                 subject_id INT,
                 chapter_id INT DEFAULT NULL,
+                textbook_id INT DEFAULT NULL,
                 FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
                 FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE,
+                FOREIGN KEY (textbook_id) REFERENCES textbooks(id) ON DELETE SET NULL,
                 INDEX idx_subject_id (subject_id),
-                INDEX idx_chapter_id (chapter_id)
+                INDEX idx_chapter_id (chapter_id),
+                INDEX idx_textbook_id (textbook_id)
             )
         """)
-
         cur.execute("""
             CREATE TABLE IF NOT EXISTS competencies (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -351,7 +374,6 @@ def init_db():
                 INDEX idx_cg_id (cg_id)
             )
         """)
-
         cur.execute("""
             CREATE TABLE IF NOT EXISTS subject_groups (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -366,7 +388,6 @@ def init_db():
                 INDEX idx_grade_subject (grade_id, subject_id)
             )
         """)
-
         cur.execute("""
             CREATE TABLE IF NOT EXISTS simple_questions (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -446,7 +467,6 @@ def init_db():
                 INDEX idx_assigned_approver (assigned_approver_id)
             )
         """)
-
         cur.execute("""
             CREATE TABLE IF NOT EXISTS paper_blueprints (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -469,28 +489,18 @@ def init_db():
                 INDEX idx_created_by (created_by)
             )
         """)
-
-        db.commit()
-
         add_cognitive_config_column()
+        add_textbook_id_to_cgs()
 
         cur.execute("SELECT COUNT(*) as count FROM cognitive_domains")
         domain_count = cur.fetchone()[0]
-        
         if domain_count == 0:
             insert_default_reference_data(cur)
-            db.commit()
 
         cur.execute("SELECT COUNT(*) as count FROM users")
         user_count = cur.fetchone()[0]
-        
         if user_count == 0:
-            ADMIN_USERNAME = "admin"
-            ADMIN_PASSWORD = "admin123"
-            ADMIN_ROLE = "admin"
-            
-            hashed_password = generate_password_hash(ADMIN_PASSWORD)
-            
+            hashed_password = generate_password_hash("admin123")
             cur.execute("""
                 INSERT INTO users (
                     username, password, role, 
@@ -498,36 +508,32 @@ def init_db():
                     created_at
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
-                ADMIN_USERNAME, 
-                hashed_password, 
-                ADMIN_ROLE,
-                True, True, True, True, True,
-                datetime.now()
+                "admin", hashed_password, "admin",
+                True, True, True, True, True, datetime.now()
             ))
-            
-            db.commit()
-
-    except Exception as e:
-        db.rollback()
-        
+    except Exception:
+        traceback.print_exc()
     finally:
         cur.close()
         db.close()
-
 
 @app.route('/')
 def home():
     return redirect(url_for('dashboard_login'))
 
+
 @app.route('/dashboard-login', methods=['GET', 'POST'])
 def dashboard_login():
-    if 'user' in session:
+    if 'user' in session and request.method == 'GET':
         return redirect(url_for('dashboard'))
-    
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        
+        # Wipe everything first.
+        session.clear()
+        session['_sid'] = secrets.token_hex(16)
+
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+
         if not username or not password:
             flash('Username and password are required!', 'error')
             return render_template('dashboard_login.html')
@@ -536,37 +542,38 @@ def dashboard_login():
         cur = db.cursor(dictionary=True)
         cur.execute("SELECT * FROM users WHERE username=%s", (username,))
         user = cur.fetchone()
-        
-        if not user:
-            cur.close()
-            db.close()
-            flash('Invalid username or password!', 'error')
-            return render_template('dashboard_login.html')
-        
-        if user and check_password_hash(user['password'], password):
-            session['user'] = user['username']
-            session['user_id'] = user['id']
-            session['user_role'] = user.get('role', 'writer')
-            session['subject_group'] = user.get('subject_group')
-            session['group_role'] = user.get('group_role', 'member')
-            session['perm_re'] = bool(user.get('perm_re', False))
-            session['perm_ra'] = bool(user.get('perm_ra', False))
-            session['perm_rc'] = bool(user.get('perm_rc', False))
-            session['perm_ap'] = bool(user.get('perm_ap', False))
-            session['perm_master'] = bool(user.get('perm_master', False))
-            
-            cur.close()
-            db.close()
-            
-            flash(f'Welcome back, {user["username"]}!', 'success')
-            return redirect(url_for('dashboard'))
-
         cur.close()
         db.close()
-        flash('Invalid username or password!', 'error')
-        return render_template('dashboard_login.html')
+
+        if not user or not check_password_hash(user['password'], password):
+            session.clear()
+            flash('Invalid username or password!', 'error')
+            return render_template('dashboard_login.html')
+        session.clear()
+
+        sg = user.get('subject_group')
+        if sg is not None and str(sg).strip() == '':
+            sg = None
+
+        session['_sid'] = secrets.token_hex(16)
+        session['user'] = user['username']
+        session['user_id'] = user['id']
+        session['user_role'] = user.get('role') or 'writer'
+        session['subject_group'] = sg
+        session['group_role'] = user.get('group_role') or 'member'
+        session['perm_re'] = bool(user.get('perm_re', False))
+        session['perm_ra'] = bool(user.get('perm_ra', False))
+        session['perm_rc'] = bool(user.get('perm_rc', False))
+        session['perm_ap'] = bool(user.get('perm_ap', False))
+        session['perm_master'] = bool(user.get('perm_master', False))
+        session.permanent = False
+        session.modified = True
+
+        flash(f'Welcome back, {user["username"]}!', 'success')
+        return redirect(url_for('dashboard'))
 
     return render_template('dashboard_login.html')
+
 
 @app.route('/dashboard-register', methods=['GET', 'POST'])
 def dashboard_register():
@@ -596,44 +603,45 @@ def dashboard_register():
                 INSERT INTO users (username, password, role, perm_re, created_at) 
                 VALUES (%s, %s, %s, %s, %s)
             """, (username, hashed_password, 'writer', True, datetime.now()))
-            db.commit()
             cur.close()
             db.close()
             flash('Account created successfully! You can now login.', 'success')
             return redirect(url_for('dashboard_login'))
         except Exception as e:
-            db.rollback()
             cur.close()
             db.close()
             flash(f'Registration failed: {str(e)}', 'error')
             return render_template('dashboard_register.html')
     return render_template('dashboard_register.html')
 
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     return redirect(url_for('dashboard_login'))
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     return redirect(url_for('dashboard_register'))
 
+
 @app.route('/builder-login', methods=['GET', 'POST'])
 def builder_login():
     return redirect(url_for('dashboard_login'))
 
+
 @app.route('/builder-register', methods=['GET', 'POST'])
 def builder_register():
     return redirect(url_for('dashboard_register'))
+
 
 @app.route('/dashboard')
 def dashboard():
     if 'user' not in session:
         flash('Please login to access the dashboard', 'error')
         return redirect(url_for('dashboard_login'))
-    
     user_role = session.get('user_role', 'writer')
     username = session.get('user', 'User')
-    
     permissions = {
         'RE': session.get('perm_re', False),
         'RA': session.get('perm_ra', False),
@@ -641,49 +649,42 @@ def dashboard():
         'AP': session.get('perm_ap', False),
         'MASTER': session.get('perm_master', False)
     }
-    
-    return render_template('dashboard.html', 
-                         user=username, 
-                         user_role=user_role,
-                         permissions=permissions)
+    return render_template('dashboard.html', user=username, user_role=user_role, permissions=permissions)
+
 
 @app.route('/complete-selection')
 def questions_upload():
     if 'user' not in session:
         flash('Please login first!', 'error')
         return redirect(url_for('dashboard_login'))
-    
     has_access = (
-        session.get('perm_re', False) or 
-        session.get('perm_rc', False) or 
-        session.get('perm_ap', False) or 
+        session.get('perm_re', False) or
+        session.get('perm_rc', False) or
+        session.get('perm_ap', False) or
         session.get('user_role') == 'admin'
     )
-    
     if not has_access:
         flash('Access Denied: You do not have permission to upload questions', 'error')
         return redirect(url_for('dashboard'))
-    
     return render_template('questions_upload.html', user=session['user'])
+
 
 @app.route('/page2')
 def page2():
     if 'user' not in session:
         flash('Please login first!', 'error')
         return redirect(url_for('dashboard_login'))
-    
     has_access = (
-        session.get('perm_re', False) or 
-        session.get('perm_rc', False) or 
-        session.get('perm_ap', False) or 
+        session.get('perm_re', False) or
+        session.get('perm_rc', False) or
+        session.get('perm_ap', False) or
         session.get('user_role') == 'admin'
     )
-    
     if not has_access:
         flash('Access Denied: You do not have permission to upload questions', 'error')
         return redirect(url_for('dashboard'))
-    
     return render_template('questions_upload_2.html', user=session['user'])
+
 
 @app.route('/question-paper-builder')
 def question_paper_builder():
@@ -695,6 +696,7 @@ def question_paper_builder():
         return redirect(url_for('dashboard'))
     return render_template('question_paper_builder.html', user=session['user'])
 
+
 @app.route('/configure')
 def configure():
     if 'user' not in session:
@@ -705,12 +707,12 @@ def configure():
         return redirect(url_for('dashboard'))
     return render_template('configure_dashboard.html', user=session['user'])
 
+
 @app.route('/review')
 def review():
     if 'user' not in session:
         flash('Please login first!', 'error')
         return redirect(url_for('dashboard_login'))
-    
     username = session.get('user', 'User')
     user_role = session.get('user_role', 'writer')
     user_id = session.get('user_id', 0)
@@ -721,7 +723,6 @@ def review():
         'AP': session.get('perm_ap', False),
         'MASTER': session.get('perm_master', False)
     }
-    
     page_title = "Questions List"
     if user_role == 'admin':
         page_title = "All Questions"
@@ -735,50 +736,191 @@ def review():
         page_title = "Approved Questions for Paper Building"
     elif permissions.get('RE'):
         page_title = "My Questions"
-    
-    return render_template('review.html', 
-                         user=username, 
-                         user_id=user_id,
-                         user_role=user_role,
-                         permissions=permissions,
-                         page_title=page_title)
+    return render_template('review.html', user=username, user_id=user_id,
+                           user_role=user_role, permissions=permissions, page_title=page_title)
+
 
 @app.route('/logout')
 def logout():
     session.clear()
+    session['_sid'] = secrets.token_hex(16)
+    session.modified = True
     flash('You have been logged out successfully!', 'success')
     return redirect(url_for('dashboard_login'))
 
+@app.route('/api/hierarchy-chain', methods=['GET'])
+def get_hierarchy_chain():
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    user_role = session.get('user_role')
+    subject_group = session.get('subject_group')
+
+    grade_id = request.args.get('grade_id')
+    subject_id = request.args.get('subject_id')
+    textbook_id = request.args.get('textbook_id')
+    chapter_id = request.args.get('chapter_id')
+    cg_id = request.args.get('cg_id')
+
+    db = get_db()
+    cur = db.cursor(dictionary=True)
+    try:
+        user_subject_ids = []
+        if user_role != 'admin' and subject_group:
+            cur.execute("SELECT subject_id FROM subject_groups WHERE group_code = %s", (subject_group,))
+            user_subject_ids = [row['subject_id'] for row in cur.fetchall()]
+
+        result = {'grades': [], 'subjects': [], 'textbooks': [], 'chapters': [], 'cgs': [], 'competencies': []}
+
+        if user_role == 'admin':
+            cur.execute("SELECT id, grade_name FROM grades ORDER BY id")
+        else:
+            if user_subject_ids:
+                placeholders = ','.join(['%s'] * len(user_subject_ids))
+                cur.execute(f"""
+                    SELECT DISTINCT g.id, g.grade_name
+                    FROM grades g
+                    JOIN subjects s ON g.id = s.grade_id
+                    WHERE s.id IN ({placeholders})
+                    ORDER BY g.id
+                """, tuple(user_subject_ids))
+            else:
+                cur.execute("SELECT id, grade_name FROM grades WHERE 1=0")
+        result['grades'] = cur.fetchall()
+
+        if grade_id:
+            if user_role == 'admin':
+                cur.execute("""
+                    SELECT s.id, s.subject_name, s.grade_id
+                    FROM subjects s WHERE s.grade_id = %s
+                    ORDER BY s.subject_name
+                """, (grade_id,))
+            else:
+                if user_subject_ids:
+                    placeholders = ','.join(['%s'] * len(user_subject_ids))
+                    cur.execute(f"""
+                        SELECT s.id, s.subject_name, s.grade_id
+                        FROM subjects s
+                        WHERE s.grade_id = %s AND s.id IN ({placeholders})
+                        ORDER BY s.subject_name
+                    """, tuple([grade_id] + user_subject_ids))
+                else:
+                    cur.execute("SELECT id, subject_name, grade_id FROM subjects WHERE 1=0")
+            result['subjects'] = cur.fetchall()
+        else:
+            if user_role == 'admin':
+                cur.execute("SELECT id, subject_name, grade_id FROM subjects ORDER BY grade_id, subject_name")
+            else:
+                if user_subject_ids:
+                    placeholders = ','.join(['%s'] * len(user_subject_ids))
+                    cur.execute(f"""
+                        SELECT id, subject_name, grade_id FROM subjects
+                        WHERE id IN ({placeholders})
+                        ORDER BY grade_id, subject_name
+                    """, tuple(user_subject_ids))
+                else:
+                    cur.execute("SELECT id, subject_name, grade_id FROM subjects WHERE 1=0")
+            result['subjects'] = cur.fetchall()
+
+        if subject_id:
+            cur.execute("""
+                SELECT t.id, t.textbook_name, t.publisher, t.is_reference,
+                       t.subject_id, t.grade_id
+                FROM textbooks t
+                WHERE t.subject_id = %s
+                ORDER BY t.is_reference, t.textbook_name
+            """, (subject_id,))
+            result['textbooks'] = cur.fetchall()
+
+        if textbook_id:
+            cur.execute("""
+                SELECT c.id, c.chapter_name, c.chapter_number,
+                       c.textbook_id, c.subject_id, c.reference_book
+                FROM chapters c
+                WHERE c.textbook_id = %s
+                ORDER BY c.chapter_number, c.id
+            """, (textbook_id,))
+            result['chapters'] = cur.fetchall()
+        elif subject_id:
+            cur.execute("""
+                SELECT c.id, c.chapter_name, c.chapter_number,
+                       c.textbook_id, c.subject_id, c.reference_book
+                FROM chapters c
+                WHERE c.subject_id = %s
+                ORDER BY c.chapter_number, c.id
+            """, (subject_id,))
+            result['chapters'] = cur.fetchall()
+
+        if chapter_id:
+            cur.execute("""
+                SELECT cg.id, cg.cg_code, cg.cg_description,
+                       cg.chapter_id, cg.subject_id, cg.textbook_id
+                FROM curricular_goals cg
+                WHERE cg.chapter_id = %s
+                ORDER BY cg.id
+            """, (chapter_id,))
+            result['cgs'] = cur.fetchall()
+        elif subject_id:
+            cur.execute("""
+                SELECT cg.id, cg.cg_code, cg.cg_description,
+                       cg.chapter_id, cg.subject_id, cg.textbook_id,
+                       ch.chapter_name
+                FROM curricular_goals cg
+                LEFT JOIN chapters ch ON cg.chapter_id = ch.id
+                WHERE cg.subject_id = %s
+                ORDER BY cg.chapter_id, cg.id
+            """, (subject_id,))
+            result['cgs'] = cur.fetchall()
+
+        if cg_id:
+            cur.execute("""
+                SELECT c.id, c.comp_code, c.comp_description, c.cg_id, c.status
+                FROM competencies c
+                WHERE c.cg_id = %s AND c.status = 1
+                ORDER BY c.id
+            """, (cg_id,))
+            result['competencies'] = cur.fetchall()
+        elif subject_id:
+            cur.execute("""
+                SELECT c.id, c.comp_code, c.comp_description, c.cg_id, c.status,
+                       cg.cg_code, cg.chapter_id, cg.textbook_id
+                FROM competencies c
+                JOIN curricular_goals cg ON c.cg_id = cg.id
+                WHERE cg.subject_id = %s AND c.status = 1
+                ORDER BY cg.chapter_id, c.id
+            """, (subject_id,))
+            result['competencies'] = cur.fetchall()
+
+        return jsonify(result)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cur.close()
+        db.close()
 
 @app.route('/api/dashboard-stats')
 def dashboard_stats():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     username = session.get('user')
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
         cur.execute("SHOW TABLES LIKE 'simple_questions'")
         if not cur.fetchone():
             return jsonify({})
-        
         cur.execute("SELECT id, subject_name, grade_id FROM subjects")
         all_subjects = cur.fetchall()
         subjects_dict = {s['id']: s for s in all_subjects}
-        
         cur.execute("SELECT id, grade_name FROM grades ORDER BY id")
         all_grades = cur.fetchall()
-        
         stats = {}
-        
         for grade in all_grades:
             grade_id = grade['id']
             grade_name = grade['grade_name']
-            
             cur.execute("""
                 SELECT 
                     COUNT(*) as total,
@@ -788,11 +930,9 @@ def dashboard_stats():
                     SUM(CASE WHEN status = 'reviewed_completed' THEN 1 ELSE 0 END) as reviewed_completed,
                     SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected,
                     SUM(CASE WHEN status = 'master_reviewed' THEN 1 ELSE 0 END) as master_reviewed
-                FROM simple_questions 
-                WHERE grade_id = %s
+                FROM simple_questions WHERE grade_id = %s
             """, (grade_id,))
             grade_stats = cur.fetchone()
-            
             cur.execute("""
                 SELECT 
                     subject_id,
@@ -803,12 +943,10 @@ def dashboard_stats():
                     SUM(CASE WHEN status = 'reviewed_completed' THEN 1 ELSE 0 END) as reviewed_completed,
                     SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected,
                     SUM(CASE WHEN status = 'master_reviewed' THEN 1 ELSE 0 END) as master_reviewed
-                FROM simple_questions 
-                WHERE grade_id = %s
+                FROM simple_questions WHERE grade_id = %s
                 GROUP BY subject_id
             """, (grade_id,))
             subject_stats = cur.fetchall()
-            
             subjects_dict_for_grade = {}
             for subj in subject_stats:
                 subject_id = subj['subject_id']
@@ -823,7 +961,6 @@ def dashboard_stats():
                         'master_reviewed': subj['master_reviewed'] or 0,
                         'subject_name': subjects_dict[subject_id]['subject_name']
                     }
-            
             stats[f'grade_{grade_id}'] = {
                 'total': grade_stats['total'] or 0,
                 'approved': grade_stats['approved'] or 0,
@@ -836,11 +973,9 @@ def dashboard_stats():
                 'grade_name': grade_name,
                 'grade_id': grade_id
             }
-        
         if user_role != 'admin' and subject_group:
             cur.execute("SELECT subject_id FROM subject_groups WHERE group_code = %s", (subject_group,))
             user_subject_ids = [row['subject_id'] for row in cur.fetchall()]
-            
             if user_subject_ids:
                 placeholders = ','.join(['%s'] * len(user_subject_ids))
                 cur.execute(f"""
@@ -855,8 +990,7 @@ def dashboard_stats():
                     LEFT JOIN subjects sub ON sq.subject_id = sub.id
                     LEFT JOIN chapters ch ON sq.chapter_id = ch.id
                     WHERE sq.subject_id IN ({placeholders})
-                    ORDER BY sq.created_at DESC
-                    LIMIT 10
+                    ORDER BY sq.created_at DESC LIMIT 10
                 """, tuple(user_subject_ids))
             else:
                 cur.execute("""
@@ -870,8 +1004,8 @@ def dashboard_stats():
                     LEFT JOIN grades g ON sq.grade_id = g.id
                     LEFT JOIN subjects sub ON sq.subject_id = sub.id
                     LEFT JOIN chapters ch ON sq.chapter_id = ch.id
-                    ORDER BY sq.created_at DESC
-                    LIMIT 10                """)
+                    ORDER BY sq.created_at DESC LIMIT 10
+                """)
         else:
             cur.execute("""
                 SELECT sq.id, sq.question_text, 
@@ -884,41 +1018,29 @@ def dashboard_stats():
                 LEFT JOIN grades g ON sq.grade_id = g.id
                 LEFT JOIN subjects sub ON sq.subject_id = sub.id
                 LEFT JOIN chapters ch ON sq.chapter_id = ch.id
-                ORDER BY sq.created_at DESC
-                LIMIT 10
+                ORDER BY sq.created_at DESC LIMIT 10
             """)
         recent = cur.fetchall()
         stats['recent'] = recent
-        
         return jsonify(stats)
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
-
 @app.route('/api/grades', methods=['GET'])
 def get_grades():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
         if user_role == 'admin':
             cur.execute("SELECT id, grade_name FROM grades ORDER BY id")
-        elif user_role == 'master' and subject_group:
-            cur.execute("""
-                SELECT DISTINCT g.id, g.grade_name 
-                FROM grades g
-                JOIN subject_groups sg ON g.id = sg.grade_id
-                WHERE sg.group_code = %s
-                ORDER BY g.id
-            """, (subject_group,))
         else:
             cur.execute("""
                 SELECT DISTINCT g.id, g.grade_name 
@@ -936,44 +1058,38 @@ def get_grades():
         cur.close()
         db.close()
 
+
 @app.route('/api/grades', methods=['POST'])
 def create_grade():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     if user_role != 'admin' and user_role != 'master':
         return jsonify({'error': 'Admin or Master access required'}), 403
-    
     data = request.json
     name = data.get('name')
     if not name:
         return jsonify({'error': 'Grade name is required'}), 400
-    
     db = get_db()
     cur = db.cursor()
     try:
         cur.execute("INSERT INTO grades (grade_name) VALUES (%s)", (name,))
-        db.commit()
         return jsonify({'success': True, 'id': cur.lastrowid})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/grades/<int:grade_id>', methods=['PUT'])
 def update_grade(grade_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
     if user_role != 'admin' and user_role != 'master':
         return jsonify({'error': 'Admin or Master access required'}), 403
-    
     if user_role == 'master' and subject_group:
         db_check = get_db()
         cur_check = db_check.cursor(dictionary=True)
@@ -987,34 +1103,29 @@ def update_grade(grade_id):
         finally:
             cur_check.close()
             db_check.close()
-    
     data = request.json
     name = data.get('name')
     if not name:
         return jsonify({'error': 'Grade name is required'}), 400
-    
     db = get_db()
     cur = db.cursor()
     try:
         cur.execute("UPDATE grades SET grade_name = %s WHERE id = %s", (name, grade_id))
-        db.commit()
         return jsonify({'success': True})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/grades/<int:grade_id>', methods=['DELETE'])
 def delete_grade(grade_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     if user_role != 'admin':
         return jsonify({'error': 'Admin access required'}), 403
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
@@ -1022,24 +1133,19 @@ def delete_grade(grade_id):
         if cur.fetchone()['count'] > 0:
             return jsonify({'error': 'Cannot delete grade with subjects'}), 400
         cur.execute("DELETE FROM grades WHERE id = %s", (grade_id,))
-        db.commit()
         return jsonify({'success': True})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
-
 @app.route('/api/subjects', methods=['GET'])
 def get_subjects():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
@@ -1050,15 +1156,6 @@ def get_subjects():
                 LEFT JOIN grades g ON s.grade_id = g.id
                 ORDER BY s.grade_id, s.subject_name
             """)
-        elif user_role == 'master' and subject_group:
-            cur.execute("""
-                SELECT s.id, s.subject_name, s.grade_id, g.grade_name 
-                FROM subjects s
-                LEFT JOIN grades g ON s.grade_id = g.id
-                JOIN subject_groups sg ON s.id = sg.subject_id
-                WHERE sg.group_code = %s
-                ORDER BY s.grade_id, s.subject_name
-            """, (subject_group,))
         else:
             cur.execute("""
                 SELECT s.id, s.subject_name, s.grade_id, g.grade_name 
@@ -1077,24 +1174,20 @@ def get_subjects():
         cur.close()
         db.close()
 
+
 @app.route('/api/subjects', methods=['POST'])
 def create_subject():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
     if user_role != 'admin' and user_role != 'master':
         return jsonify({'error': 'Admin or Master access required'}), 403
-    
     data = request.json
     name = data.get('name')
     grade_id = data.get('grade_id')
-    
     if not name or not grade_id:
         return jsonify({'error': 'Name and grade required'}), 400
-    
     if user_role == 'master' and subject_group:
         db_check = get_db()
         cur_check = db_check.cursor(dictionary=True)
@@ -1108,31 +1201,26 @@ def create_subject():
         finally:
             cur_check.close()
             db_check.close()
-    
     db = get_db()
     cur = db.cursor()
     try:
         cur.execute("INSERT INTO subjects (subject_name, grade_id) VALUES (%s, %s)", (name, grade_id))
-        db.commit()
         return jsonify({'success': True, 'id': cur.lastrowid})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/subjects/<int:subject_id>', methods=['PUT'])
 def update_subject(subject_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
     if user_role != 'admin' and user_role != 'master':
         return jsonify({'error': 'Admin or Master access required'}), 403
-    
     if user_role == 'master' and subject_group:
         db_check = get_db()
         cur_check = db_check.cursor(dictionary=True)
@@ -1146,35 +1234,30 @@ def update_subject(subject_id):
         finally:
             cur_check.close()
             db_check.close()
-    
     data = request.json
     name = data.get('name')
     grade_id = data.get('grade_id')
     if not name or not grade_id:
         return jsonify({'error': 'Name and grade required'}), 400
-    
     db = get_db()
     cur = db.cursor()
     try:
         cur.execute("UPDATE subjects SET subject_name = %s, grade_id = %s WHERE id = %s", (name, grade_id, subject_id))
-        db.commit()
         return jsonify({'success': True})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/subjects/<int:subject_id>', methods=['DELETE'])
 def delete_subject(subject_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     if user_role != 'admin':
         return jsonify({'error': 'Admin access required'}), 403
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
@@ -1182,27 +1265,22 @@ def delete_subject(subject_id):
         if cur.fetchone()['count'] > 0:
             return jsonify({'error': 'Cannot delete subject with CGs'}), 400
         cur.execute("DELETE FROM subjects WHERE id = %s", (subject_id,))
-        db.commit()
         return jsonify({'success': True})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
-
 @app.route('/api/textbooks', methods=['GET'])
 def get_textbooks():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     subject_id = request.args.get('subject_id')
     grade_id = request.args.get('grade_id')
     book_type = request.args.get('book_type')
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
@@ -1214,8 +1292,7 @@ def get_textbooks():
             WHERE 1=1
         """
         params = []
-        
-        if user_role == 'master' and subject_group:
+        if user_role != 'admin' and subject_group:
             query += """ 
                 AND t.subject_id IN (
                     SELECT sg.subject_id FROM subject_groups sg 
@@ -1223,15 +1300,6 @@ def get_textbooks():
                 )
             """
             params.append(subject_group)
-        elif user_role != 'admin' and subject_group:
-            query += """ 
-                AND t.subject_id IN (
-                    SELECT sg.subject_id FROM subject_groups sg 
-                    WHERE sg.group_code = %s
-                )
-            """
-            params.append(subject_group)
-        
         if subject_id:
             query += " AND t.subject_id = %s"
             params.append(subject_id)
@@ -1242,38 +1310,34 @@ def get_textbooks():
             query += " AND (t.is_reference = 0 OR t.is_reference IS NULL)"
         elif book_type == 'reference':
             query += " AND t.is_reference = 1"
-            
         query += " ORDER BY t.textbook_name"
         cur.execute(query, params)
         textbooks = cur.fetchall()
         return jsonify({'textbooks': textbooks})
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/textbooks', methods=['POST'])
 def create_textbook():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
     if user_role != 'admin' and user_role != 'master':
         return jsonify({'error': 'Admin or Master access required'}), 403
-    
     data = request.json
     textbook_name = data.get('textbook_name')
     subject_id = data.get('subject_id')
     grade_id = data.get('grade_id')
     publisher = data.get('publisher', '')
     is_reference = data.get('is_reference', 0)
-    
     if not textbook_name or not subject_id or not grade_id:
         return jsonify({'error': 'Textbook name, subject, and grade are required'}), 400
-    
     if user_role == 'master' and subject_group:
         db_check = get_db()
         cur_check = db_check.cursor(dictionary=True)
@@ -1287,7 +1351,6 @@ def create_textbook():
         finally:
             cur_check.close()
             db_check.close()
-    
     db = get_db()
     cur = db.cursor()
     try:
@@ -1295,38 +1358,32 @@ def create_textbook():
             INSERT INTO textbooks (textbook_name, subject_id, grade_id, publisher, is_reference)
             VALUES (%s, %s, %s, %s, %s)
         """, (textbook_name, subject_id, grade_id, publisher, is_reference))
-        db.commit()
         return jsonify({'success': True, 'id': cur.lastrowid, 'message': 'Book saved successfully'})
     except mysql.connector.IntegrityError:
         return jsonify({'error': 'Book already exists for this subject'}), 400
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/textbooks/<int:textbook_id>', methods=['PUT'])
 def update_textbook(textbook_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
     if user_role != 'admin' and user_role != 'master':
         return jsonify({'error': 'Admin or Master access required'}), 403
-    
     data = request.json
     textbook_name = data.get('textbook_name')
     subject_id = data.get('subject_id')
     grade_id = data.get('grade_id')
     publisher = data.get('publisher', '')
     is_reference = data.get('is_reference', 0)
-    
     if not textbook_name or not subject_id or not grade_id:
         return jsonify({'error': 'Textbook name, subject, and grade are required'}), 400
-    
     if user_role == 'master' and subject_group:
         db_check = get_db()
         cur_check = db_check.cursor(dictionary=True)
@@ -1340,7 +1397,6 @@ def update_textbook(textbook_id):
         finally:
             cur_check.close()
             db_check.close()
-    
     db = get_db()
     cur = db.cursor()
     try:
@@ -1350,28 +1406,25 @@ def update_textbook(textbook_id):
                 publisher = %s, is_reference = %s
             WHERE id = %s
         """, (textbook_name, subject_id, grade_id, publisher, is_reference, textbook_id))
-        db.commit()
         if cur.rowcount == 0:
             return jsonify({'error': 'Book not found'}), 404
         return jsonify({'success': True, 'message': 'Book updated successfully'})
     except mysql.connector.IntegrityError:
         return jsonify({'error': 'Book already exists for this subject'}), 400
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/textbooks/<int:textbook_id>', methods=['DELETE'])
 def delete_textbook(textbook_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     if user_role != 'admin':
         return jsonify({'error': 'Admin access required'}), 403
-    
     db = get_db()
     cur = db.cursor()
     try:
@@ -1379,78 +1432,60 @@ def delete_textbook(textbook_id):
         count = cur.fetchone()[0]
         if count > 0:
             return jsonify({'error': f'Cannot delete textbook because it has {count} chapter(s) associated.'}), 400
-            
         cur.execute("DELETE FROM textbooks WHERE id = %s", (textbook_id,))
-        db.commit()
         if cur.rowcount == 0:
             return jsonify({'error': 'Book not found'}), 404
         return jsonify({'success': True, 'message': 'Book deleted successfully'})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
+
 
 @app.route('/api/subjects/<int:subject_id>/textbooks', methods=['GET'])
 def get_subject_textbooks(subject_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     book_type = request.args.get('book_type')
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
-        if user_role == 'master' and subject_group:
-            cur_check = get_db()
-            cur_check_cursor = cur_check.cursor(dictionary=True)
-            try:
-                cur_check_cursor.execute("""
-                    SELECT sg.id FROM subject_groups sg
-                    WHERE sg.group_code = %s AND sg.subject_id = %s
-                """, (subject_group, subject_id))
-                if not cur_check_cursor.fetchone():
-                    return jsonify({'error': 'Access denied'}), 403
-            finally:
-                cur_check_cursor.close()
-                cur_check.close()
-        
+        if user_role != 'admin' and subject_group:
+            cur.execute("SELECT subject_id FROM subject_groups WHERE group_code = %s AND subject_id = %s",
+                        (subject_group, subject_id))
+            if not cur.fetchone():
+                return jsonify({'error': 'Access denied'}), 403
         query = """
             SELECT id, textbook_name, publisher, grade_id, is_reference
-            FROM textbooks 
-            WHERE subject_id = %s
+            FROM textbooks WHERE subject_id = %s
         """
         params = [subject_id]
-        
         if book_type == 'textbook':
             query += " AND (is_reference = 0 OR is_reference IS NULL)"
         elif book_type == 'reference':
             query += " AND is_reference = 1"
-            
         query += " ORDER BY textbook_name"
-        
         cur.execute(query, params)
         textbooks = cur.fetchall()
         return jsonify({'textbooks': textbooks})
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
-
 @app.route('/api/chapters', methods=['GET'])
 def get_chapters():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     subject_id = request.args.get('subject_id')
+    textbook_id = request.args.get('textbook_id')
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
@@ -1458,74 +1493,57 @@ def get_chapters():
         if user_role != 'admin' and subject_group:
             cur.execute("SELECT subject_id FROM subject_groups WHERE group_code = %s", (subject_group,))
             user_subject_ids = [row['subject_id'] for row in cur.fetchall()]
-        
+
+        query = """
+            SELECT c.*, s.subject_name, s.grade_id, g.grade_name,
+                   t.textbook_name, t.id as textbook_id, t.publisher, t.is_reference
+            FROM chapters c 
+            LEFT JOIN subjects s ON c.subject_id = s.id 
+            LEFT JOIN grades g ON s.grade_id = g.id
+            LEFT JOIN textbooks t ON c.textbook_id = t.id
+            WHERE 1=1
+        """
+        params = []
+        if user_role != 'admin' and user_subject_ids:
+            placeholders = ','.join(['%s'] * len(user_subject_ids))
+            query += f" AND c.subject_id IN ({placeholders})"
+            params.extend(user_subject_ids)
         if subject_id:
-            if user_role != 'admin' and user_subject_ids and int(subject_id) not in user_subject_ids:
-                return jsonify({'error': 'Access denied'}), 403
-            cur.execute("""
-                SELECT c.*, s.subject_name, s.grade_id, g.grade_name,
-                       t.textbook_name, t.id as textbook_id, t.publisher, t.is_reference
-                FROM chapters c 
-                LEFT JOIN subjects s ON c.subject_id = s.id 
-                LEFT JOIN grades g ON s.grade_id = g.id
-                LEFT JOIN textbooks t ON c.textbook_id = t.id
-                WHERE c.subject_id = %s 
-                ORDER BY c.chapter_number, c.id
-            """, (subject_id,))
-        else:
-            if user_role != 'admin' and user_subject_ids:
-                placeholders = ','.join(['%s'] * len(user_subject_ids))
-                cur.execute(f"""
-                    SELECT c.*, s.subject_name, s.grade_id, g.grade_name,
-                           t.textbook_name, t.id as textbook_id, t.publisher, t.is_reference
-                    FROM chapters c 
-                    LEFT JOIN subjects s ON c.subject_id = s.id 
-                    LEFT JOIN grades g ON s.grade_id = g.id
-                    LEFT JOIN textbooks t ON c.textbook_id = t.id
-                    WHERE c.subject_id IN ({placeholders})
-                    ORDER BY g.id, s.subject_name, c.chapter_number, c.id
-                """, tuple(user_subject_ids))
-            else:
-                cur.execute("""
-                    SELECT c.*, s.subject_name, s.grade_id, g.grade_name,
-                           t.textbook_name, t.id as textbook_id, t.publisher, t.is_reference
-                    FROM chapters c 
-                    LEFT JOIN subjects s ON c.subject_id = s.id 
-                    LEFT JOIN grades g ON s.grade_id = g.id
-                    LEFT JOIN textbooks t ON c.textbook_id = t.id
-                    ORDER BY g.id, s.subject_name, c.chapter_number, c.id
-                """)
+            query += " AND c.subject_id = %s"
+            params.append(subject_id)
+        if textbook_id:
+            query += " AND c.textbook_id = %s"
+            params.append(textbook_id)
+        query += " ORDER BY c.chapter_number, c.id"
+        cur.execute(query, params)
         chapters = cur.fetchall()
         return jsonify({'chapters': chapters})
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/chapters', methods=['POST'])
 def create_chapter():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
     if user_role != 'admin' and user_role != 'master':
         return jsonify({'error': 'Admin or Master access required'}), 403
-    
     data = request.json
     subject_id = data.get('subject_id')
     chapter_name = data.get('chapter_name')
     chapter_number = data.get('chapter_number', 0)
     textbook_id = data.get('textbook_id')
     reference_book = data.get('reference_book', '')
-    
     if not subject_id or not chapter_name:
         return jsonify({'error': 'Subject and chapter name are required'}), 400
     if not textbook_id:
         return jsonify({'error': 'Textbook selection is required'}), 400
-    
     if user_role == 'master' and subject_group:
         db_check = get_db()
         cur_check = db_check.cursor(dictionary=True)
@@ -1539,7 +1557,6 @@ def create_chapter():
         finally:
             cur_check.close()
             db_check.close()
-    
     db = get_db()
     cur = db.cursor()
     try:
@@ -1547,40 +1564,34 @@ def create_chapter():
             INSERT INTO chapters (subject_id, chapter_name, chapter_number, textbook_id, reference_book)
             VALUES (%s, %s, %s, %s, %s)
         """, (subject_id, chapter_name, chapter_number, textbook_id, reference_book))
-        db.commit()
         return jsonify({'success': True, 'id': cur.lastrowid, 'message': 'Chapter created successfully'})
     except mysql.connector.IntegrityError:
         return jsonify({'error': 'Chapter already exists for this subject'}), 400
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/chapters/<int:chapter_id>', methods=['PUT'])
 def update_chapter(chapter_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
     if user_role != 'admin' and user_role != 'master':
         return jsonify({'error': 'Admin or Master access required'}), 403
-    
     data = request.json
     subject_id = data.get('subject_id')
     chapter_name = data.get('chapter_name')
     chapter_number = data.get('chapter_number', 0)
     textbook_id = data.get('textbook_id')
     reference_book = data.get('reference_book', '')
-    
     if not subject_id or not chapter_name:
         return jsonify({'error': 'Subject and chapter name are required'}), 400
     if not textbook_id:
         return jsonify({'error': 'Textbook selection is required'}), 400
-    
     if user_role == 'master' and subject_group:
         db_check = get_db()
         cur_check = db_check.cursor(dictionary=True)
@@ -1594,7 +1605,6 @@ def update_chapter(chapter_id):
         finally:
             cur_check.close()
             db_check.close()
-    
     db = get_db()
     cur = db.cursor()
     try:
@@ -1604,28 +1614,25 @@ def update_chapter(chapter_id):
                 chapter_number = %s, textbook_id = %s, reference_book = %s
             WHERE id = %s
         """, (subject_id, chapter_name, chapter_number, textbook_id, reference_book, chapter_id))
-        db.commit()
         if cur.rowcount == 0:
             return jsonify({'error': 'Chapter not found'}), 404
         return jsonify({'success': True, 'message': 'Chapter updated successfully'})
     except mysql.connector.IntegrityError:
         return jsonify({'error': 'Chapter already exists for this subject'}), 400
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/chapters/<int:chapter_id>', methods=['DELETE'])
 def delete_chapter(chapter_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     if user_role != 'admin':
         return jsonify({'error': 'Admin access required'}), 403
-    
     db = get_db()
     cur = db.cursor()
     try:
@@ -1634,25 +1641,23 @@ def delete_chapter(chapter_id):
         if count > 0:
             return jsonify({'error': f'Cannot delete chapter because it has {count} question(s).'}), 400
         cur.execute("DELETE FROM chapters WHERE id = %s", (chapter_id,))
-        db.commit()
         if cur.rowcount == 0:
             return jsonify({'error': 'Chapter not found'}), 404
         return jsonify({'success': True, 'message': 'Chapter deleted successfully'})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/subjects/<int:subject_id>/chapters', methods=['GET'])
 def get_subject_chapters(subject_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
+    textbook_id = request.args.get('textbook_id')
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
@@ -1661,49 +1666,53 @@ def get_subject_chapters(subject_id):
             user_subject_ids = [row['subject_id'] for row in cur.fetchall()]
             if subject_id not in user_subject_ids:
                 return jsonify({'error': 'Access denied'}), 403
-        
-        cur.execute("""
+        query = """
             SELECT c.id, c.chapter_name, c.chapter_number, c.textbook_id, c.reference_book,
                    t.textbook_name, t.publisher, t.is_reference
             FROM chapters c
             LEFT JOIN textbooks t ON c.textbook_id = t.id
             WHERE c.subject_id = %s 
-            ORDER BY c.chapter_number, c.id
-        """, (subject_id,))
+        """
+        params = [subject_id]
+        if textbook_id:
+            query += " AND c.textbook_id = %s"
+            params.append(textbook_id)
+        query += " ORDER BY c.chapter_number, c.id"
+        cur.execute(query, params)
         chapters = cur.fetchall()
         return jsonify({'chapters': chapters})
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
-
 
 @app.route('/api/cgs', methods=['GET'])
 def get_cgs():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     subject_id = request.args.get('subject_id')
     chapter_id = request.args.get('chapter_id')
+    textbook_id = request.args.get('textbook_id')
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
         query = """
             SELECT cg.*, s.subject_name, g.grade_name,
-                   ch.chapter_name, ch.id as chapter_id
+                   ch.chapter_name, ch.id as chapter_id,
+                   t.textbook_name, t.id as textbook_id
             FROM curricular_goals cg 
             LEFT JOIN subjects s ON cg.subject_id = s.id 
             LEFT JOIN grades g ON s.grade_id = g.id
             LEFT JOIN chapters ch ON cg.chapter_id = ch.id
+            LEFT JOIN textbooks t ON cg.textbook_id = t.id
             WHERE 1=1
         """
         params = []
-        
-        if user_role == 'master' and subject_group:
+        if user_role != 'admin' and subject_group:
             query += """ 
                 AND cg.subject_id IN (
                     SELECT sg.subject_id FROM subject_groups sg 
@@ -1711,54 +1720,43 @@ def get_cgs():
                 )
             """
             params.append(subject_group)
-        elif user_role != 'admin' and subject_group:
-            query += """ 
-                AND cg.subject_id IN (
-                    SELECT sg.subject_id FROM subject_groups sg 
-                    WHERE sg.group_code = %s
-                )
-            """
-            params.append(subject_group)
-        
         if subject_id:
             query += " AND cg.subject_id = %s"
             params.append(subject_id)
-        
         if chapter_id:
-            query += " AND (cg.chapter_id = %s OR cg.chapter_id IS NULL)"
+            query += " AND cg.chapter_id = %s"
             params.append(chapter_id)
-        
-        query += " ORDER BY cg.subject_id, cg.id"
-        
+        if textbook_id:
+            query += " AND cg.textbook_id = %s"
+            params.append(textbook_id)
+        query += " ORDER BY cg.subject_id, cg.chapter_id, cg.id"
         cur.execute(query, params)
         cgs = cur.fetchall()
         return jsonify({'cgs': cgs})
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/cgs', methods=['POST'])
 def create_cg():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
     if user_role != 'admin' and user_role != 'master':
         return jsonify({'error': 'Admin or Master access required'}), 403
-    
     data = request.json
     code = data.get('code')
     description = data.get('description', '')
     subject_id = data.get('subject_id')
     chapter_id = data.get('chapter_id')
-    
+    textbook_id = data.get('textbook_id')
     if not code or not subject_id:
         return jsonify({'error': 'Code and subject required'}), 400
-    
     if user_role == 'master' and subject_group:
         db_check = get_db()
         cur_check = db_check.cursor(dictionary=True)
@@ -1772,7 +1770,6 @@ def create_cg():
         finally:
             cur_check.close()
             db_check.close()
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
@@ -1786,48 +1783,40 @@ def create_cg():
                 SELECT id FROM curricular_goals 
                 WHERE cg_code = %s AND subject_id = %s AND chapter_id IS NULL
             """, (code, subject_id))
-        
         if cur.fetchone():
             return jsonify({'error': f'Curricular Goal "{code}" already exists for this subject and chapter'}), 400
-        
         cur.execute("""
-            INSERT INTO curricular_goals (cg_code, cg_description, subject_id, chapter_id) 
-            VALUES (%s, %s, %s, %s)
-        """, (code, description, subject_id, chapter_id))
-        db.commit()
+            INSERT INTO curricular_goals (cg_code, cg_description, subject_id, chapter_id, textbook_id) 
+            VALUES (%s, %s, %s, %s, %s)
+        """, (code, description, subject_id, chapter_id, textbook_id))
         return jsonify({'success': True, 'id': cur.lastrowid})
     except mysql.connector.IntegrityError as e:
-        db.rollback()
         if 'Duplicate entry' in str(e):
             return jsonify({'error': f'Curricular Goal "{code}" already exists'}), 400
         return jsonify({'error': str(e)}), 500
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/cgs/<int:cg_id>', methods=['PUT'])
 def update_cg(cg_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
     if user_role != 'admin' and user_role != 'master':
         return jsonify({'error': 'Admin or Master access required'}), 403
-    
     data = request.json
     code = data.get('code')
     description = data.get('description', '')
     subject_id = data.get('subject_id')
     chapter_id = data.get('chapter_id')
-    
+    textbook_id = data.get('textbook_id')
     if not code or not subject_id:
         return jsonify({'error': 'Code and subject required'}), 400
-    
     if user_role == 'master' and subject_group:
         db_check = get_db()
         cur_check = db_check.cursor(dictionary=True)
@@ -1841,7 +1830,6 @@ def update_cg(cg_id):
         finally:
             cur_check.close()
             db_check.close()
-    
     db = get_db()
     cur = db.cursor()
     try:
@@ -1855,33 +1843,29 @@ def update_cg(cg_id):
                 SELECT id FROM curricular_goals 
                 WHERE cg_code = %s AND subject_id = %s AND chapter_id IS NULL AND id != %s
             """, (code, subject_id, cg_id))
-        
         if cur.fetchone():
             return jsonify({'error': f'Curricular Goal "{code}" already exists for this subject and chapter'}), 400
-        
         cur.execute("""
             UPDATE curricular_goals 
-            SET cg_code = %s, cg_description = %s, subject_id = %s, chapter_id = %s 
+            SET cg_code = %s, cg_description = %s, subject_id = %s, 
+                chapter_id = %s, textbook_id = %s
             WHERE id = %s
-        """, (code, description, subject_id, chapter_id, cg_id))
-        db.commit()
+        """, (code, description, subject_id, chapter_id, textbook_id, cg_id))
         return jsonify({'success': True})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/cgs/<int:cg_id>', methods=['DELETE'])
 def delete_cg(cg_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     if user_role != 'admin':
         return jsonify({'error': 'Admin access required'}), 403
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
@@ -1889,38 +1873,40 @@ def delete_cg(cg_id):
         if cur.fetchone()['count'] > 0:
             return jsonify({'error': 'Cannot delete CG with competencies'}), 400
         cur.execute("DELETE FROM curricular_goals WHERE id = %s", (cg_id,))
-        db.commit()
         return jsonify({'success': True})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
-
 
 @app.route('/api/competencies', methods=['GET'])
 def get_competencies_api():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
+    cg_id = request.args.get('cg_id')
+    subject_id = request.args.get('subject_id')
+    chapter_id = request.args.get('chapter_id')
+    textbook_id = request.args.get('textbook_id')
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
         query = """
-            SELECT c.*, cg.cg_code, cg.subject_id, s.subject_name, g.grade_name 
+            SELECT c.*, cg.cg_code, cg.subject_id, cg.chapter_id, cg.textbook_id,
+                   s.subject_name, g.grade_name,
+                   ch.chapter_name, t.textbook_name
             FROM competencies c 
             LEFT JOIN curricular_goals cg ON c.cg_id = cg.id 
             LEFT JOIN subjects s ON cg.subject_id = s.id 
-            LEFT JOIN grades g ON s.grade_id = g.id 
+            LEFT JOIN grades g ON s.grade_id = g.id
+            LEFT JOIN chapters ch ON cg.chapter_id = ch.id
+            LEFT JOIN textbooks t ON cg.textbook_id = t.id
             WHERE 1=1
         """
         params = []
-        
-        if user_role == 'master' and subject_group:
+        if user_role != 'admin' and subject_group:
             query += """ 
                 AND cg.subject_id IN (
                     SELECT sg.subject_id FROM subject_groups sg 
@@ -1928,45 +1914,45 @@ def get_competencies_api():
                 )
             """
             params.append(subject_group)
-        elif user_role != 'admin' and subject_group:
-            query += """ 
-                AND cg.subject_id IN (
-                    SELECT sg.subject_id FROM subject_groups sg 
-                    WHERE sg.group_code = %s
-                )
-            """
-            params.append(subject_group)
-        
+        if cg_id:
+            query += " AND c.cg_id = %s"
+            params.append(cg_id)
+        if subject_id:
+            query += " AND cg.subject_id = %s"
+            params.append(subject_id)
+        if chapter_id:
+            query += " AND cg.chapter_id = %s"
+            params.append(chapter_id)
+        if textbook_id:
+            query += " AND cg.textbook_id = %s"
+            params.append(textbook_id)
         query += " AND c.status = 1 ORDER BY c.cg_id, c.id"
         cur.execute(query, params)
         comps = cur.fetchall()
         return jsonify({'competencies': comps})
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/competencies', methods=['POST'])
 def create_competency():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
     if user_role != 'admin' and user_role != 'master':
         return jsonify({'error': 'Admin or Master access required'}), 403
-    
     data = request.json
     code = data.get('code')
     description = data.get('description', '')
     cg_id = data.get('cg_id')
     status = data.get('status', 1)
-    
     if not code or not cg_id:
         return jsonify({'error': 'Code and CG required'}), 400
-    
     if user_role == 'master' and subject_group:
         db_check = get_db()
         cur_check = db_check.cursor(dictionary=True)
@@ -1981,7 +1967,6 @@ def create_competency():
         finally:
             cur_check.close()
             db_check.close()
-    
     db = get_db()
     cur = db.cursor()
     try:
@@ -1989,35 +1974,29 @@ def create_competency():
             INSERT INTO competencies (comp_code, comp_description, cg_id, status) 
             VALUES (%s, %s, %s, %s)
         """, (code, description, cg_id, status))
-        db.commit()
         return jsonify({'success': True, 'id': cur.lastrowid})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/competencies/<int:comp_id>', methods=['PUT'])
 def update_competency(comp_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
     if user_role != 'admin' and user_role != 'master':
         return jsonify({'error': 'Admin or Master access required'}), 403
-    
     data = request.json
     code = data.get('code')
     description = data.get('description', '')
     cg_id = data.get('cg_id')
     status = data.get('status', 1)
-    
     if not code or not cg_id:
         return jsonify({'error': 'Code and CG required'}), 400
-    
     if user_role == 'master' and subject_group:
         db_check = get_db()
         cur_check = db_check.cursor(dictionary=True)
@@ -2033,7 +2012,6 @@ def update_competency(comp_id):
         finally:
             cur_check.close()
             db_check.close()
-    
     db = get_db()
     cur = db.cursor()
     try:
@@ -2042,24 +2020,21 @@ def update_competency(comp_id):
             SET comp_code = %s, comp_description = %s, cg_id = %s, status = %s 
             WHERE id = %s
         """, (code, description, cg_id, status, comp_id))
-        db.commit()
         return jsonify({'success': True})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/competencies/<int:comp_id>', methods=['DELETE'])
 def delete_competency(comp_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     if user_role != 'admin':
         return jsonify({'error': 'Admin access required'}), 403
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
@@ -2067,26 +2042,22 @@ def delete_competency(comp_id):
         if cur.fetchone()['count'] > 0:
             return jsonify({'error': 'Cannot delete competency with questions'}), 400
         cur.execute("DELETE FROM competencies WHERE id = %s", (comp_id,))
-        db.commit()
         return jsonify({'success': True})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/competencies/<int:comp_id>/toggle', methods=['POST'])
 def toggle_competency_status(comp_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
     if user_role != 'admin' and user_role != 'master':
         return jsonify({'error': 'Admin or Master access required'}), 403
-    
     if user_role == 'master' and subject_group:
         db_check = get_db()
         cur_check = db_check.cursor(dictionary=True)
@@ -2102,31 +2073,25 @@ def toggle_competency_status(comp_id):
         finally:
             cur_check.close()
             db_check.close()
-    
     data = request.json
     status = data.get('status', 1)
     db = get_db()
     cur = db.cursor()
     try:
         cur.execute("UPDATE competencies SET status = %s WHERE id = %s", (status, comp_id))
-        db.commit()
         return jsonify({'success': True})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
-
 @app.route('/api/subject-groups', methods=['GET'])
 def get_subject_groups():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
@@ -2139,16 +2104,6 @@ def get_subject_groups():
                 LEFT JOIN subjects s ON sg.subject_id = s.id
                 ORDER BY sg.grade_id, sg.group_code
             """)
-        elif user_role == 'master' and subject_group:
-            cur.execute("""
-                SELECT sg.*, g.grade_name, s.subject_name,
-                       (SELECT COUNT(*) FROM users WHERE subject_group = sg.group_code) as member_count
-                FROM subject_groups sg
-                LEFT JOIN grades g ON sg.grade_id = g.id
-                LEFT JOIN subjects s ON sg.subject_id = s.id
-                WHERE sg.group_code = %s
-                ORDER BY sg.grade_id, sg.group_code
-            """, (subject_group,))
         else:
             cur.execute("""
                 SELECT sg.*, g.grade_name, s.subject_name,
@@ -2162,35 +2117,31 @@ def get_subject_groups():
         groups = cur.fetchall()
         return jsonify({'groups': groups})
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/subject-groups', methods=['POST'])
 def create_subject_group():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     if user_role != 'admin':
         return jsonify({'error': 'Only Administrators can create subject groups'}), 403
-    
     data = request.json
     group_code = data.get('group_code')
     group_name = data.get('group_name')
     grade_id = data.get('grade_id')
     subject_id = data.get('subject_id')
-    
     if not all([group_code, group_name, grade_id, subject_id]):
         return jsonify({'error': 'All fields are required'}), 400
-    
     if not re.match(r'^[a-zA-Z0-9_\-]+$', group_code):
         return jsonify({'error': 'Group code can only contain letters, numbers, underscores, and hyphens'}), 400
-    
     if len(group_code) < 3:
         return jsonify({'error': 'Group code must be at least 3 characters'}), 400
-    
     db = get_db()
     cur = db.cursor()
     try:
@@ -2198,38 +2149,32 @@ def create_subject_group():
             INSERT INTO subject_groups (group_code, group_name, grade_id, subject_id)
             VALUES (%s, %s, %s, %s)
         """, (group_code, group_name, grade_id, subject_id))
-        db.commit()
         return jsonify({'success': True, 'id': cur.lastrowid, 'message': 'Group created successfully'})
     except mysql.connector.IntegrityError:
         return jsonify({'error': 'Group code already exists'}), 400
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/subject-groups/<int:group_id>', methods=['PUT'])
 def update_subject_group(group_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     if user_role != 'admin':
         return jsonify({'error': 'Only Administrators can update subject groups'}), 403
-    
     data = request.json
     group_code = data.get('group_code')
     group_name = data.get('group_name')
     grade_id = data.get('grade_id')
     subject_id = data.get('subject_id')
-    
     if not re.match(r'^[a-zA-Z0-9_\-]+$', group_code):
         return jsonify({'error': 'Group code can only contain letters, numbers, underscores, and hyphens'}), 400
-    
     if len(group_code) < 3:
         return jsonify({'error': 'Group code must be at least 3 characters'}), 400
-    
     db = get_db()
     cur = db.cursor()
     try:
@@ -2238,30 +2183,25 @@ def update_subject_group(group_id):
             SET group_code = %s, group_name = %s, grade_id = %s, subject_id = %s
             WHERE id = %s
         """, (group_code, group_name, grade_id, subject_id, group_id))
-        db.commit()
         if cur.rowcount == 0:
             return jsonify({'error': 'Group not found'}), 404
         return jsonify({'success': True, 'message': 'Group updated successfully'})
     except mysql.connector.IntegrityError:
         return jsonify({'error': 'Group code already exists'}), 400
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/subject-groups/<int:group_id>', methods=['DELETE'])
 def delete_subject_group(group_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
-    subject_group = session.get('subject_group')
-    
     if user_role != 'admin':
         return jsonify({'error': 'Only Administrators can delete subject groups'}), 403
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
@@ -2269,22 +2209,13 @@ def delete_subject_group(group_id):
         group = cur.fetchone()
         if not group:
             return jsonify({'error': 'Group not found'}), 404
-        
-        cur.execute("""
-            SELECT COUNT(*) as count FROM users 
-            WHERE subject_group = (SELECT group_code FROM subject_groups WHERE id = %s)
-        """, (group_id,))
+        cur.execute("SELECT COUNT(*) as count FROM users WHERE subject_group = %s", (group['group_code'],))
         user_count = cur.fetchone()['count']
         if user_count > 0:
             return jsonify({'error': f'Cannot delete group because it has {user_count} user(s) assigned.'}), 400
-        
         cur.execute("DELETE FROM subject_groups WHERE id = %s", (group_id,))
-        db.commit()
-        if cur.rowcount == 0:
-            return jsonify({'error': 'Group not found'}), 404
         return jsonify({'success': True, 'message': 'Group deleted successfully'})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
@@ -2318,6 +2249,7 @@ def get_users():
         cur.close()
         db.close()
 
+
 @app.route('/api/users', methods=['POST'])
 def create_user():
     if 'user' not in session:
@@ -2330,13 +2262,11 @@ def create_user():
     role = data.get('role', 'writer')
     subject_group = data.get('subject_group')
     group_role = data.get('group_role', 'member')
-    
     perm_re = False
     perm_ra = False
     perm_rc = False
     perm_ap = False
     perm_master = False
-    
     if role == 'writer':
         perm_re = True
     elif role == 'master':
@@ -2348,12 +2278,7 @@ def create_user():
     elif role == 'builder':
         perm_ra = True
     elif role == 'admin':
-        perm_re = True
-        perm_ra = True
-        perm_rc = True
-        perm_ap = True
-        perm_master = True
-    
+        perm_re = perm_ra = perm_rc = perm_ap = perm_master = True
     if not username or not password:
         return jsonify({'error': 'Username and password required'}), 400
     if len(password) < 8:
@@ -2371,7 +2296,6 @@ def create_user():
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (username, hashed_password, role, subject_group, group_role,
               perm_re, perm_ra, perm_rc, perm_ap, perm_master, datetime.now()))
-        db.commit()
         return jsonify({'success': True, 'message': 'User created successfully'})
     except mysql.connector.IntegrityError:
         return jsonify({'error': 'Username already exists'}), 400
@@ -2381,6 +2305,7 @@ def create_user():
     finally:
         cur.close()
         db.close()
+
 
 @app.route('/api/users/<int:user_id>', methods=['PUT'])
 def update_user(user_id):
@@ -2408,9 +2333,8 @@ def update_user(user_id):
             SET username = %s, role = %s, subject_group = %s, group_role = %s,
                 perm_re = %s, perm_ra = %s, perm_rc = %s, perm_ap = %s, perm_master = %s
             WHERE id = %s
-        """, (username, role, subject_group, group_role, 
+        """, (username, role, subject_group, group_role,
               perm_re, perm_ra, perm_rc, perm_ap, perm_master, user_id))
-        db.commit()
         if cur.rowcount == 0:
             return jsonify({'error': 'User not found'}), 404
         return jsonify({'success': True, 'message': 'User updated successfully'})
@@ -2422,6 +2346,7 @@ def update_user(user_id):
     finally:
         cur.close()
         db.close()
+
 
 @app.route('/api/users/reset-password/<int:user_id>', methods=['POST'])
 def reset_user_password(user_id):
@@ -2437,12 +2362,7 @@ def reset_user_password(user_id):
     db = get_db()
     cur = db.cursor()
     try:
-        cur.execute("""
-            UPDATE users 
-            SET password = %s 
-            WHERE id = %s
-        """, (hashed_password, user_id))
-        db.commit()
+        cur.execute("UPDATE users SET password = %s WHERE id = %s", (hashed_password, user_id))
         if cur.rowcount == 0:
             return jsonify({'error': 'User not found'}), 404
         return jsonify({'success': True, 'message': 'Password reset successfully'})
@@ -2452,6 +2372,7 @@ def reset_user_password(user_id):
     finally:
         cur.close()
         db.close()
+
 
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
@@ -2465,7 +2386,6 @@ def delete_user(user_id):
     cur = db.cursor()
     try:
         cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
-        db.commit()
         if cur.rowcount == 0:
             return jsonify({'error': 'User not found'}), 404
         return jsonify({'success': True, 'message': 'User deleted successfully'})
@@ -2475,6 +2395,7 @@ def delete_user(user_id):
     finally:
         cur.close()
         db.close()
+
 
 @app.route('/api/user-permissions')
 def get_user_permissions():
@@ -2495,19 +2416,15 @@ def get_user_permissions():
         'user_id': session.get('user_id')
     })
 
-
 @app.route('/api/reviewers', methods=['GET'])
 def get_reviewers():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
     current_user_id = session.get('user_id')
-    
     if user_role != 'admin' and not session.get('perm_master', False):
         return jsonify({'error': 'Access denied'}), 403
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
@@ -2533,23 +2450,22 @@ def get_reviewers():
         reviewers = cur.fetchall()
         return jsonify({'reviewers': reviewers})
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/approvers', methods=['GET'])
 def get_approvers():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
     current_user_id = session.get('user_id')
-    
     if user_role != 'admin' and not session.get('perm_rc', False):
         return jsonify({'error': 'Access denied'}), 403
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
@@ -2575,33 +2491,28 @@ def get_approvers():
         approvers = cur.fetchall()
         return jsonify({'approvers': approvers})
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
-
 @app.route('/api/master-review-question/<int:question_id>', methods=['POST'])
 def master_review_question(question_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     username = session.get('user', '')
     user_role = session.get('user_role', 'writer')
     perm_master = session.get('perm_master', False)
     subject_group = session.get('subject_group')
-    
     if user_role != 'admin' and not perm_master:
         return jsonify({'error': 'Master permission required'}), 403
-    
     data = request.json
     comment = data.get('comment', '') if data else ''
     reviewer_id = data.get('reviewer_id')
     reviewer_name = data.get('reviewer_name')
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
-    
     try:
         if user_role != 'admin' and subject_group:
             cur.execute("""
@@ -2612,15 +2523,12 @@ def master_review_question(question_id):
             """, (question_id, subject_group))
             if not cur.fetchone():
                 return jsonify({'error': 'Access denied'}), 403
-        
         cur.execute("SELECT * FROM simple_questions WHERE id = %s", (question_id,))
         question = cur.fetchone()
         if not question:
             return jsonify({'error': 'Question not found'}), 404
-        
         if question['status'] != 'unassigned' and user_role != 'admin':
             return jsonify({'error': 'Only unassigned questions can be assigned to reviewer'}), 400
-        
         if reviewer_id:
             if user_role == 'admin':
                 cur.execute("SELECT id, username FROM users WHERE id = %s AND (perm_rc = 1 OR role = 'reviewer' OR role = 'admin')", (reviewer_id,))
@@ -2635,12 +2543,10 @@ def master_review_question(question_id):
             if not reviewer:
                 return jsonify({'error': 'Selected reviewer does not have reviewer permission or is not in your group'}), 400
             reviewer_name = reviewer['username']
-        
         if reviewer_name:
             master_comment = f"[ASSIGNED TO REVIEWER: {reviewer_name}] {comment}" if comment else f"[ASSIGNED TO REVIEWER: {reviewer_name}]"
         else:
             master_comment = comment if comment else 'Question assigned for review'
-        
         cur.execute("""
             UPDATE simple_questions 
             SET status = 'under_review', 
@@ -2656,11 +2562,8 @@ def master_review_question(question_id):
                 approved_at = NULL
             WHERE id = %s
         """, (username, datetime.now(), master_comment, reviewer_id, reviewer_name, question_id))
-        db.commit()
-        
         return jsonify({'success': True, 'message': f'Question assigned to {reviewer_name or "reviewer"} for review'})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
@@ -2671,24 +2574,19 @@ def master_review_question(question_id):
 def review_question(question_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     username = session.get('user', '')
     user_id = session.get('user_id')
     user_role = session.get('user_role', 'writer')
     perm_rc = session.get('perm_rc', False)
     subject_group = session.get('subject_group')
-    
     if user_role != 'admin' and not perm_rc:
         return jsonify({'error': 'Reviewer (RC) permission required'}), 403
-    
     data = request.json
     comment = data.get('comment', '') if data else ''
     approver_id = data.get('approver_id')
     approver_name = data.get('approver_name')
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
-    
     try:
         if user_role != 'admin' and subject_group:
             cur.execute("""
@@ -2699,18 +2597,14 @@ def review_question(question_id):
             """, (question_id, subject_group))
             if not cur.fetchone():
                 return jsonify({'error': 'Access denied'}), 403
-        
         cur.execute("SELECT * FROM simple_questions WHERE id = %s", (question_id,))
         question = cur.fetchone()
         if not question:
             return jsonify({'error': 'Question not found'}), 404
-        
         if user_role != 'admin' and question['assigned_reviewer_id'] != user_id:
             return jsonify({'error': 'This question is not assigned to you'}), 403
-        
         if question['status'] != 'under_review' and user_role != 'admin':
             return jsonify({'error': 'Only under review questions can be reviewed'}), 400
-        
         if approver_id:
             if user_role == 'admin':
                 cur.execute("SELECT id, username FROM users WHERE id = %s AND (perm_ap = 1 OR role = 'approver' OR role = 'admin')", (approver_id,))
@@ -2725,12 +2619,10 @@ def review_question(question_id):
             if not approver:
                 return jsonify({'error': 'Selected approver does not have approver permission or is not in your group'}), 400
             approver_name = approver['username']
-        
         if approver_name:
             reviewer_comment = f"[ASSIGNED TO APPROVER: {approver_name}] {comment}" if comment else f"[ASSIGNED TO APPROVER: {approver_name}]"
         else:
             reviewer_comment = comment if comment else 'Question passed for approval'
-        
         cur.execute("""
             UPDATE simple_questions 
             SET status = 'reviewed_completed', 
@@ -2743,11 +2635,8 @@ def review_question(question_id):
                 approved_at = NULL
             WHERE id = %s
         """, (username, datetime.now(), reviewer_comment, approver_id, approver_name, question_id))
-        db.commit()
-        
         return jsonify({'success': True, 'message': f'Question assigned to {approver_name or "approver"} for approval'})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
@@ -2758,7 +2647,6 @@ def review_question(question_id):
 def get_review_questions():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     username = session.get('user', '')
     user_role = session.get('user_role', 'writer')
     user_id = session.get('user_id')
@@ -2768,28 +2656,20 @@ def get_review_questions():
     perm_ap = session.get('perm_ap', False)
     perm_master = session.get('perm_master', False)
     subject_group = session.get('subject_group')
-    
     grade = request.args.get('grade', '')
     subject = request.args.get('subject', '')
     status = request.args.get('status', '')
     search = request.args.get('search', '')
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
-    
     try:
         cur.execute("SHOW TABLES LIKE 'simple_questions'")
         if not cur.fetchone():
             return jsonify({'questions': []})
-        
         user_subject_ids = []
         if user_role != 'admin' and subject_group:
             cur.execute("SELECT subject_id FROM subject_groups WHERE group_code = %s", (subject_group,))
             user_subject_ids = [row['subject_id'] for row in cur.fetchall()]
-            
-            cur.execute("SELECT grade_id FROM subject_groups WHERE group_code = %s", (subject_group,))
-            grade_ids = [row['grade_id'] for row in cur.fetchall()]
-        
         query = """
             SELECT sq.id, sq.question_text as question, sq.answer, sq.marks, sq.duration_minutes,
                    COALESCE(sq.status, 'unassigned') as status,
@@ -2819,43 +2699,31 @@ def get_review_questions():
             WHERE 1=1
         """
         params = []
-        
-        if user_role == 'admin':
-            pass
-        else:
+        if user_role != 'admin':
             permission_filters = []
-            
             if perm_re:
                 permission_filters.append("(sq.created_by = %s AND sq.status IN ('unassigned', 'rejected'))")
                 params.append(username)
-            
             if perm_master:
                 permission_filters.append("(sq.status = 'unassigned')")
-            
             if perm_rc:
                 permission_filters.append("(sq.status = 'under_review' AND sq.assigned_reviewer_id = %s)")
                 params.append(user_id)
-            
             if perm_ap:
                 permission_filters.append("(sq.status = 'reviewed_completed' AND sq.assigned_approver_id = %s)")
                 params.append(user_id)
-            
             if perm_ra:
                 permission_filters.append("(sq.status = 'approved')")
-            
             permission_filters.append("(sq.created_by = %s)")
             params.append(username)
-            
             if permission_filters:
                 query += " AND (" + " OR ".join(permission_filters) + ")"
             else:
                 query += " AND 1=0"
-        
         if user_role != 'admin' and user_subject_ids:
             placeholders = ','.join(['%s'] * len(user_subject_ids))
             query += f" AND sq.subject_id IN ({placeholders})"
             params.extend(user_subject_ids)
-        
         if grade:
             query += " AND g.id = %s"
             params.append(grade)
@@ -2868,66 +2736,33 @@ def get_review_questions():
         if search:
             query += " AND (sq.question_text LIKE %s OR sq.answer LIKE %s)"
             params.extend([f'%{search}%', f'%{search}%'])
-        
         query += " ORDER BY sq.created_at DESC"
         cur.execute(query, params)
         questions = cur.fetchall()
-        
         formatted_questions = []
         for q in questions:
-            can_edit = False
-            can_review = False
-            can_approve = False
-            can_build = False
+            can_edit = can_review = can_approve = can_build = can_rework = can_master_review = False
             can_delete = user_role == 'admin'
-            can_rework = False
-            can_master_review = False
-            
             is_assigned_reviewer = q.get('assigned_reviewer_id') == user_id
             is_assigned_approver = q.get('assigned_approver_id') == user_id
             is_my_question = q.get('created_by') == username
-            
             if perm_re and is_my_question:
                 if q['status'] in ['unassigned', 'rejected', 'rework']:
                     can_edit = True
                 if q['status'] == 'rejected':
                     can_rework = True
-            
             if perm_master and q['status'] == 'unassigned':
                 can_master_review = True
-            
             if perm_rc and q['status'] == 'under_review' and is_assigned_reviewer:
                 can_review = True
                 can_rework = True
-            
             if perm_ap and q['status'] == 'reviewed_completed' and is_assigned_approver:
                 can_approve = True
                 can_rework = True
-            
             if perm_ra and q['status'] == 'approved':
                 can_build = True
-            
             if user_role == 'admin':
-                can_edit = True
-                can_review = True
-                can_approve = True
-                can_build = True
-                can_delete = True
-                can_rework = True
-                can_master_review = True
-            
-            if user_role == 'admin':
-                can_rework = True
-            elif (perm_master or perm_rc or perm_ap) and q['status'] != 'approved':
-                if perm_rc and is_assigned_reviewer:
-                    can_rework = True
-                elif perm_ap and is_assigned_approver:
-                    can_rework = True
-                elif perm_master:
-                    can_rework = True
-            elif perm_re and is_my_question and q['status'] == 'rejected':
-                can_rework = True
-            
+                can_edit = can_review = can_approve = can_build = can_delete = can_rework = can_master_review = True
             images = []
             try:
                 if q.get('images'):
@@ -2936,7 +2771,6 @@ def get_review_questions():
                         images = []
             except:
                 images = []
-            
             formatted_questions.append({
                 'id': q['id'],
                 'question': q['question'],
@@ -2987,15 +2821,11 @@ def get_review_questions():
                 'is_my_question': is_my_question,
                 'user_group': subject_group
             })
-        
         return jsonify({
             'questions': formatted_questions,
             'permissions': {
-                'RE': perm_re,
-                'RA': perm_ra,
-                'RC': perm_rc,
-                'AP': perm_ap,
-                'MASTER': perm_master
+                'RE': perm_re, 'RA': perm_ra, 'RC': perm_rc,
+                'AP': perm_ap, 'MASTER': perm_master
             },
             'subject_group': subject_group,
             'user_role': user_role,
@@ -3003,6 +2833,7 @@ def get_review_questions():
             'user_subject_ids': user_subject_ids
         })
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
@@ -3013,22 +2844,17 @@ def get_review_questions():
 def approve_question(question_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     username = session.get('user', '')
     user_id = session.get('user_id')
     user_role = session.get('user_role', 'writer')
     perm_ap = session.get('perm_ap', False)
     subject_group = session.get('subject_group')
-    
     if user_role != 'admin' and not perm_ap:
         return jsonify({'error': 'Approver (AP) permission required'}), 403
-    
     data = request.json
     comment = data.get('comment', '') if data else ''
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
-    
     try:
         if user_role != 'admin' and subject_group:
             cur.execute("""
@@ -3039,18 +2865,14 @@ def approve_question(question_id):
             """, (question_id, subject_group))
             if not cur.fetchone():
                 return jsonify({'error': 'Access denied'}), 403
-        
         cur.execute("SELECT * FROM simple_questions WHERE id = %s", (question_id,))
         question = cur.fetchone()
         if not question:
             return jsonify({'error': 'Question not found'}), 404
-        
         if user_role != 'admin' and question['assigned_approver_id'] != user_id:
             return jsonify({'error': 'This question is not assigned to you'}), 403
-        
         if question['status'] != 'reviewed_completed' and user_role != 'admin':
             return jsonify({'error': 'Only reviewed completed questions can be approved'}), 400
-        
         cur.execute("""
             UPDATE simple_questions 
             SET status = 'approved', 
@@ -3059,21 +2881,18 @@ def approve_question(question_id):
                 approved_by = %s
             WHERE id = %s
         """, (comment, datetime.now(), username, question_id))
-        db.commit()
-        
         return jsonify({'success': True, 'message': 'Question approved successfully'})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/rework-question/<int:question_id>', methods=['POST'])
 def rework_question(question_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     username = session.get('user', '')
     user_id = session.get('user_id')
     user_role = session.get('user_role', 'writer')
@@ -3082,13 +2901,10 @@ def rework_question(question_id):
     perm_ap = session.get('perm_ap', False)
     perm_master = session.get('perm_master', False)
     subject_group = session.get('subject_group')
-    
     data = request.json
     rework_comment = data.get('comment', '') if data else ''
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
-    
     try:
         if user_role != 'admin' and subject_group:
             cur.execute("""
@@ -3099,56 +2915,37 @@ def rework_question(question_id):
             """, (question_id, subject_group))
             if not cur.fetchone():
                 return jsonify({'error': 'Access denied'}), 403
-        
         cur.execute("SELECT created_by, status, assigned_reviewer_id, assigned_approver_id FROM simple_questions WHERE id = %s", (question_id,))
         question = cur.fetchone()
         if not question:
             return jsonify({'error': 'Question not found'}), 404
-        
         can_rework = False
         if user_role == 'admin':
             can_rework = True
         elif perm_master:
             can_rework = question['status'] != 'approved'
-        elif perm_rc:
-            if question['assigned_reviewer_id'] == user_id:
-                can_rework = question['status'] != 'approved'
-        elif perm_ap:
-            if question['assigned_approver_id'] == user_id:
-                can_rework = question['status'] != 'approved'
+        elif perm_rc and question['assigned_reviewer_id'] == user_id:
+            can_rework = question['status'] != 'approved'
+        elif perm_ap and question['assigned_approver_id'] == user_id:
+            can_rework = question['status'] != 'approved'
         elif perm_re and question['created_by'] == username:
-            can_rework = question['status'] == 'rejected' or question['status'] == 'rework'
-        
+            can_rework = question['status'] in ('rejected', 'rework')
         if not can_rework:
             return jsonify({'error': 'Not authorized to rework this question'}), 403
-        
         comment_with_meta = f"[REWORK by {username} on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {rework_comment}"
-        
         cur.execute("""
             UPDATE simple_questions 
             SET status = 'unassigned',
-                reviewed_by = NULL,
-                reviewed_at = NULL,
-                reviewed_comment = %s,
-                master_reviewed_by = NULL,
-                master_reviewed_at = NULL,
-                master_reviewed_comment = NULL,
-                rejection_reason = NULL,
-                rejected_by = NULL,
-                rejected_at = NULL,
-                approved_by = NULL,
-                approved_at = NULL,
-                assigned_reviewer_id = NULL,
-                assigned_reviewer_name = NULL,
-                assigned_approver_id = NULL,
-                assigned_approver_name = NULL
+                reviewed_by = NULL, reviewed_at = NULL, reviewed_comment = %s,
+                master_reviewed_by = NULL, master_reviewed_at = NULL, master_reviewed_comment = NULL,
+                rejection_reason = NULL, rejected_by = NULL, rejected_at = NULL,
+                approved_by = NULL, approved_at = NULL,
+                assigned_reviewer_id = NULL, assigned_reviewer_name = NULL,
+                assigned_approver_id = NULL, assigned_approver_name = NULL
             WHERE id = %s
         """, (comment_with_meta, question_id))
-        db.commit()
-        
         return jsonify({'success': True, 'message': 'Question moved to unassigned for rework'})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
@@ -3159,30 +2956,23 @@ def rework_question(question_id):
 def update_question(question_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     username = session.get('user', '')
     user_role = session.get('user_role', 'writer')
     perm_re = session.get('perm_re', False)
     subject_group = session.get('subject_group')
-    
     data = request.json
     question_text = data.get('question_text')
     answer = data.get('answer')
     marks = data.get('marks', 1)
     duration_minutes = data.get('duration_minutes', 0)
-    
     if not question_text:
         return jsonify({'error': 'Question text is required'}), 400
-    
     if not has_actual_content(question_text):
-        return jsonify({'error': 'Question text must have actual content (text, images, or structured content)'}), 400
-    
+        return jsonify({'error': 'Question text must have actual content'}), 400
     if not answer:
         return jsonify({'error': 'Answer is required'}), 400
-    
     if not has_actual_content(answer):
-        return jsonify({'error': 'Answer must have actual content (text, images, or structured content)'}), 400
-    
+        return jsonify({'error': 'Answer must have actual content'}), 400
     try:
         marks = int(marks)
         if marks < 0 or marks > 100:
@@ -3192,10 +2982,8 @@ def update_question(question_id):
             return jsonify({'error': 'Duration must be between 0 and 180 minutes'}), 400
     except ValueError:
         return jsonify({'error': 'Marks and duration must be valid numbers'}), 400
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
-    
     try:
         if user_role != 'admin' and subject_group:
             cur.execute("""
@@ -3210,10 +2998,8 @@ def update_question(question_id):
         else:
             cur.execute("SELECT created_by, status FROM simple_questions WHERE id = %s", (question_id,))
             question_access = cur.fetchone()
-        
         if not question_access:
             return jsonify({'error': 'Question not found'}), 404
-        
         can_edit = False
         if user_role == 'admin':
             can_edit = True
@@ -3221,10 +3007,8 @@ def update_question(question_id):
             can_edit = question_access['status'] in ['unassigned', 'rejected', 'rework']
         else:
             can_edit = question_access['status'] != 'approved'
-        
         if not can_edit:
             return jsonify({'error': 'Not authorized to edit this question'}), 403
-        
         chapter_id = data.get('chapter_id')
         cg_id = data.get('cg_id')
         comp_id = data.get('comp_id')
@@ -3240,7 +3024,6 @@ def update_question(question_id):
         textbook_page = data.get('textbook_page')
         reference_book = data.get('reference_book')
         reference_page = data.get('reference_page')
-        
         try:
             image_list = json.loads(images) if isinstance(images, str) else images
             filtered_images = []
@@ -3253,7 +3036,6 @@ def update_question(question_id):
             images = json.dumps(filtered_images)
         except:
             pass
-        
         update_fields = """
             question_text = %s, answer = %s, marks = %s, duration_minutes = %s,
             chapter_id = %s, cg_id = %s, comp_id = %s,
@@ -3264,48 +3046,34 @@ def update_question(question_id):
             textbook_page = %s, reference_book = %s, reference_page = %s,
             updated_at = NOW()
         """
-        params = [question_text, answer, marks, duration_minutes, 
+        params = [question_text, answer, marks, duration_minutes,
                   chapter_id, cg_id, comp_id,
                   domain_id, knowledge_level_id,
                   question_type_id, difficulty_id,
                   images, language,
                   textbook_id, textbook_name, textbook_publisher,
                   textbook_page, reference_book, reference_page]
-        
         if data.get('status') is not None:
             update_fields += ", status = %s"
             params.append(data.get('status'))
-        
         params.append(question_id)
-        
-        cur.execute(f"""
-            UPDATE simple_questions 
-            SET {update_fields}
-            WHERE id = %s
-        """, params)
-        db.commit()
-        
+        cur.execute(f"UPDATE simple_questions SET {update_fields} WHERE id = %s", params)
         return jsonify({'success': True, 'message': 'Question updated successfully'})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
-
 @app.route('/api/builder-questions', methods=['GET'])
 def get_builder_questions():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role', 'writer')
     perm_ra = session.get('perm_ra', False)
     subject_group = session.get('subject_group')
-    
     if user_role != 'admin' and not perm_ra:
         return jsonify({'error': 'Builder (RA) permission required'}), 403
-    
     grade_id = request.args.get('grade_id')
     subject_id = request.args.get('subject_id')
     chapter_ids = request.args.get('chapter_ids')
@@ -3314,16 +3082,13 @@ def get_builder_questions():
     question_ids = request.args.get('question_ids')
     status = request.args.get('status', 'approved')
     count_only = request.args.get('count_only') == 'true'
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
-    
     try:
         user_subject_ids = []
         if user_role != 'admin' and subject_group:
             cur.execute("SELECT subject_id FROM subject_groups WHERE group_code = %s", (subject_group,))
             user_subject_ids = [row['subject_id'] for row in cur.fetchall()]
-        
         if count_only:
             query = """
                 SELECT ch.id, ch.chapter_name, COUNT(sq.id) as question_count
@@ -3332,23 +3097,18 @@ def get_builder_questions():
                 WHERE 1=1
             """
             params = []
-            
             if subject_id:
                 query += " AND ch.subject_id = %s"
                 params.append(subject_id)
-            
             if user_role != 'admin' and user_subject_ids and subject_id:
                 placeholders = ','.join(['%s'] * len(user_subject_ids))
                 query += f" AND ch.subject_id IN ({placeholders})"
                 params.extend(user_subject_ids)
-            
             query += " GROUP BY ch.id"
             cur.execute(query, params)
             results = cur.fetchall()
-            
             chapter_counts = {str(r['id']): r['question_count'] for r in results}
             return jsonify({'chapter_counts': chapter_counts})
-        
         query = """
             SELECT sq.id, sq.question_text, sq.answer, sq.marks, sq.duration_minutes,
                    sq.competency_code, sq.difficulty_name, sq.domain_name,
@@ -3368,11 +3128,9 @@ def get_builder_questions():
             WHERE 1=1
         """
         params = []
-        
         if status:
             query += " AND sq.status = %s"
             params.append(status)
-        
         if question_ids:
             id_list = [int(x.strip()) for x in question_ids.split(',') if x.strip().isdigit()]
             if id_list:
@@ -3382,63 +3140,53 @@ def get_builder_questions():
                 cur.execute(query, params)
                 questions = cur.fetchall()
                 return jsonify({'questions': questions})
-        
         if user_role != 'admin' and user_subject_ids:
             placeholders = ','.join(['%s'] * len(user_subject_ids))
             query += f" AND sq.subject_id IN ({placeholders})"
             params.extend(user_subject_ids)
-        
         if chapter_ids:
             chapter_list = [int(x.strip()) for x in chapter_ids.split(',') if x.strip().isdigit()]
             if chapter_list:
                 placeholders = ','.join(['%s'] * len(chapter_list))
                 query += f" AND sq.chapter_id IN ({placeholders})"
                 params.extend(chapter_list)
-        
         if cg_ids:
             cg_list = [int(x.strip()) for x in cg_ids.split(',') if x.strip().isdigit()]
             if cg_list:
                 placeholders = ','.join(['%s'] * len(cg_list))
                 query += f" AND sq.cg_id IN ({placeholders})"
                 params.extend(cg_list)
-        
         if comp_ids:
             comp_list = [int(x.strip()) for x in comp_ids.split(',') if x.strip().isdigit()]
             if comp_list:
                 placeholders = ','.join(['%s'] * len(comp_list))
                 query += f" AND sq.comp_id IN ({placeholders})"
                 params.extend(comp_list)
-        
         if grade_id:
             query += " AND sq.grade_id = %s"
             params.append(grade_id)
-        
         if subject_id:
             if user_role != 'admin' and user_subject_ids and int(subject_id) not in user_subject_ids:
                 return jsonify({'error': 'Access denied to this subject'}), 403
             query += " AND sq.subject_id = %s"
             params.append(subject_id)
-        
         query += " ORDER BY sq.question_type_name, sq.difficulty_name LIMIT 500"
         cur.execute(query, params)
         questions = cur.fetchall()
-        
         return jsonify({'questions': questions})
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
-
 @app.route('/api/page1-data')
 def get_page1_data():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
@@ -3446,7 +3194,7 @@ def get_page1_data():
         if user_role != 'admin' and subject_group:
             cur.execute("SELECT subject_id FROM subject_groups WHERE group_code = %s", (subject_group,))
             user_subject_ids = [row['subject_id'] for row in cur.fetchall()]
-        
+
         if user_role == 'admin':
             cur.execute("SELECT * FROM grades ORDER BY id")
         else:
@@ -3462,7 +3210,7 @@ def get_page1_data():
             else:
                 cur.execute("SELECT * FROM grades WHERE 1=0")
         grades = cur.fetchall()
-        
+
         if user_role == 'admin':
             cur.execute("""
                 SELECT s.*, g.grade_name 
@@ -3483,41 +3231,99 @@ def get_page1_data():
             else:
                 cur.execute("SELECT * FROM subjects WHERE 1=0")
         subjects = cur.fetchall()
-        
+
+        if user_role == 'admin':
+            cur.execute("""
+                SELECT t.*, s.subject_name, s.grade_id, g.grade_name
+                FROM textbooks t
+                LEFT JOIN subjects s ON t.subject_id = s.id
+                LEFT JOIN grades g ON t.grade_id = g.id
+                ORDER BY t.subject_id, t.is_reference, t.textbook_name
+            """)
+        else:
+            if user_subject_ids:
+                placeholders = ','.join(['%s'] * len(user_subject_ids))
+                cur.execute(f"""
+                    SELECT t.*, s.subject_name, s.grade_id, g.grade_name
+                    FROM textbooks t
+                    LEFT JOIN subjects s ON t.subject_id = s.id
+                    LEFT JOIN grades g ON t.grade_id = g.id
+                    WHERE t.subject_id IN ({placeholders})
+                    ORDER BY t.subject_id, t.is_reference, t.textbook_name
+                """, tuple(user_subject_ids))
+            else:
+                cur.execute("SELECT * FROM textbooks WHERE 1=0")
+        textbooks = cur.fetchall()
+
+        if user_role == 'admin':
+            cur.execute("""
+                SELECT c.*, s.subject_name, s.grade_id, g.grade_name,
+                       t.textbook_name, t.is_reference, t.publisher
+                FROM chapters c 
+                LEFT JOIN subjects s ON c.subject_id = s.id 
+                LEFT JOIN grades g ON s.grade_id = g.id
+                LEFT JOIN textbooks t ON c.textbook_id = t.id
+                ORDER BY c.subject_id, c.chapter_number, c.id
+            """)
+        else:
+            if user_subject_ids:
+                placeholders = ','.join(['%s'] * len(user_subject_ids))
+                cur.execute(f"""
+                    SELECT c.*, s.subject_name, s.grade_id, g.grade_name,
+                           t.textbook_name, t.is_reference, t.publisher
+                    FROM chapters c 
+                    LEFT JOIN subjects s ON c.subject_id = s.id 
+                    LEFT JOIN grades g ON s.grade_id = g.id
+                    LEFT JOIN textbooks t ON c.textbook_id = t.id
+                    WHERE c.subject_id IN ({placeholders})
+                    ORDER BY c.subject_id, c.chapter_number, c.id
+                """, tuple(user_subject_ids))
+            else:
+                cur.execute("SELECT * FROM chapters WHERE 1=0")
+        chapters = cur.fetchall()
+
         if user_role == 'admin':
             cur.execute("""
                 SELECT cg.*, s.subject_name, s.grade_id, g.grade_name,
-                       ch.chapter_name, ch.id as chapter_id
+                       ch.chapter_name, ch.id as chapter_id,
+                       t.textbook_name, t.id as textbook_id
                 FROM curricular_goals cg 
                 LEFT JOIN subjects s ON cg.subject_id = s.id 
                 LEFT JOIN grades g ON s.grade_id = g.id
                 LEFT JOIN chapters ch ON cg.chapter_id = ch.id
-                ORDER BY cg.subject_id, cg.id
+                LEFT JOIN textbooks t ON cg.textbook_id = t.id
+                ORDER BY cg.subject_id, cg.chapter_id, cg.id
             """)
         else:
             if user_subject_ids:
                 placeholders = ','.join(['%s'] * len(user_subject_ids))
                 cur.execute(f"""
                     SELECT cg.*, s.subject_name, s.grade_id, g.grade_name,
-                           ch.chapter_name, ch.id as chapter_id
+                           ch.chapter_name, ch.id as chapter_id,
+                           t.textbook_name, t.id as textbook_id
                     FROM curricular_goals cg 
                     LEFT JOIN subjects s ON cg.subject_id = s.id 
                     LEFT JOIN grades g ON s.grade_id = g.id
                     LEFT JOIN chapters ch ON cg.chapter_id = ch.id
+                    LEFT JOIN textbooks t ON cg.textbook_id = t.id
                     WHERE cg.subject_id IN ({placeholders})
-                    ORDER BY cg.subject_id, cg.id
+                    ORDER BY cg.subject_id, cg.chapter_id, cg.id
                 """, tuple(user_subject_ids))
             else:
                 cur.execute("SELECT * FROM curricular_goals WHERE 1=0")
         cgs = cur.fetchall()
-        
+
         if user_role == 'admin':
             cur.execute("""
-                SELECT c.*, cg.cg_code, cg.subject_id, s.subject_name, g.grade_name 
+                SELECT c.*, cg.cg_code, cg.subject_id, cg.chapter_id, cg.textbook_id,
+                       s.subject_name, g.grade_name,
+                       ch.chapter_name, t.textbook_name
                 FROM competencies c 
                 LEFT JOIN curricular_goals cg ON c.cg_id = cg.id 
                 LEFT JOIN subjects s ON cg.subject_id = s.id 
                 LEFT JOIN grades g ON s.grade_id = g.id 
+                LEFT JOIN chapters ch ON cg.chapter_id = ch.id
+                LEFT JOIN textbooks t ON cg.textbook_id = t.id
                 WHERE c.status = 1
                 ORDER BY c.cg_id, c.id
             """)
@@ -3525,62 +3331,86 @@ def get_page1_data():
             if user_subject_ids:
                 placeholders = ','.join(['%s'] * len(user_subject_ids))
                 cur.execute(f"""
-                    SELECT c.*, cg.cg_code, cg.subject_id, s.subject_name, g.grade_name 
+                    SELECT c.*, cg.cg_code, cg.subject_id, cg.chapter_id, cg.textbook_id,
+                           s.subject_name, g.grade_name,
+                           ch.chapter_name, t.textbook_name
                     FROM competencies c 
                     LEFT JOIN curricular_goals cg ON c.cg_id = cg.id 
                     LEFT JOIN subjects s ON cg.subject_id = s.id 
                     LEFT JOIN grades g ON s.grade_id = g.id 
+                    LEFT JOIN chapters ch ON cg.chapter_id = ch.id
+                    LEFT JOIN textbooks t ON cg.textbook_id = t.id
                     WHERE c.status = 1 AND cg.subject_id IN ({placeholders})
                     ORDER BY c.cg_id, c.id
                 """, tuple(user_subject_ids))
             else:
                 cur.execute("SELECT * FROM competencies WHERE 1=0")
         competencies = cur.fetchall()
-        
+
         cur.execute("SELECT * FROM question_types")
         question_types = cur.fetchall()
-        
         cur.execute("SELECT id, domain_name, description FROM cognitive_domains")
         cognitive_domains = cur.fetchall()
-        
+
         data = {
             'grades': grades,
             'subjects': subjects,
+            'textbooks': textbooks,
+            'chapters': chapters,
             'cgs': cgs,
             'competencies': competencies,
-            'subjects_by_grade': {},
-            'cgs_by_subject': {},
-            'comps_by_cg': {},
             'question_types': question_types,
-            'cognitive_domains': cognitive_domains
+            'cognitive_domains': cognitive_domains,
+            'subjects_by_grade': {},
+            'textbooks_by_subject': {},
+            'chapters_by_textbook': {},
+            'chapters_by_subject': {},
+            'cgs_by_chapter': {},
+            'cgs_by_subject': {},
+            'comps_by_cg': {}
         }
-        
+
         for subject in subjects:
             grade_id = subject.get('grade_id')
             if grade_id:
                 key = str(grade_id)
-                if key not in data['subjects_by_grade']:
-                    data['subjects_by_grade'][key] = []
-                data['subjects_by_grade'][key].append(subject)
-        
-        for cg in cgs:
-            subject_id = cg.get('subject_id')
+                data['subjects_by_grade'].setdefault(key, []).append(subject)
+
+        for textbook in textbooks:
+            subject_id = textbook.get('subject_id')
             if subject_id:
                 key = str(subject_id)
-                if key not in data['cgs_by_subject']:
-                    data['cgs_by_subject'][key] = []
-                data['cgs_by_subject'][key].append(cg)
-        
+                data['textbooks_by_subject'].setdefault(key, []).append(textbook)
+
+        for chapter in chapters:
+            textbook_id = chapter.get('textbook_id')
+            subject_id = chapter.get('subject_id')
+            if textbook_id:
+                key = str(textbook_id)
+                data['chapters_by_textbook'].setdefault(key, []).append(chapter)
+            if subject_id:
+                key = str(subject_id)
+                data['chapters_by_subject'].setdefault(key, []).append(chapter)
+
+        for cg in cgs:
+            chapter_id = cg.get('chapter_id')
+            subject_id = cg.get('subject_id')
+            if chapter_id:
+                key = str(chapter_id)
+                data['cgs_by_chapter'].setdefault(key, []).append(cg)
+            if subject_id:
+                key = str(subject_id)
+                data['cgs_by_subject'].setdefault(key, []).append(cg)
+
         for comp in competencies:
             cg_id = comp.get('cg_id')
             if cg_id:
                 key = str(cg_id)
-                if key not in data['comps_by_cg']:
-                    data['comps_by_cg'][key] = []
-                data['comps_by_cg'][key].append(comp)
-        
+                data['comps_by_cg'].setdefault(key, []).append(comp)
+
         return jsonify(data)
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
@@ -3590,7 +3420,6 @@ def get_page1_data():
 def get_page2_data():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     comp_id = request.args.get('comp_id')
     db = get_db()
     cur = db.cursor(dictionary=True)
@@ -3600,15 +3429,18 @@ def get_page2_data():
             cur.execute("""
                 SELECT c.*, cg.cg_code, cg.cg_description, 
                        s.subject_name, s.id as subject_id, 
-                       g.grade_name, g.id as grade_id
+                       g.grade_name, g.id as grade_id,
+                       ch.id as chapter_id, ch.chapter_name,
+                       t.id as textbook_id, t.textbook_name
                 FROM competencies c
                 LEFT JOIN curricular_goals cg ON c.cg_id = cg.id
                 LEFT JOIN subjects s ON cg.subject_id = s.id
                 LEFT JOIN grades g ON s.grade_id = g.id
+                LEFT JOIN chapters ch ON cg.chapter_id = ch.id
+                LEFT JOIN textbooks t ON cg.textbook_id = t.id
                 WHERE c.id = %s
             """, (comp_id,))
             comp_data = cur.fetchone()
-        
         cur.execute("SELECT * FROM cognitive_domains ORDER BY id")
         domains = cur.fetchall()
         if not domains:
@@ -3617,10 +3449,8 @@ def get_page2_data():
                 {'id': 2, 'domain_name': 'Sensitivity', 'description': 'Sensitivity to applications and real-world connections'},
                 {'id': 3, 'domain_name': 'Creativity', 'description': 'Creative thinking and problem solving'}
             ]
-        
         cur.execute("SELECT * FROM question_types ORDER BY cognitive_id, id")
         question_types = cur.fetchall()
-        
         cur.execute("SELECT * FROM difficulty_levels ORDER BY id")
         difficulty_levels = cur.fetchall()
         if not difficulty_levels:
@@ -3629,36 +3459,29 @@ def get_page2_data():
                 {'id': 2, 'level_name': 'Medium'},
                 {'id': 3, 'level_name': 'Hard'}
             ]
-        
         data = {
             'domains': domains,
             'question_types_by_domain': {},
             'difficulty_levels': difficulty_levels,
             'comp': comp_data
         }
-        
         for qt in question_types:
             cognitive_id = qt['cognitive_id']
-            if cognitive_id not in data['question_types_by_domain']:
-                data['question_types_by_domain'][cognitive_id] = []
-            data['question_types_by_domain'][cognitive_id].append(qt)
-        
+            data['question_types_by_domain'].setdefault(cognitive_id, []).append(qt)
         return jsonify(data)
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
-
 @app.route('/api/knowledge-levels', methods=['GET'])
 def get_knowledge_levels():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     domain_id = request.args.get('domain_id')
     difficulty_id = request.args.get('difficulty_id')
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
@@ -3667,8 +3490,7 @@ def get_knowledge_levels():
                 SELECT kl.*, cd.domain_name 
                 FROM knowledge_levels kl
                 LEFT JOIN cognitive_domains cd ON kl.domain_id = cd.id
-                WHERE kl.is_active = TRUE 
-                AND kl.domain_id = %s
+                WHERE kl.is_active = TRUE AND kl.domain_id = %s
                 ORDER BY kl.id
             """, (domain_id,))
         elif difficulty_id:
@@ -3676,8 +3498,7 @@ def get_knowledge_levels():
                 SELECT kl.*, cd.domain_name 
                 FROM knowledge_levels kl
                 LEFT JOIN cognitive_domains cd ON kl.domain_id = cd.id
-                WHERE kl.is_active = TRUE 
-                AND kl.difficulty_id = %s
+                WHERE kl.is_active = TRUE AND kl.difficulty_id = %s
                 ORDER BY kl.id
             """, (difficulty_id,))
         else:
@@ -3689,58 +3510,53 @@ def get_knowledge_levels():
                 ORDER BY kl.domain_id, kl.id
             """)
         levels = cur.fetchall()
-        
         if not levels:
             default_mapping = [
-                {'id': 1, 'level_name': 'Knowledge', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Basic recall of information and facts'},
-                {'id': 2, 'level_name': 'Remembering', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Retrieving knowledge from memory'},
-                {'id': 3, 'level_name': 'Understanding', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Constructing meaning from information'},
-                {'id': 4, 'level_name': 'Comprehension', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Grasping the meaning of information'},
-                {'id': 5, 'level_name': 'Application', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Apply knowledge to new situations'},
-                {'id': 6, 'level_name': 'Analysis', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Break down information into parts'},
-                {'id': 7, 'level_name': 'Synthesis', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Combine elements to form a new whole'},
-                {'id': 8, 'level_name': 'Empathy', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': "Understanding others' perspectives and feelings"},
-                {'id': 9, 'level_name': 'Interpretation', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Explaining and interpreting information'},
-                {'id': 10, 'level_name': 'Evaluation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Make judgments based on criteria and standards'},
-                {'id': 11, 'level_name': 'Creation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Generate new ideas and products'},
-                {'id': 12, 'level_name': 'Critical Thinking', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Deep analysis and evaluation of information'},
-                {'id': 13, 'level_name': 'Innovation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Novel approaches and solutions to problems'},
-                {'id': 14, 'level_name': 'Design Thinking', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Human-centered problem solving approach'},
-                {'id': 15, 'level_name': 'Reflection', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Thoughtful consideration and self-assessment'}
+                {'id': 1, 'level_name': 'Knowledge', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Basic recall'},
+                {'id': 2, 'level_name': 'Remembering', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Retrieving knowledge'},
+                {'id': 3, 'level_name': 'Understanding', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Constructing meaning'},
+                {'id': 4, 'level_name': 'Comprehension', 'domain_id': 1, 'domain_name': 'Awareness', 'description': 'Grasping meaning'},
+                {'id': 5, 'level_name': 'Application', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Apply knowledge'},
+                {'id': 6, 'level_name': 'Analysis', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Break down info'},
+                {'id': 7, 'level_name': 'Synthesis', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Combine elements'},
+                {'id': 8, 'level_name': 'Empathy', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': "Understanding others"},
+                {'id': 9, 'level_name': 'Interpretation', 'domain_id': 2, 'domain_name': 'Sensitivity', 'description': 'Explaining info'},
+                {'id': 10, 'level_name': 'Evaluation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Make judgments'},
+                {'id': 11, 'level_name': 'Creation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Generate ideas'},
+                {'id': 12, 'level_name': 'Critical Thinking', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Deep analysis'},
+                {'id': 13, 'level_name': 'Innovation', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Novel approaches'},
+                {'id': 14, 'level_name': 'Design Thinking', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Human-centered'},
+                {'id': 15, 'level_name': 'Reflection', 'domain_id': 3, 'domain_name': 'Creativity', 'description': 'Thoughtful consideration'}
             ]
-            
             if domain_id:
                 levels = [l for l in default_mapping if l['domain_id'] == int(domain_id)]
             else:
                 levels = default_mapping
-        
         return jsonify({'knowledge_levels': levels})
-    except Exception as e:
+    except Exception:
         return jsonify({'knowledge_levels': []})
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/cognitive-domains', methods=['GET'])
 def get_cognitive_domains():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
         cur.execute("SELECT id, domain_name, description FROM cognitive_domains ORDER BY id")
         domains = cur.fetchall()
-        
         if not domains:
             domains = [
                 {'id': 1, 'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
                 {'id': 2, 'domain_name': 'Sensitivity', 'description': 'Sensitivity to applications and real-world connections'},
                 {'id': 3, 'domain_name': 'Creativity', 'description': 'Creative thinking and problem solving'}
             ]
-        
         return jsonify({'domains': domains})
-    except Exception as e:
+    except Exception:
         return jsonify({
             'domains': [
                 {'id': 1, 'domain_name': 'Awareness', 'description': 'Basic awareness of concepts and information'},
@@ -3753,16 +3569,15 @@ def get_cognitive_domains():
         db.close()
 
 
+
 @app.route('/api/simple-questions')
 def get_simple_questions():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     comp_id = request.args.get('comp_id')
     username = session.get('user')
     subject_group = session.get('subject_group')
     user_role = session.get('user_role')
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
@@ -3770,7 +3585,6 @@ def get_simple_questions():
         if user_role != 'admin' and subject_group:
             cur.execute("SELECT subject_id FROM subject_groups WHERE group_code = %s", (subject_group,))
             user_subject_ids = [row['subject_id'] for row in cur.fetchall()]
-        
         query = """
             SELECT id, question_text, answer, marks, duration_minutes,
                    competency_code, difficulty_name, domain_name,
@@ -3786,20 +3600,16 @@ def get_simple_questions():
             WHERE created_by = %s
         """
         params = [username]
-        
         if user_role != 'admin' and user_subject_ids:
             placeholders = ','.join(['%s'] * len(user_subject_ids))
             query += f" AND subject_id IN ({placeholders})"
             params.extend(user_subject_ids)
-        
         if comp_id and comp_id != '0':
             query += " AND comp_id = %s"
             params.append(comp_id)
-        
         query += " ORDER BY id DESC LIMIT 50"
         cur.execute(query, tuple(params))
         questions = cur.fetchall()
-        
         for q in questions:
             if q.get('images'):
                 try:
@@ -3808,13 +3618,14 @@ def get_simple_questions():
                     q['images'] = []
             else:
                 q['images'] = []
-        
         return jsonify({'questions': questions})
-    except Exception as e:
+    except Exception:
+        traceback.print_exc()
         return jsonify({'questions': []})
     finally:
         cur.close()
         db.close()
+
 
 @app.route('/api/page2-questions')
 def get_page2_questions():
@@ -3825,30 +3636,19 @@ def get_page2_questions():
 def create_simple_question():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     has_access = (
-        session.get('perm_re', False) or 
-        session.get('perm_rc', False) or 
-        session.get('perm_ap', False) or 
+        session.get('perm_re', False) or
+        session.get('perm_rc', False) or
+        session.get('perm_ap', False) or
         session.get('user_role') == 'admin'
     )
-    
     if not has_access:
         return jsonify({'error': 'You do not have permission to create questions'}), 403
-    
     data = request.json
-    
     raw_question = data.get('question_text', '')
     raw_answer = data.get('answer', '')
-    
-    question_text = strip_html_tags(raw_question)
-    answer = strip_html_tags(raw_answer)
-    
-    if not question_text:
-        question_text = 'Question content'
-    if not answer:
-        answer = 'Answer content'
-    
+    question_text = strip_html_tags(raw_question) or 'Question content'
+    answer = strip_html_tags(raw_answer) or 'Answer content'
     marks = data.get('marks', 1)
     duration_minutes = data.get('duration_minutes', 0)
     comp_id = data.get('comp_id')
@@ -3878,13 +3678,10 @@ def create_simple_question():
     textbook_page = data.get('textbook_page')
     reference_book = data.get('reference_book')
     reference_page = data.get('reference_page')
-    
     if not question_text:
         return jsonify({'error': 'Question text is required'}), 400
-    
     if not answer:
         return jsonify({'error': 'Answer is required'}), 400
-    
     subject_group = session.get('subject_group')
     user_role = session.get('user_role')
     if user_role != 'admin' and subject_group and subject_id:
@@ -3900,75 +3697,61 @@ def create_simple_question():
         finally:
             cur_check.close()
             db_check.close()
-    
     db = get_db()
     cur = db.cursor()
-    
     try:
-        
         if chapter_id:
             cur.execute("SELECT id FROM chapters WHERE id = %s", (chapter_id,))
             if not cur.fetchone():
                 chapter_id = None
                 chapter_name = None
-        
         if cg_id:
             cur.execute("SELECT id FROM curricular_goals WHERE id = %s", (cg_id,))
             if not cur.fetchone():
                 cg_id = None
                 cg_code = None
-        
         if comp_id:
             cur.execute("SELECT id FROM competencies WHERE id = %s", (comp_id,))
             if not cur.fetchone():
                 comp_id = None
                 competency_code = None
-        
         if domain_id:
             cur.execute("SELECT id FROM cognitive_domains WHERE id = %s", (domain_id,))
             if not cur.fetchone():
                 domain_id = None
                 domain_name = None
-        
         if knowledge_level_id:
             cur.execute("SELECT id FROM knowledge_levels WHERE id = %s", (knowledge_level_id,))
             if not cur.fetchone():
                 knowledge_level_id = None
                 knowledge_level_name = None
-        
         if question_type_id:
             cur.execute("SELECT id FROM question_types WHERE id = %s", (question_type_id,))
             if not cur.fetchone():
                 question_type_id = None
                 question_type_name = None
-        
         if difficulty_id:
             cur.execute("SELECT id FROM difficulty_levels WHERE id = %s", (difficulty_id,))
             if not cur.fetchone():
                 difficulty_id = None
                 difficulty_name = None
-        
         if grade_id:
             cur.execute("SELECT id FROM grades WHERE id = %s", (grade_id,))
             if not cur.fetchone():
                 grade_id = None
                 grade_name = None
-        
         if subject_id:
             cur.execute("SELECT id FROM subjects WHERE id = %s", (subject_id,))
             if not cur.fetchone():
                 subject_id = None
                 subject_name = None
-        
         if textbook_id:
             cur.execute("SELECT id FROM textbooks WHERE id = %s", (textbook_id,))
             if not cur.fetchone():
                 textbook_id = None
                 textbook_name = None
-        
         username = session.get('user', 'Unknown')
         current_time = datetime.now()
-        
         cur.execute("""
             INSERT INTO simple_questions (
                 question_text, answer, marks, duration_minutes, 
@@ -3998,28 +3781,26 @@ def create_simple_question():
             textbook_id, textbook_name, textbook_publisher,
             textbook_page, reference_book, reference_page
         ))
-        db.commit()
-        
         return jsonify({
-            'success': True, 
+            'success': True,
             'message': 'Question saved successfully',
             'id': cur.lastrowid,
             'language': language,
             'status': 'unassigned'
         })
     except mysql.connector.Error as e:
-        db.rollback()
         return jsonify({'error': f'Database error: {str(e)}'}), 500
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
 
+
 @app.route('/api/create-question', methods=['POST'])
 def create_question():
     return create_simple_question()
+
 
 @app.route('/api/delete-question/<int:question_id>', methods=['DELETE'])
 def delete_question(question_id):
@@ -4029,14 +3810,13 @@ def delete_question(question_id):
     cur = db.cursor()
     try:
         cur.execute("DELETE FROM simple_questions WHERE id = %s", (question_id,))
-        db.commit()
         return jsonify({'success': True})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
         db.close()
+
 
 
 @app.route('/api/upload-question-images', methods=['POST'])
@@ -4045,13 +3825,11 @@ def upload_question_images():
         return jsonify({'error': 'Not authenticated'}), 401
     if 'images' not in request.files:
         return jsonify({'error': 'No images provided'}), 400
-    
     files = request.files.getlist('images')
     if len(files) == 0:
         return jsonify({'error': 'No images selected'}), 400
     if len(files) > 10:
         return jsonify({'error': 'Maximum 10 images allowed'}), 400
-    
     uploaded_urls = []
     for file in files:
         if file and allowed_file(file.filename):
@@ -4065,23 +3843,20 @@ def upload_question_images():
             uploaded_urls.append(image_url)
         else:
             return jsonify({'error': f'Invalid file type: {file.filename}'}), 400
-    
     return jsonify({'success': True, 'image_urls': uploaded_urls})
+
 
 @app.route('/api/upload-answer-images', methods=['POST'])
 def upload_answer_images():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     if 'images' not in request.files:
         return jsonify({'error': 'No images provided'}), 400
-    
     files = request.files.getlist('images')
     if len(files) == 0:
         return jsonify({'error': 'No images selected'}), 400
     if len(files) > 10:
         return jsonify({'error': 'Maximum 10 images allowed'}), 400
-    
     uploaded_urls = []
     for file in files:
         if file and allowed_file(file.filename):
@@ -4095,8 +3870,8 @@ def upload_answer_images():
             uploaded_urls.append(image_url)
         else:
             return jsonify({'error': f'Invalid file type: {file.filename}'}), 400
-    
     return jsonify({'success': True, 'image_urls': uploaded_urls})
+
 
 @app.route('/static/uploads/questions/<path:filename>')
 def serve_question_image(filename):
@@ -4113,11 +3888,9 @@ def serve_question_image(filename):
 def get_paper_blueprints():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     username = session.get('user')
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
@@ -4125,7 +3898,6 @@ def get_paper_blueprints():
         if user_role != 'admin' and subject_group:
             cur.execute("SELECT subject_id FROM subject_groups WHERE group_code = %s", (subject_group,))
             user_subject_ids = [row['subject_id'] for row in cur.fetchall()]
-        
         if user_role == 'admin':
             cur.execute("""
                 SELECT bp.*, g.grade_name, s.subject_name
@@ -4154,20 +3926,17 @@ def get_paper_blueprints():
                     WHERE bp.created_by = %s
                     ORDER BY bp.updated_at DESC, bp.created_at DESC
                 """, (username,))
-        
         blueprints = cur.fetchall()
         for bp in blueprints:
             bp['cg_ids'] = [int(x) for x in bp['cg_ids'].split(',')] if bp['cg_ids'] else []
             bp['comp_ids'] = [int(x) for x in bp['comp_ids'].split(',')] if bp['comp_ids'] else []
             bp['question_ids'] = [int(x) for x in bp['question_ids'].split(',')] if bp['question_ids'] else []
-            
             config_data = {}
             if bp['config']:
                 try:
                     config_data = json.loads(bp['config'])
                 except:
                     config_data = {}
-            
             if bp.get('cognitive_config'):
                 try:
                     cognitive_data = json.loads(bp['cognitive_config'])
@@ -4175,11 +3944,10 @@ def get_paper_blueprints():
                         config_data['cognitive'] = cognitive_data
                 except:
                     pass
-            
             bp['config'] = config_data
-        
         return jsonify({'blueprints': blueprints})
-    except Exception as e:
+    except Exception:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
@@ -4190,10 +3958,8 @@ def get_paper_blueprints():
 def create_paper_blueprint():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     username = session.get('user')
     data = request.json
-    
     name = data.get('name', 'Unnamed Blueprint')
     grade_id = data.get('grade_id')
     subject_id = data.get('subject_id')
@@ -4202,13 +3968,10 @@ def create_paper_blueprint():
     question_ids = data.get('question_ids', [])
     config = data.get('config', {})
     status = data.get('status', 'draft')
-    
     cognitive_config = config.get('cognitive', {}) if config else {}
-    
     main_config = config.copy() if config else {}
     if 'cognitive' in main_config:
         del main_config['cognitive']
-    
     db = get_db()
     cur = db.cursor()
     try:
@@ -4223,13 +3986,10 @@ def create_paper_blueprint():
             ','.join(map(str, question_ids)) if question_ids else None,
             json.dumps(main_config) if main_config else None,
             json.dumps(cognitive_config) if cognitive_config else None,
-            username,
-            status
+            username, status
         ))
-        db.commit()
         return jsonify({'success': True, 'id': cur.lastrowid, 'message': 'Blueprint saved successfully'})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
@@ -4240,7 +4000,6 @@ def create_paper_blueprint():
 def get_paper_blueprint(blueprint_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
@@ -4252,21 +4011,17 @@ def get_paper_blueprint(blueprint_id):
             WHERE bp.id = %s
         """, (blueprint_id,))
         blueprint = cur.fetchone()
-        
         if not blueprint:
             return jsonify({'error': 'Blueprint not found'}), 404
-        
         blueprint['cg_ids'] = [int(x) for x in blueprint['cg_ids'].split(',')] if blueprint['cg_ids'] else []
         blueprint['comp_ids'] = [int(x) for x in blueprint['comp_ids'].split(',')] if blueprint['comp_ids'] else []
         blueprint['question_ids'] = [int(x) for x in blueprint['question_ids'].split(',')] if blueprint['question_ids'] else []
-        
         config_data = {}
         if blueprint['config']:
             try:
                 config_data = json.loads(blueprint['config'])
             except:
                 config_data = {}
-        
         if blueprint.get('cognitive_config'):
             try:
                 cognitive_data = json.loads(blueprint['cognitive_config'])
@@ -4274,11 +4029,10 @@ def get_paper_blueprint(blueprint_id):
                     config_data['cognitive'] = cognitive_data
             except:
                 pass
-        
         blueprint['config'] = config_data
-        
         return jsonify({'blueprint': blueprint})
-    except Exception as e:
+    except Exception:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
@@ -4289,10 +4043,7 @@ def get_paper_blueprint(blueprint_id):
 def update_paper_blueprint(blueprint_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
-    username = session.get('user')
     data = request.json
-    
     name = data.get('name', 'Unnamed Blueprint')
     grade_id = data.get('grade_id')
     subject_id = data.get('subject_id')
@@ -4301,13 +4052,10 @@ def update_paper_blueprint(blueprint_id):
     question_ids = data.get('question_ids', [])
     config = data.get('config', {})
     status = data.get('status', 'draft')
-    
     cognitive_config = config.get('cognitive', {}) if config else {}
-    
     main_config = config.copy() if config else {}
     if 'cognitive' in main_config:
         del main_config['cognitive']
-    
     db = get_db()
     cur = db.cursor()
     try:
@@ -4325,17 +4073,12 @@ def update_paper_blueprint(blueprint_id):
             ','.join(map(str, question_ids)) if question_ids else None,
             json.dumps(main_config) if main_config else None,
             json.dumps(cognitive_config) if cognitive_config else None,
-            status,
-            blueprint_id
+            status, blueprint_id
         ))
-        db.commit()
-        
         if cur.rowcount == 0:
             return jsonify({'error': 'Blueprint not found'}), 404
-        
         return jsonify({'success': True, 'id': blueprint_id, 'message': 'Blueprint updated successfully'})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
@@ -4346,19 +4089,14 @@ def update_paper_blueprint(blueprint_id):
 def delete_paper_blueprint(blueprint_id):
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     db = get_db()
     cur = db.cursor()
     try:
         cur.execute("DELETE FROM paper_blueprints WHERE id = %s", (blueprint_id,))
-        db.commit()
-        
         if cur.rowcount == 0:
             return jsonify({'error': 'Blueprint not found'}), 404
-        
         return jsonify({'success': True, 'message': 'Blueprint deleted successfully'})
     except Exception as e:
-        db.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
@@ -4369,10 +4107,8 @@ def delete_paper_blueprint(blueprint_id):
 def get_pending_count():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     user_role = session.get('user_role')
     subject_group = session.get('subject_group')
-    
     db = get_db()
     cur = db.cursor()
     try:
@@ -4394,6 +4130,7 @@ def get_pending_count():
         cur.close()
         db.close()
 
+
 @app.route('/debug-session')
 def debug_session():
     if 'user' not in session:
@@ -4410,11 +4147,11 @@ def debug_session():
         }
     })
 
+
 @app.route('/api/debug-questions')
 def debug_questions():
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
@@ -4424,7 +4161,6 @@ def debug_questions():
             GROUP BY status
         """)
         status_counts = cur.fetchall()
-        
         cur.execute("""
             SELECT id, question_text, status, subject_id, chapter_id, cg_id, comp_id, 
                    domain_id, knowledge_level_id, question_type_id, difficulty_id, language
@@ -4433,7 +4169,6 @@ def debug_questions():
             LIMIT 10
         """)
         sample_questions = cur.fetchall()
-        
         cur.execute("""
             SELECT s.id, s.subject_name, COUNT(sq.id) as approved_count
             FROM subjects s
@@ -4442,7 +4177,6 @@ def debug_questions():
             ORDER BY approved_count DESC
         """)
         subjects_with_questions = cur.fetchall()
-        
         return jsonify({
             'status_counts': status_counts,
             'sample_approved_questions': sample_questions,
@@ -4455,36 +4189,35 @@ def debug_questions():
         cur.close()
         db.close()
 
+
 @app.route('/api/debug/cgs')
 def debug_cgs():
     if 'user' not in session or session.get('user_role') != 'admin':
         return jsonify({'error': 'Unauthorized'}), 401
-    
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
         cur.execute("""
-            SELECT cg.id, cg.cg_code, cg.cg_description, cg.subject_id, cg.chapter_id,
+            SELECT cg.id, cg.cg_code, cg.cg_description, cg.subject_id, cg.chapter_id, cg.textbook_id,
                    s.subject_name, s.grade_id, g.grade_name,
-                   ch.chapter_name,
+                   ch.chapter_name, t.textbook_name,
                    (SELECT COUNT(*) FROM competencies WHERE cg_id = cg.id) as comp_count
             FROM curricular_goals cg
             LEFT JOIN subjects s ON cg.subject_id = s.id
             LEFT JOIN grades g ON s.grade_id = g.id
             LEFT JOIN chapters ch ON cg.chapter_id = ch.id
+            LEFT JOIN textbooks t ON cg.textbook_id = t.id
             ORDER BY cg.id
         """)
         cgs = cur.fetchall()
-        
         cur.execute("""
             SELECT c.id, c.comp_code, c.comp_description, c.cg_id, c.status,
-                   cg.cg_code, cg.subject_id, cg.chapter_id
+                   cg.cg_code, cg.subject_id, cg.chapter_id, cg.textbook_id
             FROM competencies c
             LEFT JOIN curricular_goals cg ON c.cg_id = cg.id
             ORDER BY c.id
         """)
         comps = cur.fetchall()
-        
         return jsonify({
             'curricular_goals': cgs,
             'competencies': comps,
