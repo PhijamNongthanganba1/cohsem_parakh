@@ -1752,27 +1752,73 @@ def get_competencies_api():
         user_role = session.get('user_role', 'writer')
         subject_group = session.get('subject_group')
         
+        cg_id = request.args.get('cg_id')
+        chapter_id = request.args.get('chapter_id')
+        subject_id = request.args.get('subject_id')
+        
         match_stage = {}
+        
+        if cg_id:
+            try:
+                match_stage['cg_id'] = int(cg_id)
+            except:
+                return jsonify({'competencies': []})
+        
+        if chapter_id and 'cg_id' not in match_stage:
+            try:
+                chapter_id_int = int(chapter_id)
+                chapter_cgs = list(db.curricular_goals.find({'chapter_id': chapter_id_int}))
+                chapter_cg_ids = [cg['id'] for cg in chapter_cgs]
+                if not chapter_cg_ids:
+                    return jsonify({'competencies': []})
+                match_stage['cg_id'] = {'$in': chapter_cg_ids}
+            except:
+                return jsonify({'competencies': []})
+            
+        if subject_id and 'cg_id' not in match_stage:
+            try:
+                subject_id_int = int(subject_id)
+                subject_cgs = list(db.curricular_goals.find({'subject_id': subject_id_int}))
+                subject_cg_ids = [cg['id'] for cg in subject_cgs]
+                if not subject_cg_ids:
+                    return jsonify({'competencies': []})
+                match_stage['cg_id'] = {'$in': subject_cg_ids}
+            except:
+                return jsonify({'competencies': []})
         
         if user_role != 'admin' and subject_group:
             group_subjects = list(db.subject_groups.find({'group_code': subject_group}))
-            subject_ids = [s['subject_id'] for s in group_subjects]
-            if not subject_ids:
+            subject_ids_in_group = [s['subject_id'] for s in group_subjects]
+            if not subject_ids_in_group:
                 return jsonify({'competencies': []})
-            group_cgs = list(db.curricular_goals.find({'subject_id': {'$in': subject_ids}}))
-            cg_ids = [cg['id'] for cg in group_cgs]
-            if not cg_ids:
+            group_cgs = list(db.curricular_goals.find({'subject_id': {'$in': subject_ids_in_group}}))
+            group_cg_ids = [cg['id'] for cg in group_cgs]
+            if not group_cg_ids:
                 return jsonify({'competencies': []})
-            match_stage = {'$match': {'cg_id': {'$in': cg_ids}}}
+            
+            if 'cg_id' in match_stage:
+                existing = match_stage['cg_id']
+                if isinstance(existing, dict) and '$in' in existing:
+                    combined = list(set(existing['$in']) & set(group_cg_ids))
+                elif isinstance(existing, int):
+                    combined = [existing] if existing in group_cg_ids else []
+                else:
+                    combined = group_cg_ids
+                if not combined:
+                    return jsonify({'competencies': []})
+                match_stage['cg_id'] = {'$in': combined}
+            else:
+                match_stage['cg_id'] = {'$in': group_cg_ids}
         
         pipeline = []
         if match_stage:
-            pipeline.append(match_stage)
+            pipeline.append({'$match': match_stage})
         pipeline.extend([
             {'$lookup': {'from': 'curricular_goals', 'localField': 'cg_id', 'foreignField': 'id', 'as': 'cg_info'}},
             {'$addFields': {
                 'cg_code': {'$arrayElemAt': ['$cg_info.cg_code', 0]},
-                'subject_id': {'$arrayElemAt': ['$cg_info.subject_id', 0]}
+                'subject_id': {'$arrayElemAt': ['$cg_info.subject_id', 0]},
+                'chapter_id': {'$arrayElemAt': ['$cg_info.chapter_id', 0]}
             }},
             {'$project': {'cg_info': 0}}
         ])
